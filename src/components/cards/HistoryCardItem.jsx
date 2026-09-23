@@ -24,8 +24,15 @@ const MaskedTitle = styled(HistoryTitle)`
   user-select: none;
 `;
 
+// 데이터에 팀과 직함이 같은 값으로 들어온 경력이 있어 같으면 한 번만 보여준다.
+function formatRole(team, position) {
+  if (team && position && team !== position) return `${team} · ${position}`;
+  return team || position || '';
+}
+
 export default function HistoryCardItem({
   company,
+  position,
   team,
   startDate,
   endDate,
@@ -34,6 +41,7 @@ export default function HistoryCardItem({
   masked,
 }) {
   const companyName = company?.name || '';
+  const role = formatRole(team, position);
 
   return (
     <HistoryCard>
@@ -49,7 +57,8 @@ export default function HistoryCardItem({
           ) : (
             <HistoryTitle>{companyName}</HistoryTitle>
           )}
-          <Position>{team}</Position>
+          {/* 마스킹은 회사를 가리려는 것이지 직무를 가리려는 것이 아니므로 masked여도 보여준다. */}
+          {role && <Position>{role}</Position>}
         </TitleWrapper>
         <HistoryDescription>{description}</HistoryDescription>
         <HistoryPeriod>
