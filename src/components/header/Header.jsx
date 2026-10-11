@@ -22,6 +22,7 @@ function Header({ sectionVisibility }) {
     dropdownRef,
     handleProfileClick,
     handleMyPage,
+    handleWrite,
     handleLogout,
   } = useProfileDropdown();
 
@@ -54,6 +55,7 @@ function Header({ sectionVisibility }) {
               onProfileClick={handleProfileClick}
               onMyPage={handleMyPage}
               onLogout={handleLogout}
+              onWrite={handleWrite}
             />
           </HeaderSide>
         </HeaderContainer>

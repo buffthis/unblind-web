@@ -3,6 +3,7 @@ import Loading from '@components/common/Loading';
 import BasicHeader from '@components/header/BasicHeader';
 import PostArticle from '@components/post/PostArticle';
 import PostToc from '@components/post/PostToc';
+import { useAuth } from '@contexts/AuthContext';
 import useArticleHeadings, {
   useActiveHeading,
   useScrollToHash,
@@ -16,6 +17,8 @@ import React, { useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+
+import { POST_EDITOR_ENABLED } from '@/config';
 
 const Layout = styled.div`
   width: 100%;
@@ -74,6 +77,15 @@ const MetaRow = styled.div`
 
 const AuthorLink = styled(Link)`
   font-weight: 600;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+const EditLink = styled(Link)`
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.primary};
 `;
 
@@ -139,6 +151,7 @@ const BackLink = styled(Link)`
 export default function PostPage() {
   const { postId } = useParams();
   const { post, loading } = usePost(postId);
+  const { user } = useAuth();
   const articleRef = useRef(null);
   const content = post?.content || '';
   const headings = useArticleHeadings(articleRef, content);
@@ -166,6 +179,8 @@ export default function PostPage() {
   const description = (post.subtitle || content).slice(0, 80);
   const author =
     post.author?.name && post.author?.username ? post.author : null;
+  const canEdit =
+    POST_EDITOR_ENABLED && user != null && post.author?.id === user.id;
 
   return (
     <>
@@ -197,6 +212,9 @@ export default function PostPage() {
                   <Dot aria-hidden="true" />
                   <span>{`${estimateReadingMinutes(content)}분 읽기`}</span>
                 </>
+              )}
+              {canEdit && (
+                <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
               )}
             </MetaRow>
           </header>

@@ -3,6 +3,8 @@ import useClickOutside from '@hooks/useClickOutside';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { POST_EDITOR_ENABLED } from '@/config';
+
 export default function useProfileDropdown() {
   const { user, loading, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -31,6 +33,11 @@ export default function useProfileDropdown() {
     }
   };
 
+  const handleWrite = () => {
+    setIsDropdownOpen(false);
+    navigate('/posts/new');
+  };
+
   const handleLogout = async () => {
     setIsDropdownOpen(false);
     await logout();
@@ -44,6 +51,7 @@ export default function useProfileDropdown() {
     dropdownRef,
     handleProfileClick,
     handleMyPage,
+    handleWrite: POST_EDITOR_ENABLED ? handleWrite : undefined,
     handleLogout,
   };
 }

@@ -8,7 +8,7 @@ import HoverImage from '@components/common/HoverImage';
 import Loading from '@components/common/Loading';
 import { Section, SectionTitle } from '@components/common/Section';
 import Header from '@components/header/Header';
-import { SITE_NAME, SITE_URL } from '@/config';
+import { useAuth } from '@contexts/AuthContext';
 import useUser from '@hooks/useUser';
 import NotFoundPage from '@pages/NotFoundPage';
 import { PulseAnimation, ScrollAnimation } from '@styles/AnimationStyles';
@@ -29,11 +29,18 @@ import { serializeJsonLd } from '@utils/jsonLd';
 import { sectionConfig } from '@utils/sections';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+
+import { POST_EDITOR_ENABLED, SITE_NAME, SITE_URL } from '@/config';
 
 export default function UserPage() {
   const { username } = useParams();
   const { user, loading, error } = useUser(username);
+  const { user: me } = useAuth();
+  const isMe =
+    POST_EDITOR_ENABLED &&
+    me?.username != null &&
+    me.username === user?.username;
 
   if (loading) return <Loading />;
 
@@ -205,6 +212,7 @@ export default function UserPage() {
         <SectionTitle id="posts-title">
           <ScrollAnimation>Posts</ScrollAnimation>
         </SectionTitle>
+        {isMe && <Link to="/posts/new">글쓰기</Link>}
 
         <ProjectList>
           {user.posts.map((post, index) => (

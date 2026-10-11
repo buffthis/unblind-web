@@ -1,3 +1,4 @@
+import { useAuth } from '@contexts/AuthContext';
 import usePost from '@hooks/usePost';
 import theme from '@styles/theme/theme';
 import { render, screen } from '@testing-library/react';
@@ -12,6 +13,11 @@ import PostPage from './PostPage';
 vi.mock('@components/header/BasicHeader', () => ({ default: () => null }));
 vi.mock('@components/common/Footer', () => ({ default: () => null }));
 vi.mock('@hooks/usePost', () => ({ default: vi.fn() }));
+vi.mock('@contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('@/config', async (importOriginal) => ({
+  ...(await importOriginal()),
+  POST_EDITOR_ENABLED: true,
+}));
 
 const basePost = {
   id: 3,
@@ -39,6 +45,7 @@ function renderPage() {
 
 beforeEach(() => {
   usePost.mockReset();
+  useAuth.mockReturnValue({ user: null, loading: false });
 });
 
 describe('PostPage', () => {
@@ -116,6 +123,36 @@ describe('PostPage', () => {
 
     expect(
       screen.queryByRole('link', { name: '형준' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the edit link to the author only', () => {
+    useAuth.mockReturnValue({ user: { id: 7 }, loading: false });
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    expect(screen.getByRole('link', { name: '수정' })).toHaveAttribute(
+      'href',
+      '/posts/3/edit'
+    );
+  });
+
+  it('hides the edit link from other users', () => {
+    useAuth.mockReturnValue({ user: { id: 8 }, loading: false });
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    expect(
+      screen.queryByRole('link', { name: '수정' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the edit link from anonymous visitors', () => {
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    expect(
+      screen.queryByRole('link', { name: '수정' })
     ).not.toBeInTheDocument();
   });
 });

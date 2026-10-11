@@ -32,12 +32,17 @@ const MenuItem = styled.button`
   }
 `;
 
-export default function ProfileDropdown({ onMyPage, onLogout }) {
+export default function ProfileDropdown({ onMyPage, onLogout, onWrite }) {
   return (
     <DropdownMenu role="menu">
       <MenuItem role="menuitem" onClick={onMyPage}>
         My Page
       </MenuItem>
+      {onWrite && (
+        <MenuItem role="menuitem" onClick={onWrite}>
+          글쓰기
+        </MenuItem>
+      )}
       <MenuItem role="menuitem" onClick={onLogout}>
         Logout
       </MenuItem>

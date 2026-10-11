@@ -21,6 +21,7 @@ function BasicHeader() {
     dropdownRef,
     handleProfileClick,
     handleMyPage,
+    handleWrite,
     handleLogout,
   } = useProfileDropdown();
 
@@ -49,6 +50,7 @@ function BasicHeader() {
               onProfileClick={handleProfileClick}
               onMyPage={handleMyPage}
               onLogout={handleLogout}
+              onWrite={handleWrite}
             />
           </HeaderSide>
         </HeaderContainer>

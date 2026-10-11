@@ -3,7 +3,6 @@ import Loading from '@components/common/Loading';
 import ScrollToTop from '@components/common/ScrollToTop';
 import SearchProvider from '@components/search/SearchProvider';
 import { AuthProvider } from '@contexts/AuthContext';
-import { queryClient } from '@/queryClient';
 import LoginPage from '@pages/LoginPage';
 import NotFoundPage from '@pages/NotFoundPage';
 import PostListPage from '@pages/PostListPage';
@@ -18,8 +17,12 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 
+import { POST_EDITOR_ENABLED } from '@/config';
+import { queryClient } from '@/queryClient';
+
 // 마크다운 렌더러가 무거우므로 포스트 상세 페이지만 별도 청크로 분리한다.
 const PostPage = lazy(() => import('@pages/PostPage'));
+const PostEditorPage = lazy(() => import('@pages/PostEditorPage'));
 
 function App() {
   return (
@@ -42,6 +45,18 @@ function App() {
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/users" element={<UserListPage />} />
                         <Route path="/posts" element={<PostListPage />} />
+                        {POST_EDITOR_ENABLED && (
+                          <Route
+                            path="/posts/new"
+                            element={<PostEditorPage />}
+                          />
+                        )}
+                        {POST_EDITOR_ENABLED && (
+                          <Route
+                            path="/posts/:postId/edit"
+                            element={<PostEditorPage />}
+                          />
+                        )}
                         <Route path="/posts/:postId" element={<PostPage />} />
                         <Route path="/:username" element={<UserPage />} />
                         <Route path="*" element={<NotFoundPage />} />

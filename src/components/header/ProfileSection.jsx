@@ -38,6 +38,7 @@ export default function ProfileSection({
   onProfileClick,
   onMyPage,
   onLogout,
+  onWrite,
 }) {
   if (loading) {
     return <Placeholder />;
@@ -58,7 +59,11 @@ export default function ProfileSection({
         <Avatar src={user.profileImage?.url} size={30} />
       </AvatarButton>
       {isDropdownOpen && (
-        <ProfileDropdown onMyPage={onMyPage} onLogout={onLogout} />
+        <ProfileDropdown
+          onMyPage={onMyPage}
+          onLogout={onLogout}
+          onWrite={onWrite}
+        />
       )}
     </DropdownAnchor>
   );
