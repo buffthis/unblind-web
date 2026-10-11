@@ -1,5 +1,6 @@
 import client from '@apis/client';
 import { ENDPOINTS } from '@apis/endpoints';
+import { parseTags } from '@utils/tags';
 
 export async function fetchPostById(postId) {
   const response = await client.get(ENDPOINTS.POSTS.BY_ID(postId));
@@ -60,6 +61,7 @@ export async function savePost({
     title: values.title,
     subtitle: values.subtitle,
     content: values.content,
+    ...(values.tags != null && { tags: parseTags(values.tags) }),
     ...(thumbnailId != null && { thumbnailId }),
   };
 

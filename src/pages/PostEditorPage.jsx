@@ -4,13 +4,20 @@ import BasicHeader from '@components/header/BasicHeader';
 import PostEditorForm from '@components/post/PostEditorForm';
 import { useAuth } from '@contexts/AuthContext';
 import { draftKey } from '@hooks/usePostDraft';
+import { formatTags } from '@utils/tags';
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 
-const EMPTY_VALUES = { title: '', subtitle: '', thumbnailUrl: '', content: '' };
+const EMPTY_VALUES = {
+  title: '',
+  subtitle: '',
+  tags: '',
+  thumbnailUrl: '',
+  content: '',
+};
 
 const Message = styled.div`
   padding: 160px 20px;
@@ -36,6 +43,7 @@ function toFormValues(post) {
   return {
     title: post.title || '',
     subtitle: post.subtitle || '',
+    tags: formatTags(post.tags),
     thumbnailUrl: post.thumbnail?.url || '',
     content: post.content || '',
   };

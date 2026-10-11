@@ -58,6 +58,38 @@ describe('savePost', () => {
     expect(client.patch).not.toHaveBeenCalled();
   });
 
+  it('sends the tag line as a list of tags', async () => {
+    client.post.mockResolvedValue({ data: { id: 9 } });
+
+    await savePost({
+      postId: null,
+      values: { ...values, tags: '#GPU, Kubernetes, gpu' },
+      hidden: false,
+    });
+
+    expect(client.post).toHaveBeenCalledWith('/posts', {
+      title: '제목',
+      subtitle: '',
+      content: '본문',
+      tags: ['GPU', 'Kubernetes'],
+    });
+  });
+
+  it('clears tags when the tag line is emptied', async () => {
+    client.patch.mockResolvedValue({ data: { id: 3 } });
+
+    await savePost({
+      postId: 3,
+      values: { ...values, tags: '' },
+      hidden: false,
+    });
+
+    expect(client.patch).toHaveBeenCalledWith(
+      '/posts/3',
+      expect.objectContaining({ tags: [] })
+    );
+  });
+
   it('creates then hides a new hidden post', async () => {
     client.post.mockResolvedValue({ data: { id: 9 } });
     client.patch.mockResolvedValue({ data: { id: 9, hidden: true } });

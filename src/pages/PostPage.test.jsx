@@ -73,6 +73,35 @@ describe('PostPage', () => {
     expect(screen.getByText('1분 읽기')).toBeInTheDocument();
   });
 
+  it('lists the tags under the title without a # prefix', () => {
+    usePost.mockReturnValue({
+      post: { ...basePost, tags: ['GPU', 'Kubernetes'] },
+      loading: false,
+      error: false,
+    });
+    renderPage();
+
+    const list = screen.getByRole('list', { name: '태그' });
+    expect(list).toHaveTextContent(/^GPUKubernetes$/);
+    const title = screen.getByRole('heading', { level: 1, name: '글 제목' });
+    expect(
+      title.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows no tag list when the post has no tags', () => {
+    usePost.mockReturnValue({
+      post: { ...basePost, tags: [] },
+      loading: false,
+      error: false,
+    });
+    renderPage();
+
+    expect(
+      screen.queryByRole('list', { name: '태그' })
+    ).not.toBeInTheDocument();
+  });
+
   it('builds the table of contents from the rendered article', async () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();

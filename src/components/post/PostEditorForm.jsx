@@ -387,6 +387,15 @@ export default function PostEditorForm({
         )}
       </Field>
       <Field>
+        <span>태그</span>
+        <input
+          value={values.tags}
+          onChange={update('tags')}
+          placeholder="쉼표로 구분 (예: GPU, Kubernetes)"
+        />
+        {fieldErrors.tags && <FieldError>{fieldErrors.tags}</FieldError>}
+      </Field>
+      <Field>
         <span>썸네일 이미지 URL</span>
         <input
           value={values.thumbnailUrl}

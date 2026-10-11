@@ -12,6 +12,7 @@ import usePost from '@hooks/usePost';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { estimateReadingMinutes } from '@utils/readingTime';
+import { normalizeTags } from '@utils/tags';
 import { toSafeHttpUrl } from '@utils/url';
 import React, { useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -84,6 +85,24 @@ const Subtitle = styled.p`
   font-size: 19px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.inkSub};
+`;
+
+const TagList = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  list-style: none;
+`;
+
+const Tag = styled.li`
+  margin: 0 8px 10px 0;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.inkSurface};
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.inkSoft};
 `;
 
 const Meta = styled.div`
@@ -217,6 +236,7 @@ export default function PostPage() {
   }
 
   const externalUrl = toSafeHttpUrl(post.externalUrl);
+  const tags = normalizeTags(post.tags);
   const description = (post.subtitle || content).slice(0, 80);
   const author =
     post.author?.name && post.author?.username ? post.author : null;
@@ -236,6 +256,13 @@ export default function PostPage() {
           <header>
             <Title>{post.title}</Title>
             {post.subtitle && <Subtitle>{post.subtitle}</Subtitle>}
+            {tags.length > 0 && (
+              <TagList aria-label="태그">
+                {tags.map((tag) => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+              </TagList>
+            )}
             <Meta>
               <Byline>
                 {author && (
