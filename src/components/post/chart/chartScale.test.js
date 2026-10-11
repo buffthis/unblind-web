@@ -39,4 +39,9 @@ describe('formatValue', () => {
     expect(formatValue(1234.567, '원')).toBe('1,234.57원');
     expect(formatValue(-12.5, '')).toBe('-12.5');
   });
+
+  it('never shows negative zero', () => {
+    expect(formatValue(-0, '%')).toBe('0%');
+    expect(formatValue(-0.001, '')).toBe('0');
+  });
 });

@@ -30,6 +30,8 @@ export function computeDomain(values, { min = null, max = null } = {}) {
   return { min: domainMin, max: domainMax, ticks };
 }
 
+// Rounding first and `|| 0` keep -0 and tiny negatives such as -0.001 from printing "-0".
 export function formatValue(value, unit) {
-  return `${value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}${unit}`;
+  const rounded = Number(value.toFixed(2)) || 0;
+  return `${rounded.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}${unit}`;
 }
