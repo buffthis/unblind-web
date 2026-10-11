@@ -233,6 +233,83 @@ describe('PostEditorForm', () => {
     expect(screen.getByLabelText('제목')).toHaveValue('옛 초안');
   });
 
+  it('keeps both save buttons disabled until a stored draft is resolved', () => {
+    localStorage.setItem(
+      'post-draft:new',
+      JSON.stringify({ ...empty, title: '옛 초안' })
+    );
+    renderForm();
+    type('제목', '제목');
+    type('본문', '본문');
+
+    expect(
+      screen.getByText(
+        '임시 저장된 글을 불러오거나 버린 뒤 저장할 수 있습니다.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '발행' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: '숨김으로 저장' })
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+    expect(savePost).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '버리기' }));
+
+    expect(screen.getByRole('button', { name: '발행' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '숨김으로 저장' })).toBeEnabled();
+  });
+
+  it('tracks the saved thumbnail so a later save does not register it again', async () => {
+    savePost
+      .mockResolvedValueOnce({
+        id: 3,
+        thumbnail: { url: 'https://i.imgur.com/b.png' },
+      })
+      .mockResolvedValueOnce({ id: 3 });
+    const queryClient = new QueryClient();
+    render(
+      <ThemeProvider theme={theme}>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/posts/3/edit']}>
+            <Routes>
+              <Route
+                path="/posts/:postId/edit"
+                element={
+                  <PostEditorForm
+                    postId={3}
+                    initialValues={{
+                      ...empty,
+                      title: '제목',
+                      content: '본문',
+                      thumbnailUrl: 'https://i.imgur.com/a.png',
+                    }}
+                    initialThumbnailUrl="https://i.imgur.com/a.png"
+                    draftStorageKey="post-draft:3"
+                  />
+                }
+              />
+              <Route path="/posts/:postId" element={<p>상세 페이지</p>} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ThemeProvider>
+    );
+    type('썸네일 이미지 URL', 'https://i.imgur.com/b.png');
+
+    fireEvent.click(screen.getByRole('button', { name: '숨김으로 저장' }));
+    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '발행' })).toBeEnabled()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(2));
+    expect(savePost.mock.calls[1][0]).toMatchObject({
+      initialThumbnailUrl: 'https://i.imgur.com/b.png',
+    });
+  });
+
   it('discards an existing draft on request', () => {
     localStorage.setItem(
       'post-draft:new',

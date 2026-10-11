@@ -287,8 +287,8 @@ export default function PostEditorForm({
     if (Object.keys(errors).length > 0) return;
 
     // client.js hard-redirects on 401, so the draft has to be on disk before the request.
-    // An undecided older draft is left alone rather than overwritten.
-    if (pendingDraft == null) flush();
+    // The save buttons are disabled while an older draft awaits a decision, so flush is safe here.
+    flush();
     setSaving(true);
     setFormError(null);
 
@@ -301,6 +301,10 @@ export default function PostEditorForm({
       });
       clear();
       setDirty(false);
+      // Hidden saves keep the form mounted in edit mode, so the baseline must follow the save.
+      setThumbnailBaseline(
+        saved.thumbnail?.url ?? (values.thumbnailUrl.trim() || undefined)
+      );
       await Promise.all(
         [['post'], ['posts'], ['user'], ['post-edit']].map((queryKey) =>
           queryClient.invalidateQueries({ queryKey })
@@ -340,6 +344,7 @@ export default function PostEditorForm({
                 : ''
             }.`}
           </span>
+          <span>임시 저장된 글을 불러오거나 버린 뒤 저장할 수 있습니다.</span>
           <ActionButton type="button" onClick={restoreDraft}>
             불러오기
           </ActionButton>
@@ -435,7 +440,7 @@ export default function PostEditorForm({
         </span>
         <ActionButton
           type="button"
-          disabled={saving}
+          disabled={saving || pendingDraft != null}
           onClick={() => handleSave(true)}
         >
           숨김으로 저장
@@ -443,7 +448,7 @@ export default function PostEditorForm({
         <ActionButton
           type="button"
           $primary
-          disabled={saving}
+          disabled={saving || pendingDraft != null}
           onClick={() => handleSave(false)}
         >
           발행
