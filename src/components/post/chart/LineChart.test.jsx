@@ -36,7 +36,7 @@ describe('LineChart', () => {
     );
   });
 
-  it('draws a faint and a solid line per series', () => {
+  it('draws a faint and a solid line per series, hidden until drawn in', () => {
     const { container } = renderChart();
     expect(
       container.querySelectorAll('g[data-layer="ahead"] polyline')
@@ -46,7 +46,7 @@ describe('LineChart', () => {
     ).toHaveLength(2);
     expect(container.querySelector('clipPath rect')).toHaveAttribute(
       'width',
-      '1040'
+      '0'
     );
   });
 

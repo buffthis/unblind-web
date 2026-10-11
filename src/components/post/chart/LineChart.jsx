@@ -1,3 +1,4 @@
+import { useReducedMotion } from 'framer-motion';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 
@@ -9,6 +10,7 @@ import {
   VIEW,
 } from './chartGeometry';
 import { computeDomain, formatValue } from './chartScale';
+import useDrawIn from './useDrawIn';
 
 export const PALETTE = [
   [123, 131, 235],
@@ -235,6 +237,9 @@ export default function LineChart({ chart }) {
   const pointRefs = useRef([]);
   const valueRefs = useRef([]);
 
+  const reduced = useReducedMotion() === true;
+  useDrawIn({ rootRef, clipRectRef, aheadRef, reduced });
+
   const width = useElementWidth(plotRef);
   const stride = labelStride(count, width);
   const topOf = (value) =>
@@ -286,11 +291,15 @@ export default function LineChart({ chart }) {
                   x={-CLIP_PAD}
                   y={-50}
                   height={VIEW + 100}
-                  width={CLIP_FULL}
+                  width={reduced ? CLIP_FULL : 0}
                 />
               </clipPath>
             </defs>
-            <g ref={aheadRef} data-layer="ahead">
+            <g
+              ref={aheadRef}
+              data-layer="ahead"
+              style={{ opacity: reduced ? 1 : 0 }}
+            >
               {series.map((s, k) => (
                 <Line
                   key={k}
