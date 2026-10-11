@@ -40,7 +40,11 @@ function renderChart(data = chart) {
     </ThemeProvider>
   );
   const plot = screen.getByRole('group');
-  vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
+  // The hook measures the inset layer inside the plot, not the plot itself.
+  vi.spyOn(
+    utils.container.querySelector('[data-role="plot-inner"]'),
+    'getBoundingClientRect'
+  ).mockReturnValue({
     left: 0,
     top: 0,
     right: 1000,

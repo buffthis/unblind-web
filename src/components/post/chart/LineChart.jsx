@@ -62,22 +62,30 @@ const leftInset = (right) =>
 
 const Frame = styled.div`
   position: relative;
-  padding: ${INSET.top}px ${INSET.right}px ${INSET.bottom}px
-    ${leftInset(INSET.right)};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
+  /* Experiment: no frame, and the plot spans the article width; y labels hang into the left margin. */
+  padding: ${INSET.top}px 0 ${INSET.bottom}px;
+  /* Fixed empty space (about 2.5 12px glyphs) before the first and after the last point,
+     so an end x label never runs into the y labels whatever the number of points. */
+  --plot-inset: 30px;
+  /* The empty sides hang out of the article column, so the data itself spans the column. */
+  margin: 0 calc(var(--plot-inset) * -1);
+
+  /* Below this the page padding (20px) cannot hold the 30px overhang. */
+  @media (max-width: 760px) {
+    --plot-inset: 16px;
+  }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    padding: ${INSET_MOBILE.top}px ${INSET_MOBILE.right}px
-      ${INSET_MOBILE.bottom}px ${leftInset(INSET_MOBILE.right)};
+    padding: ${INSET_MOBILE.top}px 0 ${INSET_MOBILE.bottom}px;
+    --plot-inset: 16px;
   }
 `;
 
 const Readout = styled.div`
   position: absolute;
   top: ${INSET.readoutTop}px;
-  left: ${leftInset(INSET.right)};
-  right: ${INSET.right}px;
+  left: var(--plot-inset);
+  right: var(--plot-inset);
   height: 20px;
   pointer-events: none;
   font-size: 0.8rem;
@@ -85,8 +93,6 @@ const Readout = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     top: ${INSET_MOBILE.readoutTop}px;
-    left: ${leftInset(INSET_MOBILE.right)};
-    right: ${INSET_MOBILE.right}px;
   }
 `;
 
@@ -102,6 +108,16 @@ const ReadoutInner = styled.div`
   [data-shown='true'] & {
     opacity: 1;
   }
+`;
+
+// The pointer area is the whole plot, but data, crosshair and points live in this
+// inset layer; moving over the empty sides keeps the nearest end point active.
+const Inner = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--plot-inset);
+  right: var(--plot-inset);
 `;
 
 const Plot = styled.div`
@@ -125,7 +141,34 @@ const Gridline = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px solid #ececec;
+  /* A 3px box whose middle third is the 1px line: the box starts 1px above the tick. */
+  height: 3px;
+  margin-top: -1px;
+  background: #ececec;
+  /* Across the article column the line is 1px; over the stretches hanging outside it
+     the line thins to a point while it fades out. */
+  clip-path: polygon(
+    0 50%,
+    var(--plot-inset) 33.333%,
+    calc(100% - var(--plot-inset)) 33.333%,
+    100% 50%,
+    calc(100% - var(--plot-inset)) 66.667%,
+    var(--plot-inset) 66.667%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--plot-inset),
+    #000 calc(100% - var(--plot-inset)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--plot-inset),
+    #000 calc(100% - var(--plot-inset)),
+    transparent
+  );
 `;
 
 // Anchored by the right edge so long labels grow leftward instead of into the plot.
@@ -188,6 +231,8 @@ const Point = styled.span`
 
 const XAxis = styled.div`
   position: relative;
+  margin-left: var(--plot-inset);
+  margin-right: var(--plot-inset);
   height: 18px;
   margin-top: 10px;
 `;
@@ -292,6 +337,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
   const rootRef = useRef(null);
   const frameRef = useRef(null);
   const plotRef = useRef(null);
+  const innerRef = useRef(null);
   const clipRectRef = useRef(null);
   const aheadRef = useRef(null);
   const crosshairRef = useRef(null);
@@ -319,6 +365,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
     refs: {
       root: rootRef,
       plot: plotRef,
+      inner: innerRef,
       clipRect: clipRectRef,
       crosshair: crosshairRef,
       readout: readoutRef,
@@ -328,7 +375,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
     },
   });
 
-  const width = useElementWidth(plotRef);
+  const width = useElementWidth(innerRef);
   const stride = labelStride(count, width);
   const tickLabels = domain.ticks.map((tick) => formatValue(tick, unit));
   useYLabelWidth(frameRef, plotRef, tickLabels.join('|'));
@@ -370,58 +417,60 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
               </YTick>
             </React.Fragment>
           ))}
-          <Svg
-            viewBox={`0 0 ${VIEW} ${VIEW}`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <defs>
-              <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-                <rect
-                  ref={clipRectRef}
-                  x={-CLIP_PAD}
-                  y={-50}
-                  height={VIEW + 100}
-                  width={drawnAtStart ? CLIP_FULL : 0}
-                />
-              </clipPath>
-            </defs>
-            <g
-              ref={aheadRef}
-              data-layer="ahead"
-              style={{ opacity: drawnAtStart ? 1 : 0 }}
+          <Inner ref={innerRef} data-role="plot-inner">
+            <Svg
+              viewBox={`0 0 ${VIEW} ${VIEW}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
             >
-              {series.map((s, k) => (
-                <Line
-                  key={k}
-                  points={toPoints(s.values, domain)}
-                  stroke={color(PALETTE[k], AHEAD_ALPHA)}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
-            </g>
-            <g data-layer="past" clipPath={`url(#${clipId})`}>
-              {series.map((s, k) => (
-                <Line
-                  key={k}
-                  points={toPoints(s.values, domain)}
-                  stroke={color(PALETTE[k])}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
-            </g>
-          </Svg>
-          <Crosshair ref={crosshairRef} data-role="crosshair" />
-          {series.map((s, k) => (
-            <Point
-              key={k}
-              data-role="point"
-              ref={(element) => {
-                pointRefs.current[k] = element;
-              }}
-              style={{ background: color(PALETTE[k]) }}
-            />
-          ))}
+              <defs>
+                <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+                  <rect
+                    ref={clipRectRef}
+                    x={-CLIP_PAD}
+                    y={-50}
+                    height={VIEW + 100}
+                    width={drawnAtStart ? CLIP_FULL : 0}
+                  />
+                </clipPath>
+              </defs>
+              <g
+                ref={aheadRef}
+                data-layer="ahead"
+                style={{ opacity: drawnAtStart ? 1 : 0 }}
+              >
+                {series.map((s, k) => (
+                  <Line
+                    key={k}
+                    points={toPoints(s.values, domain)}
+                    stroke={color(PALETTE[k], AHEAD_ALPHA)}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+              </g>
+              <g data-layer="past" clipPath={`url(#${clipId})`}>
+                {series.map((s, k) => (
+                  <Line
+                    key={k}
+                    points={toPoints(s.values, domain)}
+                    stroke={color(PALETTE[k])}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+              </g>
+            </Svg>
+            <Crosshair ref={crosshairRef} data-role="crosshair" />
+            {series.map((s, k) => (
+              <Point
+                key={k}
+                data-role="point"
+                ref={(element) => {
+                  pointRefs.current[k] = element;
+                }}
+                style={{ background: color(PALETTE[k]) }}
+              />
+            ))}
+          </Inner>
         </Plot>
         <XAxis aria-hidden="true" data-axis="x">
           {labels.map((label, i) =>

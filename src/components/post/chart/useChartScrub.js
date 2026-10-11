@@ -21,7 +21,7 @@ export default function useChartScrub({
   const last = count - 1;
   const {
     root: rootRef,
-    plot: plotRef,
+    inner: innerRef,
     clipRect: clipRectRef,
     crosshair: crosshairRef,
     readout: readoutRef,
@@ -51,9 +51,9 @@ export default function useChartScrub({
       point.style.top = `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
     });
     const readout = readoutRef.current;
-    const plot = plotRef.current;
-    if (readout && plot) {
-      const plotWidth = plot.clientWidth;
+    const inner = innerRef.current;
+    if (readout && inner) {
+      const plotWidth = inner.clientWidth;
       const ownWidth = readout.offsetWidth;
       const left = clamp(
         (percent / 100) * plotWidth - ownWidth / 2,
@@ -131,7 +131,7 @@ export default function useChartScrub({
   }, [chart, last, position]);
 
   function indexFromPointer(event) {
-    const rect = plotRef.current.getBoundingClientRect();
+    const rect = innerRef.current.getBoundingClientRect();
     const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;
     return indexFromRatio(ratio, count);
   }
