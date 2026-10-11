@@ -96,11 +96,11 @@ const Gridline = styled.div`
   border-top: 1px solid #ececec;
 `;
 
+// Anchored by the right edge so long labels grow leftward instead of into the plot.
 const YTick = styled.span`
   position: absolute;
-  left: -48px;
-  width: 40px;
-  text-align: right;
+  right: calc(100% + 8px);
+  white-space: nowrap;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.secondary};
   transform: translateY(-50%);
@@ -186,9 +186,12 @@ const Dot = styled.span`
   vertical-align: 1px;
 `;
 
-// && beats PostArticle's `table` rule (display/overflow) so the table stays visually hidden.
+// && beats PostArticle's `table` rule, which sets display: block and overflow-x: auto.
+// display: table undoes the block display, which can drop table semantics from the
+// accessibility tree; the rest keeps the table visually hidden.
 const HiddenTable = styled.table`
   && {
+    display: table;
     position: absolute;
     width: 1px;
     height: 1px;
