@@ -82,4 +82,26 @@ describe('usePostDraft', () => {
     act(() => result.current.clear());
     expect(readDraft('post-draft:3')).toBeNull();
   });
+
+  it('clear does not throw when storage refuses the removal', () => {
+    const removeItem = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementation(() => {
+        throw new DOMException('denied', 'SecurityError');
+      });
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    try {
+      const { result } = renderHook(() =>
+        usePostDraft('post-draft:3', values, true)
+      );
+
+      expect(() => act(() => result.current.clear())).not.toThrow();
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      removeItem.mockRestore();
+      consoleError.mockRestore();
+    }
+  });
 });

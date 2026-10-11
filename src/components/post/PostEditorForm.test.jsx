@@ -124,6 +124,32 @@ describe('PostEditorForm', () => {
     expect(localStorage.getItem('post-draft:new')).toBeNull();
   });
 
+  it('does not report a failure when only clearing the draft fails after a successful save', async () => {
+    const removeItem = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementationOnce(() => {
+        throw new DOMException('denied', 'SecurityError');
+      });
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    try {
+      savePost.mockResolvedValue({ id: 9 });
+      renderForm();
+      type('제목', '제목');
+      type('본문', '본문');
+      fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+      expect(await screen.findByText('상세 페이지')).toBeInTheDocument();
+      expect(screen.queryByText(/저장하지 못했습니다/)).not.toBeInTheDocument();
+      expect(savePost).toHaveBeenCalledTimes(1);
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      removeItem.mockRestore();
+      consoleError.mockRestore();
+    }
+  });
+
   it('saves the draft before sending, so a 401 redirect loses nothing', async () => {
     savePost.mockImplementation(async () => {
       expect(JSON.parse(localStorage.getItem('post-draft:new'))).toMatchObject({

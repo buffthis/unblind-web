@@ -303,13 +303,31 @@ export default function PostEditorForm({
     setSaving(true);
     setFormError(null);
 
+    let saved;
     try {
-      const saved = await savePost({
+      saved = await savePost({
         postId,
         values: { ...values, thumbnailUrl: values.thumbnailUrl.trim() },
         hidden,
         initialThumbnailUrl: thumbnailBaseline,
       });
+    } catch (error) {
+      const { kind, fieldErrors: serverErrors } = toSaveError(error);
+      setFieldErrors(toFieldErrors(serverErrors));
+      if (error.createdPost) {
+        setPostId(error.createdPost.id);
+        setThumbnailBaseline(error.createdPost.thumbnail?.url);
+        setFormError(PARTIAL_HIDE_MESSAGE);
+      } else {
+        setFormError(FORM_MESSAGES[kind]);
+      }
+      setSaving(false);
+      return;
+    }
+
+    // The post exists now. Whatever fails below must not read as a failed save, and a retry must PATCH it.
+    setPostId(saved.id);
+    try {
       clear();
       setDirty(false);
       // Hidden saves keep the form mounted in edit mode, so the baseline must follow the save.
@@ -328,16 +346,6 @@ export default function PostEditorForm({
         });
       } else {
         navigate(`/posts/${saved.id}`);
-      }
-    } catch (error) {
-      const { kind, fieldErrors: serverErrors } = toSaveError(error);
-      setFieldErrors(toFieldErrors(serverErrors));
-      if (error.createdPost) {
-        setPostId(error.createdPost.id);
-        setThumbnailBaseline(error.createdPost.thumbnail?.url);
-        setFormError(PARTIAL_HIDE_MESSAGE);
-      } else {
-        setFormError(FORM_MESSAGES[kind]);
       }
     } finally {
       setSaving(false);

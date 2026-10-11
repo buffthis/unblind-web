@@ -49,7 +49,11 @@ export default function usePostDraft(key, values, enabled) {
   }, [key, values, enabled]);
 
   const clear = useCallback(() => {
-    localStorage.removeItem(key);
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Failed to clear draft:', error);
+    }
     setSavedAt(null);
   }, [key]);
 
