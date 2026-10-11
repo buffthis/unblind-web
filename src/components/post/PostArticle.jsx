@@ -119,6 +119,13 @@ const Body = styled.div`
     border: 1px solid #ececec;
   }
 
+  /* Images shrink to the column but never grow, so a small one needs this to sit in the middle. */
+  img[data-center] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   a {
     color: ${({ theme }) => theme.colors.accent};
     text-decoration: underline;
@@ -158,17 +165,26 @@ function makeHeading(Tag) {
   };
 }
 
-// Markdown has no image options, so a trailing "|border" in the alt text turns the border on.
-const BORDER_FLAG = /\s*\|\s*border\s*$/;
+// Markdown has no image options, so flags go after the alt text: "설명 | border | center".
+const IMAGE_FLAGS = ['border', 'center'];
+
+function parseImageAlt(alt) {
+  const parts = (alt || '').split('|').map((part) => part.trim());
+  const flags = new Set();
+  while (parts.length > 1 && IMAGE_FLAGS.includes(parts[parts.length - 1])) {
+    flags.add(parts.pop());
+  }
+  return { text: parts.join(' | '), flags };
+}
 
 function LazyImage({ node: _node, alt, ...rest }) {
-  const text = alt || '';
-  const bordered = BORDER_FLAG.test(text);
+  const { text, flags } = parseImageAlt(alt);
   return (
     <img
       loading="lazy"
-      alt={text.replace(BORDER_FLAG, '')}
-      data-border={bordered ? '' : undefined}
+      alt={text}
+      data-border={flags.has('border') ? '' : undefined}
+      data-center={flags.has('center') ? '' : undefined}
       {...rest}
     />
   );

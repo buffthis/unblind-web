@@ -153,4 +153,21 @@ describe('PostArticle', () => {
     expect(plain).not.toHaveAttribute('data-border');
     expect(plain).toHaveAttribute('alt', '그냥');
   });
+
+  it('centers an image flagged |center and combines flags in any order', () => {
+    const { container } = renderArticle(
+      '![가운데 | center](https://a/b.png)\n\n![둘 다 | center | border](https://a/c.png)\n\n![중간 | center | 설명](https://a/d.png)'
+    );
+    const [centered, both, inside] = container.querySelectorAll('img');
+
+    expect(centered).toHaveAttribute('data-center');
+    expect(centered).not.toHaveAttribute('data-border');
+    expect(centered).toHaveAttribute('alt', '가운데');
+    expect(centered).toHaveStyle({ display: 'block', marginLeft: 'auto' });
+    expect(both).toHaveAttribute('data-center');
+    expect(both).toHaveAttribute('data-border');
+    expect(both).toHaveAttribute('alt', '둘 다');
+    expect(inside).not.toHaveAttribute('data-center');
+    expect(inside).toHaveAttribute('alt', '중간 | center | 설명');
+  });
 });
