@@ -9,7 +9,7 @@ const Nav = styled.nav`
 const Label = styled.p`
   margin-bottom: 12px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.ink};
 `;
 
 const List = styled.ol`
@@ -24,11 +24,11 @@ const Item = styled.li`
 
 const TocLink = styled.a`
   color: ${({ theme, $active }) =>
-    $active ? theme.colors.primary : theme.colors.secondary};
+    $active ? theme.colors.ink : theme.colors.inkMuted};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.ink};
   }
 `;
 

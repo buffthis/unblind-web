@@ -77,7 +77,7 @@ describe('PostPage', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();
 
-    // The aside is display:none below 1200px, and jsdom ignores media queries,
+    // The aside is display:none until the toc fits beside the article, and jsdom ignores media queries,
     // so the query has to include hidden elements.
     expect(
       await screen.findByRole('navigation', { name: '목차', hidden: true })

@@ -20,26 +20,45 @@ import styled from 'styled-components';
 
 import { POST_EDITOR_ENABLED } from '@/config';
 
+const ARTICLE_WIDTH = 700;
+const TOC_WIDTH = 220;
+const TOC_GAP = 48;
+const SIDE_PADDING = 20;
+// The article stays centered on the page and the toc sits in the right gutter,
+// so both gutters must fit the toc before it can be shown.
+const TOC_MIN_VIEWPORT =
+  ARTICLE_WIDTH + 2 * (TOC_GAP + TOC_WIDTH) + 2 * SIDE_PADDING;
+const GUTTER = 'minmax(0, 1fr)';
+
 const Layout = styled.div`
   width: 100%;
-  /* border-box: the 40px is the side padding, so the column itself maxes out at 700px. */
-  max-width: calc(700px + 40px);
+  /* border-box: the side padding is included, so the column itself maxes out at 700px. */
+  max-width: ${ARTICLE_WIDTH + 2 * SIDE_PADDING}px;
   margin: 0 auto;
-  padding: 48px 20px 96px;
+  padding: 48px ${SIDE_PADDING}px 96px;
+  /* Same reason as the article body: keeps the title and meta from rendering heavier on macOS. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
-  @media (min-width: ${({ theme }) => theme.breakpoints.wide}) {
-    max-width: calc(700px + 48px + 220px + 40px);
+  @media (min-width: ${TOC_MIN_VIEWPORT}px) {
+    max-width: none;
     display: grid;
-    grid-template-columns: minmax(0, 700px) 220px;
-    column-gap: 48px;
+    grid-template-columns: ${GUTTER} minmax(0, ${ARTICLE_WIDTH}px) ${GUTTER};
+    column-gap: ${TOC_GAP}px;
   }
+`;
+
+const Main = styled.main`
+  grid-column: 2;
 `;
 
 const Aside = styled.aside`
   display: none;
 
-  @media (min-width: ${({ theme }) => theme.breakpoints.wide}) {
+  @media (min-width: ${TOC_MIN_VIEWPORT}px) {
     display: block;
+    grid-column: 3;
+    max-width: ${TOC_WIDTH}px;
   }
 `;
 
@@ -49,36 +68,51 @@ const StickyToc = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 2.25rem;
+  font-size: 48px;
   font-weight: 700;
-  line-height: 1.3;
-  color: ${({ theme }) => theme.colors.primary};
+  line-height: 1.25;
+  color: ${({ theme }) => theme.colors.ink};
   word-break: keep-all;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    font-size: 1.75rem;
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    font-size: 32px;
   }
 `;
 
 const Subtitle = styled.p`
   margin-top: 12px;
-  font-size: 1.15rem;
-  color: ${({ theme }) => theme.colors.secondary};
+  font-size: 19px;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.inkSub};
 `;
 
-const MetaRow = styled.div`
+const Meta = styled.div`
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.secondary};
+  gap: 12px;
+  margin-top: 24px;
+`;
+
+const Byline = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 `;
 
 const AuthorLink = styled(Link)`
+  font-size: 17px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.primary};
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.inkSub};
+`;
+
+const MetaDetails = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.inkMuted};
 `;
 
 const EditLink = styled(Link)`
@@ -86,8 +120,8 @@ const EditLink = styled(Link)`
   padding: 4px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.colors.primary};
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.inkSub};
 `;
 
 const Dot = styled.span`
@@ -98,27 +132,33 @@ const Dot = styled.span`
 
 const Thumbnail = styled.img`
   width: 100%;
-  margin: 32px 0 8px;
+  margin-top: 40px;
   border-radius: ${({ theme }) => theme.radius.md};
   aspect-ratio: 16 / 9;
   object-fit: cover;
 `;
 
 const ArticleArea = styled.div`
-  margin-top: 32px;
+  margin-top: 40px;
 `;
 
 const AuthorCard = styled.div`
   margin-top: 64px;
   padding-top: 24px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.secondary};
+  font-size: 15px;
+  color: ${({ theme }) => theme.colors.inkMuted};
+
+  ${AuthorLink} {
+    font-size: inherit;
+    color: ${({ theme }) => theme.colors.ink};
+  }
 `;
 
 const ExternalNotice = styled.p`
-  margin-top: 32px;
-  color: ${({ theme }) => theme.colors.secondary};
+  margin-top: 40px;
+  font-size: 17px;
+  color: ${({ theme }) => theme.colors.inkSub};
 
   a {
     color: ${({ theme }) => theme.colors.accent};
@@ -192,32 +232,33 @@ export default function PostPage() {
 
       <BasicHeader />
       <Layout>
-        <main>
+        <Main>
           <header>
             <Title>{post.title}</Title>
             {post.subtitle && <Subtitle>{post.subtitle}</Subtitle>}
-            <MetaRow>
-              {author && (
-                <>
+            <Meta>
+              <Byline>
+                {author && (
                   <AuthorLink to={`/${author.username}`}>
                     {author.name}
                   </AuthorLink>
-                  <Dot aria-hidden="true" />
-                </>
-              )}
-              <time dateTime={post.createdAt}>
-                {formatDate(post.createdAt)}
-              </time>
-              {content && (
-                <>
-                  <Dot aria-hidden="true" />
-                  <span>{`${estimateReadingMinutes(content)}분 읽기`}</span>
-                </>
-              )}
+                )}
+                <MetaDetails>
+                  <time dateTime={post.createdAt}>
+                    {formatDate(post.createdAt)}
+                  </time>
+                  {content && (
+                    <>
+                      <Dot aria-hidden="true" />
+                      <span>{`${estimateReadingMinutes(content)}분 읽기`}</span>
+                    </>
+                  )}
+                </MetaDetails>
+              </Byline>
               {canEdit && (
                 <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
               )}
-            </MetaRow>
+            </Meta>
           </header>
 
           {post.thumbnail?.url && (
@@ -248,7 +289,7 @@ export default function PostPage() {
               {' 님의 글'}
             </AuthorCard>
           )}
-        </main>
+        </Main>
 
         <Aside>
           <StickyToc>

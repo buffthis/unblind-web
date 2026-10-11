@@ -17,7 +17,7 @@ const AnchorButton = styled.button`
   border: none;
   background: none;
   font: inherit;
-  color: ${({ theme }) => theme.colors.secondary};
+  color: ${({ theme }) => theme.colors.inkMuted};
   cursor: pointer;
   opacity: 0;
 
@@ -30,38 +30,47 @@ const Body = styled.div`
   width: 100%;
   font-size: 17px;
   font-weight: 400;
-  line-height: 1.7;
-  color: ${({ theme }) => theme.colors.text};
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.ink};
+  /* macOS renders subpixel text visibly heavier; grayscale keeps weight 400 looking like 400. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   word-break: keep-all;
   overflow-wrap: anywhere;
 
   h2,
   h3 {
-    margin: 48px 0 16px;
-    line-height: 1.35;
+    margin-bottom: 4px;
     font-weight: 700;
+    color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
   }
 
   h2 {
-    font-size: 1.5rem;
+    margin-top: 40px;
+    font-size: 30px;
+    line-height: 1.55;
   }
 
   h3 {
-    font-size: 1.25rem;
+    margin-top: 24px;
+    font-size: 24px;
+    line-height: 1.6;
   }
 
   h2:hover ${AnchorButton}, h3:hover ${AnchorButton} {
     opacity: 1;
   }
 
-  p {
-    margin: 16px 0;
+  /* Blocks open with 24px and close with 8px; adjacent margins collapse to a 24px gap. */
+  p,
+  ul,
+  ol {
+    margin: 24px 0 8px;
   }
 
   ul,
   ol {
-    margin: 16px 0;
     padding-left: 24px;
   }
 
@@ -73,7 +82,15 @@ const Body = styled.div`
     margin: 20px 0;
     padding: 4px 16px;
     border-left: 3px solid ${({ theme }) => theme.colors.border};
-    color: ${({ theme }) => theme.colors.secondary};
+    color: ${({ theme }) => theme.colors.inkSub};
+  }
+
+  blockquote > :first-child {
+    margin-top: 0;
+  }
+
+  blockquote > :last-child {
+    margin-bottom: 0;
   }
 
   code {

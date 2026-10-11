@@ -12,6 +12,12 @@ export const colors = {
   secondary: '#646464',
   accent: '#4a90e2',
 
+  // Low-saturation greys for long-form reading, darkest first.
+  inkStrong: '#191F28',
+  ink: '#333D4B',
+  inkSub: '#4E5968',
+  inkMuted: '#8B95A1',
+
   border: '#e0e0e0',
   cardBackground: '#FFFFFF',
 };
