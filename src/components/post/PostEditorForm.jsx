@@ -44,9 +44,7 @@ const Field = styled.label`
   display: block;
   margin-bottom: 12px;
 
-  /* Direct children only, so FieldError (also a span) keeps its own color and spacing. */
-  > span,
-  > label > span {
+  span {
     display: block;
     margin-bottom: 4px;
     font-size: 0.85rem;
@@ -72,11 +70,14 @@ const TitleInput = styled.input`
 `;
 
 // A span, not a p: it sits inside <label>, which only allows phrasing content.
+// && outranks Field's `span` rule, which would otherwise turn the error gray.
 const FieldError = styled.span`
-  display: block;
-  margin-top: 4px;
-  font-size: 0.85rem;
-  color: #d93025;
+  && {
+    display: block;
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #d93025;
+  }
 `;
 
 const Banner = styled.div`

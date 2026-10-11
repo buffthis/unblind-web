@@ -76,6 +76,18 @@ describe('PostEditorForm', () => {
     expect(savePost).not.toHaveBeenCalled();
   });
 
+  it('keeps the error color and the title weight against the Field rules', () => {
+    const { container } = renderForm();
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+    expect(
+      getComputedStyle(screen.getByText('제목을 입력해 주세요.')).color
+    ).toBe('rgb(217, 48, 37)');
+    expect(getComputedStyle(container.querySelector('input')).fontWeight).toBe(
+      '700'
+    );
+  });
+
   it('rejects a non-http thumbnail url', () => {
     renderForm();
     type('제목', '제목');
