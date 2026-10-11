@@ -45,7 +45,9 @@ const Field = styled.label`
   display: block;
   margin-bottom: 12px;
 
-  span {
+  /* Direct children only, so FieldError (also a span) keeps its own color and spacing. */
+  > span,
+  > label > span {
     display: block;
     margin-bottom: 4px;
     font-size: 0.85rem;
@@ -62,9 +64,12 @@ const Field = styled.label`
   }
 `;
 
+// && raises specificity above the `input { font: inherit }` rule in Field, which would reset these.
 const TitleInput = styled.input`
-  font-size: 1.75rem !important;
-  font-weight: 700;
+  && {
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
 `;
 
 // A span, not a p: it sits inside <label>, which only allows phrasing content.
