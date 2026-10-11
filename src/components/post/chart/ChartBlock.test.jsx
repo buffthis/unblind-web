@@ -59,27 +59,34 @@ describe('ChartBlock', () => {
     // React re-throws render errors to window in dev; jsdom would print them as uncaught.
     const swallow = (event) => event.preventDefault();
     window.addEventListener('error', swallow);
-    LineChart.mockImplementation(() => {
-      throw new Error('boom');
-    });
-    const { rerender } = renderBlock(VALID);
-    expect(screen.getByRole('button', { name: '복사' })).toBeInTheDocument();
+    try {
+      LineChart.mockImplementation(() => {
+        throw new Error('boom');
+      });
+      const { rerender } = renderBlock(VALID);
+      expect(screen.getByRole('button', { name: '복사' })).toBeInTheDocument();
+      expect(error).toHaveBeenCalledWith(
+        'Failed to render chart:',
+        expect.any(Error)
+      );
 
-    LineChart.mockImplementation(({ chart }) => (
-      <figure aria-label={chart.title} />
-    ));
-    const next = VALID.replace('2월, 2', '2월, 3');
-    rerender(
-      <ThemeProvider theme={theme}>
-        <ChartBlock source={next}>
-          <code className="language-chart">{next}</code>
-        </ChartBlock>
-      </ThemeProvider>
-    );
-    expect(
-      screen.getByRole('figure', { name: '전환 비율' })
-    ).toBeInTheDocument();
-    window.removeEventListener('error', swallow);
-    error.mockRestore();
+      LineChart.mockImplementation(({ chart }) => (
+        <figure aria-label={chart.title} />
+      ));
+      const next = VALID.replace('2월, 2', '2월, 3');
+      rerender(
+        <ThemeProvider theme={theme}>
+          <ChartBlock source={next}>
+            <code className="language-chart">{next}</code>
+          </ChartBlock>
+        </ThemeProvider>
+      );
+      expect(
+        screen.getByRole('figure', { name: '전환 비율' })
+      ).toBeInTheDocument();
+    } finally {
+      window.removeEventListener('error', swallow);
+      error.mockRestore();
+    }
   });
 });
