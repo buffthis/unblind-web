@@ -40,16 +40,18 @@ const Title = styled.figcaption`
   color: ${({ theme }) => theme.colors.secondary};
 `;
 
-// Insets match Linear's chart card measured at 1440px and 390px wide. The left inset
-// holds the y-axis labels; Readout must share the horizontal insets because the
-// scrub hook clamps it against the plot's width.
-const INSET = { top: 81, right: 62, bottom: 56, left: 110, readoutTop: 40 };
+// Horizontal insets follow Linear's chart card (measured at 1440px and 390px wide):
+// the left one is the right one plus the y-axis label column. Vertically the same
+// rule applies with half of Linear's top space: the space under the x-axis labels
+// equals the top inset, so the labelled side carries the extra weight. Readout must
+// share the horizontal insets because the scrub hook clamps it against the plot.
+const INSET = { top: 40, right: 62, bottom: 40, left: 110, readoutTop: 10 };
 const INSET_MOBILE = {
-  top: 59,
+  top: 29,
   right: 26,
-  bottom: 32,
+  bottom: 29,
   left: 66,
-  readoutTop: 24,
+  readoutTop: 5,
 };
 
 const Frame = styled.div`
