@@ -44,8 +44,9 @@ export default function usePostDraft(key, values, enabled) {
   }, [key, values, enabled]);
 
   const flush = useCallback(() => {
+    if (!enabled) return;
     if (writeDraft(key, values)) setSavedAt(new Date());
-  }, [key, values]);
+  }, [key, values, enabled]);
 
   const clear = useCallback(() => {
     localStorage.removeItem(key);

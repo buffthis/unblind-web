@@ -58,6 +58,19 @@ describe('usePostDraft', () => {
     expect(readDraft('post-draft:new').title).toBe('옛 초안');
   });
 
+  it('flush does not overwrite an existing draft while disabled', () => {
+    localStorage.setItem(
+      'post-draft:new',
+      JSON.stringify({ ...values, title: '옛 초안' })
+    );
+    const { result } = renderHook(() =>
+      usePostDraft('post-draft:new', { ...values, title: '' }, false)
+    );
+
+    act(() => result.current.flush());
+    expect(readDraft('post-draft:new').title).toBe('옛 초안');
+  });
+
   it('flush writes immediately and clear removes the draft', () => {
     const { result } = renderHook(() =>
       usePostDraft('post-draft:3', values, true)
