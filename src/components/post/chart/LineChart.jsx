@@ -40,22 +40,45 @@ const Title = styled.figcaption`
   color: ${({ theme }) => theme.colors.secondary};
 `;
 
+// Insets match Linear's chart card measured at 1440px and 390px wide. The left inset
+// holds the y-axis labels; Readout must share the horizontal insets because the
+// scrub hook clamps it against the plot's width.
+const INSET = { top: 81, right: 62, bottom: 56, left: 110, readoutTop: 40 };
+const INSET_MOBILE = {
+  top: 59,
+  right: 26,
+  bottom: 32,
+  left: 66,
+  readoutTop: 24,
+};
+
 const Frame = styled.div`
   position: relative;
-  padding: 48px 24px 16px 56px;
+  padding: ${INSET.top}px ${INSET.right}px ${INSET.bottom}px ${INSET.left}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${INSET_MOBILE.top}px ${INSET_MOBILE.right}px
+      ${INSET_MOBILE.bottom}px ${INSET_MOBILE.left}px;
+  }
 `;
 
 const Readout = styled.div`
   position: absolute;
-  top: 16px;
-  left: 56px;
-  right: 24px;
+  top: ${INSET.readoutTop}px;
+  left: ${INSET.left}px;
+  right: ${INSET.right}px;
   height: 20px;
   pointer-events: none;
   font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.secondary};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    top: ${INSET_MOBILE.readoutTop}px;
+    left: ${INSET_MOBILE.left}px;
+    right: ${INSET_MOBILE.right}px;
+  }
 `;
 
 const ReadoutInner = styled.div`
@@ -156,7 +179,7 @@ const Point = styled.span`
 
 const XAxis = styled.div`
   position: relative;
-  height: 24px;
+  height: 18px;
   margin-top: 10px;
 `;
 
