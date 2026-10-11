@@ -1,3 +1,5 @@
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 

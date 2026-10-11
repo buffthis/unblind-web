@@ -1,5 +1,6 @@
 export const fonts = {
-  primary: 'sans-serif',
+  primary:
+    "'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
 };
 
 export const fontSizes = {
