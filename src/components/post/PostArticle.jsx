@@ -83,7 +83,9 @@ const Body = styled.div`
     border-radius: 4px;
   }
 
-  pre code {
+  /* highlight.js sets pre code.hljs padding; this selector outranks it regardless of load order. */
+  pre code,
+  pre code.hljs {
     padding: 0;
     background: none;
   }
