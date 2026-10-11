@@ -114,6 +114,22 @@ export default function useChartScrub({
     position.jump(last);
   }, [last, position]);
 
+  // The chart stays mounted while its source is edited, so new data under an active
+  // pointer must not leave the old values on screen. The helpers are read through a
+  // ref so the effect runs on data changes only, not on every render.
+  const latest = useRef(null);
+  useEffect(() => {
+    latest.current = { writeReadout, place };
+  });
+  useEffect(() => {
+    if (!active.current) return;
+    const next = clamp(target.current, 0, last);
+    target.current = next;
+    latest.current.writeReadout(next);
+    position.jump(next);
+    latest.current.place(next);
+  }, [chart, last, position]);
+
   function indexFromPointer(event) {
     const rect = plotRef.current.getBoundingClientRect();
     const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;

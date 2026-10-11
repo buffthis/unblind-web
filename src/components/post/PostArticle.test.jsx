@@ -1,10 +1,18 @@
 import theme from '@styles/theme/theme';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { animate, useInView, useReducedMotion } from 'framer-motion';
 import React from 'react';
 import { ThemeProvider } from 'styled-components';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PostArticle from './PostArticle';
+
+vi.mock('framer-motion', async (importOriginal) => ({
+  ...(await importOriginal()),
+  animate: vi.fn(),
+  useInView: vi.fn(),
+  useReducedMotion: vi.fn(),
+}));
 
 function renderArticle(content) {
   return render(
@@ -13,6 +21,15 @@ function renderArticle(content) {
     </ThemeProvider>
   );
 }
+
+const chartSource = (value) =>
+  `\`\`\`chart\ntitle: 전환 비율\n---\n월, a\n1월, 1\n2월, ${value}\n\`\`\``;
+
+beforeEach(() => {
+  animate.mockReset().mockImplementation(() => ({ stop: vi.fn() }));
+  useInView.mockReset().mockReturnValue(true);
+  useReducedMotion.mockReset().mockReturnValue(false);
+});
 
 afterEach(() => {
   delete navigator.clipboard;
@@ -40,6 +57,38 @@ describe('PostArticle', () => {
     );
     expect(screen.queryByText(/^차트 문법 오류 · /)).not.toBeInTheDocument();
     expect(screen.getByRole('figure')).toBeInTheDocument();
+  });
+
+  it('keeps the chart mounted and does not replay the draw-in while editing', () => {
+    const { rerender } = renderArticle(chartSource(2));
+    rerender(
+      <ThemeProvider theme={theme}>
+        <PostArticle content={chartSource(3)} />
+      </ThemeProvider>
+    );
+    expect(animate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a finished chart in full after a syntax error is fixed', () => {
+    const { container, rerender } = renderArticle(chartSource(2));
+    act(() => animate.mock.calls[0][2].onComplete());
+    const show = (content) =>
+      rerender(
+        <ThemeProvider theme={theme}>
+          <PostArticle content={content} />
+        </ThemeProvider>
+      );
+    show(chartSource('x'));
+    expect(screen.queryByRole('figure')).not.toBeInTheDocument();
+    show(chartSource(3));
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('clipPath rect')).toHaveAttribute(
+      'width',
+      '1040'
+    );
+    expect(container.querySelector('g[data-layer="ahead"]').style.opacity).toBe(
+      '1'
+    );
   });
 
   it('adds Korean slug ids to h2 and h3', () => {

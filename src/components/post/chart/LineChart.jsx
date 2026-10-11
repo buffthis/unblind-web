@@ -213,7 +213,9 @@ function useElementWidth(ref) {
   return width;
 }
 
-export default function LineChart({ chart }) {
+// skipDrawIn is read on mount only: it tells a remounted chart that it was already
+// drawn, and later changes must not reset the clip of a chart that is on screen.
+export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
   const { title, unit, xLabel, labels, series } = chart;
   const count = labels.length;
   const domain = useMemo(
@@ -239,7 +241,16 @@ export default function LineChart({ chart }) {
   const valueRefs = useRef([]);
 
   const reduced = useReducedMotion() === true;
-  const drawIn = useDrawIn({ rootRef, clipRectRef, aheadRef, reduced });
+  const [startDrawn] = useState(skipDrawIn);
+  const drawIn = useDrawIn({
+    rootRef,
+    clipRectRef,
+    aheadRef,
+    reduced,
+    skip: startDrawn,
+    onDrawn,
+  });
+  const drawnAtStart = reduced || startDrawn;
   const scrub = useChartScrub({
     chart,
     domain,
@@ -309,14 +320,14 @@ export default function LineChart({ chart }) {
                   x={-CLIP_PAD}
                   y={-50}
                   height={VIEW + 100}
-                  width={reduced ? CLIP_FULL : 0}
+                  width={drawnAtStart ? CLIP_FULL : 0}
                 />
               </clipPath>
             </defs>
             <g
               ref={aheadRef}
               data-layer="ahead"
-              style={{ opacity: reduced ? 1 : 0 }}
+              style={{ opacity: drawnAtStart ? 1 : 0 }}
             >
               {series.map((s, k) => (
                 <Line

@@ -132,6 +132,20 @@ describe('useChartScrub with reduced motion', () => {
     expect(c.figure()).toHaveAttribute('data-shown', 'false');
   });
 
+  it('rewrites the readout when rows shrink under an active pointer', () => {
+    const c = renderChart();
+    fireEvent.pointerMove(c.plot, { clientX: 1000 });
+    expect(c.readout().textContent).toBe('50%10%5월');
+    const shorter = {
+      ...chart,
+      labels: chart.labels.slice(0, 4),
+      series: chart.series.map((s) => ({ ...s, values: s.values.slice(0, 4) })),
+    };
+    c.rerenderChart(shorter);
+    expect(c.readout().textContent).toBe('40%20%4월');
+    expect(c.crosshair().style.left).toBe('100%');
+  });
+
   it('steps from the new last row when the row count changes while idle', () => {
     const c = renderChart();
     c.rerenderChart(longer);
