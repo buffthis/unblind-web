@@ -114,6 +114,11 @@ const Body = styled.div`
     border-radius: 8px;
   }
 
+  /* Same hairline as the chart grid lines. */
+  img[data-border] {
+    border: 1px solid #ececec;
+  }
+
   a {
     color: ${({ theme }) => theme.colors.accent};
     text-decoration: underline;
@@ -153,8 +158,20 @@ function makeHeading(Tag) {
   };
 }
 
+// Markdown has no image options, so a trailing "|border" in the alt text turns the border on.
+const BORDER_FLAG = /\s*\|\s*border\s*$/;
+
 function LazyImage({ node: _node, alt, ...rest }) {
-  return <img loading="lazy" alt={alt || ''} {...rest} />;
+  const text = alt || '';
+  const bordered = BORDER_FLAG.test(text);
+  return (
+    <img
+      loading="lazy"
+      alt={text.replace(BORDER_FLAG, '')}
+      data-border={bordered ? '' : undefined}
+      {...rest}
+    />
+  );
 }
 
 function PreBlock({ node: _node, children }) {

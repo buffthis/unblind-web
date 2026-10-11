@@ -140,4 +140,17 @@ describe('PostArticle', () => {
     const { container } = renderArticle('```java\nint a = 1;\n```');
     expect(container.querySelector('code.hljs.language-java')).not.toBeNull();
   });
+
+  it('draws a border only when the alt text ends with |border', () => {
+    const { container } = renderArticle(
+      '![설명 | border](https://a/b.png)\n\n![그냥](https://a/c.png)'
+    );
+    const [bordered, plain] = container.querySelectorAll('img');
+
+    expect(bordered).toHaveAttribute('data-border');
+    expect(bordered).toHaveAttribute('alt', '설명');
+    expect(bordered).toHaveStyle({ border: '1px solid #ececec' });
+    expect(plain).not.toHaveAttribute('data-border');
+    expect(plain).toHaveAttribute('alt', '그냥');
+  });
 });
