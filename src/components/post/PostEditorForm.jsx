@@ -4,7 +4,6 @@ import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { useQueryClient } from '@tanstack/react-query';
 import { applyFormat } from '@utils/markdownFormat';
-import { toSafeHttpUrl } from '@utils/url';
 import React, {
   useDeferredValue,
   useLayoutEffect,
@@ -183,14 +182,21 @@ const ActionButton = styled.button`
   }
 `;
 
+// toSafeHttpUrl resolves relative strings against the page origin, but POST /images needs the url as typed.
+function isAbsoluteHttpUrl(value) {
+  try {
+    const { protocol } = new URL(value.trim());
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function validate(values) {
   const errors = {};
   if (!values.title.trim()) errors.title = '제목을 입력해 주세요.';
   if (!values.content.trim()) errors.content = '본문을 입력해 주세요.';
-  if (
-    values.thumbnailUrl.trim() &&
-    !toSafeHttpUrl(values.thumbnailUrl.trim())
-  ) {
+  if (values.thumbnailUrl.trim() && !isAbsoluteHttpUrl(values.thumbnailUrl)) {
     errors.thumbnailUrl = 'http 또는 https 주소를 입력해 주세요.';
   }
   return errors;

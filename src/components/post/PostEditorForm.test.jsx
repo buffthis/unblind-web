@@ -89,6 +89,19 @@ describe('PostEditorForm', () => {
     expect(savePost).not.toHaveBeenCalled();
   });
 
+  it('rejects a relative thumbnail url', () => {
+    renderForm();
+    type('제목', '제목');
+    type('본문', '본문');
+    type('썸네일 이미지 URL', 'a.png');
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+    expect(
+      screen.getByText('http 또는 https 주소를 입력해 주세요.')
+    ).toBeInTheDocument();
+    expect(savePost).not.toHaveBeenCalled();
+  });
+
   it('publishes, clears the draft and opens the post', async () => {
     savePost.mockResolvedValue({ id: 7 });
     renderForm();
