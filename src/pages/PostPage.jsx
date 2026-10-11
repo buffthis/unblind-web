@@ -22,12 +22,13 @@ import { POST_EDITOR_ENABLED } from '@/config';
 
 const Layout = styled.div`
   width: 100%;
-  max-width: 700px;
+  /* border-box: the 40px is the side padding, so the column itself maxes out at 700px. */
+  max-width: calc(700px + 40px);
   margin: 0 auto;
   padding: 48px 20px 96px;
 
   @media (min-width: ${({ theme }) => theme.breakpoints.wide}) {
-    max-width: calc(700px + 48px + 220px);
+    max-width: calc(700px + 48px + 220px + 40px);
     display: grid;
     grid-template-columns: minmax(0, 700px) 220px;
     column-gap: 48px;
