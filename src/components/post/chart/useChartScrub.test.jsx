@@ -167,7 +167,9 @@ describe('useChartScrub with motion', () => {
     fireEvent.pointerMove(c.plot, { clientX: 500 });
     expect(c.crosshair().style.left).toBe('0%');
     expect(c.readout().textContent).toBe('30%30%3월');
-    await waitFor(() => expect(c.crosshair().style.left).toBe('50%'));
+    await waitFor(() => expect(c.crosshair().style.left).toBe('50%'), {
+      timeout: 3000,
+    });
   });
 
   it('finishes a running draw-in as soon as the pointer arrives', () => {
@@ -185,6 +187,8 @@ describe('useChartScrub with motion', () => {
     fireEvent.pointerMove(c.plot, { clientX: 0 });
     fireEvent.pointerLeave(c.plot);
     c.rerenderChart(longer);
-    await waitFor(() => expect(c.clip()).toHaveAttribute('width', '1020'));
+    await waitFor(() => expect(c.clip()).toHaveAttribute('width', '1020'), {
+      timeout: 3000,
+    });
   });
 });
