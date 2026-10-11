@@ -19,7 +19,19 @@ export const HeaderContainer = styled.header`
   background-color: rgba(255, 255, 255, 0.9);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 0.5px solid ${({ theme }) => theme.colors.border};
+  /* The edge fades in slower than the background so it never snaps in once the page moves. */
+  transition:
+    background-color 200ms ease-out,
+    border-bottom-color 600ms ease-out;
+
+  /* At the top the header melts into the page: opaque page color and no edge. */
+  ${({ $atTop, theme }) =>
+    $atTop &&
+    css`
+      background-color: ${theme.colors.backgroundLight};
+      border-bottom-color: transparent;
+    `}
 
   // size
   width: 100%;

@@ -1,6 +1,7 @@
 import Logo from '@components/common/Logo';
 import ProfileSection from '@components/header/ProfileSection';
 import SearchButton from '@components/search/SearchButton';
+import useAtPageTop from '@hooks/useAtPageTop';
 import useProfileDropdown from '@hooks/useProfileDropdown';
 import {
   FixedHeaderArea,
@@ -15,6 +16,7 @@ import { sectionConfig } from '@utils/sections';
 import React from 'react';
 
 function Header({ sectionVisibility }) {
+  const atTop = useAtPageTop();
   const {
     user,
     loading,
@@ -29,7 +31,7 @@ function Header({ sectionVisibility }) {
   return (
     <>
       <FixedHeaderArea>
-        <HeaderContainer>
+        <HeaderContainer $atTop={atTop}>
           <HeaderSide $justify="flex-end">
             <LogoLink to="/" aria-label="홈으로">
               <Logo variant="black" size={24} />

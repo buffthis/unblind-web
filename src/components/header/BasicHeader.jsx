@@ -1,6 +1,7 @@
 import Logo from '@components/common/Logo';
 import ProfileSection from '@components/header/ProfileSection';
 import SearchButton from '@components/search/SearchButton';
+import useAtPageTop from '@hooks/useAtPageTop';
 import useProfileDropdown from '@hooks/useProfileDropdown';
 import {
   FixedHeaderArea,
@@ -14,6 +15,7 @@ import {
 import React from 'react';
 
 function BasicHeader() {
+  const atTop = useAtPageTop();
   const {
     user,
     loading,
@@ -28,7 +30,7 @@ function BasicHeader() {
   return (
     <>
       <FixedHeaderArea>
-        <HeaderContainer>
+        <HeaderContainer $atTop={atTop}>
           <HeaderSide $justify="flex-start">
             <NavMenu aria-label="주요 페이지">
               <NavRouterLink to="/users">Users</NavRouterLink>
