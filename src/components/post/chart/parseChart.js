@@ -6,6 +6,7 @@ const MIN_SERIES = 1;
 const MAX_SERIES = 6;
 const MIN_ROWS = 2;
 const MAX_ROWS = 200;
+const TOO_LARGE = '값이 너무 큽니다';
 
 class ChartSyntaxError extends Error {
   constructor(line, column, message) {
@@ -77,7 +78,9 @@ function parseSettings(lines) {
     if (value === '') fail(line, null, `'${key}' 값이 비어 있습니다`);
     if (key === 'min' || key === 'max') {
       if (!NUMBER.test(value)) fail(line, null, `숫자가 아닙니다: '${value}'`);
-      settings[key] = Number(value);
+      const number = Number(value);
+      if (!Number.isFinite(number)) fail(line, null, TOO_LARGE);
+      settings[key] = number;
     } else {
       settings[key] = value;
     }
@@ -138,6 +141,7 @@ function parseTable(lines, offset, settings) {
       const column = k + 2;
       if (!NUMBER.test(cell)) fail(line, column, `숫자가 아닙니다: '${cell}'`);
       const value = Number(cell);
+      if (!Number.isFinite(value)) fail(line, column, TOO_LARGE);
       if (settings.min != null && value < settings.min) {
         fail(line, column, `값(${cell})이 min(${settings.min})보다 작습니다`);
       }
@@ -159,16 +163,28 @@ function parseTable(lines, offset, settings) {
   };
 }
 
-function parse(text) {
+function parse(rawText) {
+  // Accept CRLF and lone CR line endings so the rest of the parser only sees '\n'.
+  const text = rawText.replace(/\r\n?/g, '\n');
   if (text.trim() === '') fail(1, null, '차트 데이터가 비어 있습니다');
   const body = text.endsWith('\n') ? text.slice(0, -1) : text;
   const lines = body.split('\n');
+  lines.forEach((line, index) => {
+    if (line !== SEPARATOR && line.trim() === SEPARATOR) {
+      fail(index + 1, null, '--- 앞뒤에 공백을 쓸 수 없습니다');
+    }
+  });
   const separators = lines.flatMap((line, index) =>
     line === SEPARATOR ? [index] : []
   );
   if (separators.length > 1)
     fail(separators[1] + 1, null, '---는 한 번만 쓸 수 있습니다');
   if (separators[0] === 0) fail(1, null, '설정이 없으면 ---를 쓰지 않습니다');
+  if (separators.length === 0) {
+    const first = lines[0].match(SETTING_LINE);
+    if (first && SETTING_KEYS.includes(first[1]))
+      fail(1, null, '설정 다음 줄에 ---가 없습니다');
+  }
 
   let settings = {};
   let table;

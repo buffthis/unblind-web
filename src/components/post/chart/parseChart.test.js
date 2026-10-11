@@ -50,6 +50,26 @@ describe('parseChart', () => {
     expect(result.chart.labels).toEqual(['1,000명', '2,000명']);
   });
 
+  it('accepts CRLF line endings', () => {
+    const result = parseChart(
+      'title: x\r\nunit: %\r\n---\r\n주, a\r\n1, 1\r\n2, 2\r\n'
+    );
+    expect(result.ok).toBe(true);
+    expect(result.chart).toMatchObject({
+      title: 'x',
+      unit: '%',
+      labels: ['1', '2'],
+    });
+  });
+
+  it('parses a header without a colon-delimited setting key', () => {
+    const plain = parseChart('월, a\n1월, 1\n2월, 2');
+    expect(plain.ok).toBe(true);
+    const colon = parseChart('시각: 분, a\n1, 1\n2, 2');
+    expect(colon.ok).toBe(true);
+    expect(colon.chart.xLabel).toBe('시각: 분');
+  });
+
   it.each([
     ['', 1, null, '차트 데이터가 비어 있습니다'],
     [
@@ -114,6 +134,20 @@ describe('parseChart', () => {
     ],
     ['min: 0\n---\n주, a\n1, -1\n2, 2', 4, 2, '값(-1)이 min(0)보다 작습니다'],
     ['주, a\n"1, 1\n2, 2', 2, null, '큰따옴표가 닫히지 않았습니다'],
+    [`주, a\n1, ${'9'.repeat(400)}\n2, 2`, 2, 2, '값이 너무 큽니다'],
+    [
+      `max: ${'9'.repeat(400)}\n---\n주, a\n1, 1\n2, 2`,
+      1,
+      null,
+      '값이 너무 큽니다',
+    ],
+    [
+      'title: x\n--- \n주, a\n1, 1\n2, 2',
+      2,
+      null,
+      '--- 앞뒤에 공백을 쓸 수 없습니다',
+    ],
+    ['title: x\n주, a\n1, 1\n2, 2', 1, null, '설정 다음 줄에 ---가 없습니다'],
   ])('rejects %j at line %i column %s', (text, line, column, message) => {
     expect(errorOf(text)).toEqual({ line, column, message });
   });
