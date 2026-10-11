@@ -1,4 +1,4 @@
-import { savePost } from '@apis/postApi';
+import { savePost, uploadImage } from '@apis/postApi';
 import theme from '@styles/theme/theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -18,6 +18,7 @@ import PostEditorForm from './PostEditorForm';
 vi.mock('@apis/postApi', async (importOriginal) => ({
   ...(await importOriginal()),
   savePost: vi.fn(),
+  uploadImage: vi.fn(),
 }));
 
 const empty = { title: '', subtitle: '', thumbnailUrl: '', content: '' };
@@ -63,6 +64,7 @@ function type(label, value) {
 
 beforeEach(() => {
   savePost.mockReset();
+  uploadImage.mockReset();
   localStorage.clear();
 });
 
@@ -394,5 +396,87 @@ describe('PostEditorForm', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: /소개/ })
     ).toHaveAttribute('id', '소개');
+  });
+
+  describe('image uploads', () => {
+    const png = new File(['x'], 'shot.png', { type: 'image/png' });
+    const body = () => screen.getByLabelText('본문');
+
+    it('replaces the marker with the uploaded image markdown', async () => {
+      let finish;
+      uploadImage.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+      renderForm();
+      type('본문', '앞 뒤');
+
+      fireEvent.paste(body(), { clipboardData: { files: [png] } });
+      expect(body()).toHaveValue('앞 뒤![shot 업로드 중 #1]()');
+
+      finish({ url: 'https://img/shot.png', altText: '' });
+      await waitFor(() =>
+        expect(body()).toHaveValue('앞 뒤![shot](https://img/shot.png)')
+      );
+      expect(uploadImage).toHaveBeenCalledWith(png);
+    });
+
+    it('uploads files dropped on the body', async () => {
+      uploadImage.mockResolvedValue({ url: 'https://img/d.png', altText: 'd' });
+      renderForm();
+
+      fireEvent.drop(body(), { dataTransfer: { files: [png] } });
+
+      await waitFor(() =>
+        expect(body()).toHaveValue('![d](https://img/d.png)')
+      );
+    });
+
+    it('uploads files chosen with the button', async () => {
+      uploadImage.mockResolvedValue({ url: 'https://img/p.png', altText: '' });
+      renderForm();
+
+      fireEvent.change(screen.getByTestId('image-file-input'), {
+        target: { files: [png] },
+      });
+
+      await waitFor(() =>
+        expect(body()).toHaveValue('![shot](https://img/p.png)')
+      );
+    });
+
+    it('ignores pasted text and non-image files', () => {
+      renderForm();
+      const text = new File(['x'], 'a.txt', { type: 'text/plain' });
+
+      fireEvent.paste(body(), { clipboardData: { files: [text] } });
+
+      expect(uploadImage).not.toHaveBeenCalled();
+    });
+
+    it('removes the marker and reports a failed upload', async () => {
+      uploadImage.mockRejectedValue(httpError(500, {}));
+      renderForm();
+      type('본문', '글');
+
+      fireEvent.paste(body(), { clipboardData: { files: [png] } });
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        '이미지를 올리지 못했습니다: shot.png'
+      );
+      expect(body()).toHaveValue('글');
+    });
+
+    it('refuses to save while an upload is running', () => {
+      uploadImage.mockReturnValue(new Promise(() => {}));
+      renderForm();
+      type('제목', '제목');
+      type('본문', '본문');
+
+      fireEvent.paste(body(), { clipboardData: { files: [png] } });
+      fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+      expect(savePost).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '이미지를 올리는 중입니다'
+      );
+    });
   });
 });

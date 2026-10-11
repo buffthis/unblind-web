@@ -47,6 +47,14 @@ async function registerThumbnail(values, initialThumbnailUrl) {
   return response.data.id;
 }
 
+// Sends the file itself; the response has the same shape as a registered image URL.
+export async function uploadImage(file) {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await client.post(ENDPOINTS.IMAGE_UPLOAD, body);
+  return response.data;
+}
+
 // PostCreateRequest has no hidden field yet, so a new hidden post takes two requests.
 // If the second fails, the created post rides on the error so the caller can switch to
 // editing it instead of creating a duplicate on retry.

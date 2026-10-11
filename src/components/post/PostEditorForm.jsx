@@ -1,8 +1,9 @@
-import { savePost, toSaveError } from '@apis/postApi';
+import { savePost, toSaveError, uploadImage } from '@apis/postApi';
 import PostArticle from '@components/post/PostArticle';
 import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { useQueryClient } from '@tanstack/react-query';
+import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
 import React, {
   useDeferredValue,
@@ -226,6 +227,10 @@ export default function PostEditorForm({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const uploadSeq = useRef(0);
+  // Uploads still running; saving then would store their placeholder markers.
+  const [uploading, setUploading] = useState(0);
   const pendingSelection = useRef(null);
 
   // After a create succeeds, later saves must PATCH this id instead of creating again.
@@ -280,6 +285,67 @@ export default function PostEditorForm({
     setDirty(true);
   };
 
+  // Each image gets a marker at the caret right away; the marker is swapped for the final
+  // markdown (or removed) when its upload settles, so typing during the upload is safe.
+  const uploadImages = (files) => {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? values.content.length;
+    const end = textarea?.selectionEnd ?? start;
+    const items = files.map((file) => {
+      uploadSeq.current += 1;
+      return { file, marker: uploadMarker(uploadSeq.current, file) };
+    });
+    const inserted = items.map((item) => item.marker).join('\n');
+    pendingSelection.current = {
+      start: start + inserted.length,
+      end: start + inserted.length,
+    };
+    setValues((prev) => ({
+      ...prev,
+      content:
+        prev.content.slice(0, start) + inserted + prev.content.slice(end),
+    }));
+    setDirty(true);
+    setFormError(null);
+    setUploading((count) => count + items.length);
+
+    items.forEach(async ({ file, marker }) => {
+      let replacement = '';
+      try {
+        replacement = imageMarkdown(await uploadImage(file), file);
+      } catch {
+        setFormError(
+          `이미지를 올리지 못했습니다: ${file.name}. 잠시 후 다시 시도해 주세요.`
+        );
+      }
+      setValues((prev) => ({
+        ...prev,
+        content: prev.content.replace(marker, replacement),
+      }));
+      setUploading((count) => count - 1);
+    });
+  };
+
+  const handlePaste = (event) => {
+    const files = pickImageFiles(event.clipboardData);
+    if (files.length === 0) return;
+    event.preventDefault();
+    uploadImages(files);
+  };
+
+  const handleDrop = (event) => {
+    const files = pickImageFiles(event.dataTransfer);
+    if (files.length === 0) return;
+    event.preventDefault();
+    uploadImages(files);
+  };
+
+  const handleFilePick = (event) => {
+    const files = pickImageFiles(event.target);
+    event.target.value = '';
+    if (files.length > 0) uploadImages(files);
+  };
+
   const restoreDraft = () => {
     const draftValues = { ...pendingDraft };
     delete draftValues.savedAt;
@@ -294,6 +360,10 @@ export default function PostEditorForm({
   };
 
   const handleSave = async (hidden) => {
+    if (uploading > 0) {
+      setFormError('이미지를 올리는 중입니다. 끝난 뒤 저장해 주세요.');
+      return;
+    }
     const errors = validate(values);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -441,6 +511,22 @@ export default function PostEditorForm({
                 {tool.text}
               </ToolButton>
             ))}
+            <ToolButton
+              type="button"
+              aria-label="이미지 파일 올리기"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              이미지 올리기
+            </ToolButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              data-testid="image-file-input"
+              onChange={handleFilePick}
+            />
           </Toolbar>
           <Field as="div">
             <label htmlFor="post-body">
@@ -451,7 +537,9 @@ export default function PostEditorForm({
               ref={textareaRef}
               value={values.content}
               onChange={update('content')}
-              placeholder="마크다운으로 작성합니다."
+              onPaste={handlePaste}
+              onDrop={handleDrop}
+              placeholder="마크다운으로 작성합니다. 이미지는 붙여넣거나 끌어다 놓을 수 있습니다."
             />
             {fieldErrors.content && (
               <FieldError>{fieldErrors.content}</FieldError>
