@@ -20,3 +20,89 @@ export async function fetchPosts() {
   const posts = Array.isArray(response.data) ? response.data : [];
   return posts.filter((post) => !post.hidden);
 }
+
+function notFound(postId) {
+  const error = new Error(`Post not found: ${postId}`);
+  error.code = 'POST_NOT_FOUND';
+  return error;
+}
+
+// Unlike fetchPostById, hidden posts pass through: the backend only returns them to their owner.
+export async function fetchEditablePost(postId) {
+  const response = await client.get(ENDPOINTS.POSTS.BY_ID(postId));
+  const post = response.data;
+  if (!post || typeof post !== 'object' || post.id == null)
+    throw notFound(postId);
+  return post;
+}
+
+async function registerThumbnail(values, initialThumbnailUrl) {
+  if (!values.thumbnailUrl || values.thumbnailUrl === initialThumbnailUrl)
+    return null;
+  const response = await client.post(ENDPOINTS.IMAGES, {
+    url: values.thumbnailUrl,
+    altText: values.title,
+  });
+  return response.data.id;
+}
+
+// PostCreateRequest has no hidden field yet, so a new hidden post takes two requests.
+// If the second fails, the created post rides on the error so the caller can switch to
+// editing it instead of creating a duplicate on retry.
+export async function savePost({
+  postId,
+  values,
+  hidden,
+  initialThumbnailUrl,
+}) {
+  const thumbnailId = await registerThumbnail(values, initialThumbnailUrl);
+  const body = {
+    title: values.title,
+    subtitle: values.subtitle,
+    content: values.content,
+    ...(thumbnailId != null && { thumbnailId }),
+  };
+
+  if (postId != null) {
+    const response = await client.patch(ENDPOINTS.POSTS.BY_ID(postId), {
+      ...body,
+      hidden,
+    });
+    return response.data;
+  }
+
+  const created = (await client.post(ENDPOINTS.POSTS.LIST, body)).data;
+  if (!hidden) return created;
+
+  try {
+    const response = await client.patch(ENDPOINTS.POSTS.BY_ID(created.id), {
+      hidden: true,
+    });
+    return response.data;
+  } catch (error) {
+    error.createdPost = created;
+    throw error;
+  }
+}
+
+const KIND_BY_STATUS = {
+  401: 'unauthorized',
+  403: 'forbidden',
+  404: 'notFound',
+};
+
+export function toSaveError(error) {
+  const response = error?.response;
+  if (!response) return { kind: 'network', fieldErrors: {} };
+  if (response.status === 400) {
+    const errors = response.data?.errors;
+    return {
+      kind: 'validation',
+      fieldErrors: errors && typeof errors === 'object' ? errors : {},
+    };
+  }
+  return {
+    kind: KIND_BY_STATUS[response.status] ?? 'unknown',
+    fieldErrors: {},
+  };
+}

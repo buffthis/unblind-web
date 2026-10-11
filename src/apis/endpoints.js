@@ -1,6 +1,7 @@
 export const ENDPOINTS = {
   SESSIONS: '/sessions',
   ME: '/me',
+  IMAGES: '/images',
   USERS: {
     BY_ID: (id) => `/users/${encodeURIComponent(id)}`,
     BY_USERNAME: (username) =>
