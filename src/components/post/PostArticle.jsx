@@ -89,6 +89,7 @@ const Body = styled.div`
   pre code.hljs {
     padding: 0;
     background: none;
+    font-size: inherit;
   }
 
   img {

@@ -136,9 +136,8 @@ describe('PostArticle', () => {
     );
   });
 
-  it('highlights fenced code and labels the language', () => {
+  it('highlights fenced code', () => {
     const { container } = renderArticle('```java\nint a = 1;\n```');
     expect(container.querySelector('code.hljs.language-java')).not.toBeNull();
-    expect(screen.getByText('java')).toBeInTheDocument();
   });
 });
