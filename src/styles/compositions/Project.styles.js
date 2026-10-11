@@ -45,8 +45,6 @@ export const ProjectImageContainer = styled.div`
   box-sizing: border-box;
 `;
 
-export const PostImageContainer = styled(ProjectImageContainer)``;
-
 export const ProjectContent = styled.div`
   padding: 0;
   text-align: left;

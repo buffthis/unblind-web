@@ -1,125 +1,110 @@
-import Container from '@components/common/Container';
-import Divider from '@components/common/Divider';
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
-import { PostTitle } from '@components/common/Title';
 import BasicHeader from '@components/header/BasicHeader';
+import PostArticle from '@components/post/PostArticle';
+import PostToc from '@components/post/PostToc';
+import useArticleHeadings, {
+  useActiveHeading,
+  useScrollToHash,
+} from '@hooks/useArticleHeadings';
 import usePost from '@hooks/usePost';
-import { PostImageContainer } from '@styles/compositions/Project.styles';
+import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
+import { estimateReadingMinutes } from '@utils/readingTime';
 import { toSafeHttpUrl } from '@utils/url';
-import React from 'react';
+import React, { useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import Markdown from 'react-markdown';
 import { Link, useParams } from 'react-router-dom';
-import remarkGfm from 'remark-gfm';
 import styled from 'styled-components';
 
-const HeroImageContainer = styled(PostImageContainer)`
-  margin-bottom: 32px;
+const Layout = styled.div`
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 48px 20px 96px;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.wide}) {
+    max-width: calc(700px + 48px + 220px);
+    display: grid;
+    grid-template-columns: minmax(0, 700px) 220px;
+    column-gap: 48px;
+  }
 `;
 
-const HeroImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+const Aside = styled.aside`
+  display: none;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.wide}) {
+    display: block;
+  }
+`;
+
+const StickyToc = styled.div`
+  position: sticky;
+  top: ${LAYOUT.HEADER_HEIGHT + 48}px;
+`;
+
+const Title = styled.h1`
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: ${({ theme }) => theme.colors.primary};
+  word-break: keep-all;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    font-size: 1.75rem;
+  }
+`;
+
+const Subtitle = styled.p`
+  margin-top: 12px;
+  font-size: 1.15rem;
+  color: ${({ theme }) => theme.colors.secondary};
 `;
 
 const MetaRow = styled.div`
   display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
-  align-items: baseline;
-`;
-
-const AuthorName = styled.span`
-  font-weight: 500;
-  font-size: 1.1rem;
-`;
-
-const PostDate = styled.span`
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 0.95rem;
   color: ${({ theme }) => theme.colors.secondary};
-  font-weight: 300;
-  font-size: 1rem;
 `;
 
-const MarkdownBody = styled.div`
-  margin-top: 24px;
+const AuthorLink = styled(Link)`
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+const Dot = styled.span`
+  &::before {
+    content: '·';
+  }
+`;
+
+const Thumbnail = styled.img`
   width: 100%;
-  font-weight: 300;
-  line-height: 1.8;
-  color: ${({ theme }) => theme.colors.text};
+  margin: 32px 0 8px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+`;
 
-  h1,
-  h2,
-  h3 {
-    margin: 32px 0 12px;
-    line-height: 1.3;
-  }
+const ArticleArea = styled.div`
+  margin-top: 32px;
+`;
 
-  p {
-    margin: 12px 0;
-  }
-
-  ul,
-  ol {
-    margin: 12px 0;
-    padding-left: 24px;
-  }
-
-  blockquote {
-    margin: 16px 0;
-    padding: 4px 16px;
-    border-left: 3px solid ${({ theme }) => theme.colors.border};
-    color: ${({ theme }) => theme.colors.secondary};
-  }
-
-  pre {
-    margin: 16px 0;
-    padding: 16px;
-    border-radius: 8px;
-    background: #f6f8fa;
-    overflow-x: auto;
-  }
-
-  code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9em;
-    background: #f6f8fa;
-    padding: 2px 4px;
-    border-radius: 4px;
-  }
-
-  pre code {
-    padding: 0;
-    background: none;
-  }
-
-  img {
-    max-width: 100%;
-    border-radius: 8px;
-  }
-
-  a {
-    color: ${({ theme }) => theme.colors.accent};
-    text-decoration: underline;
-  }
-
-  table {
-    border-collapse: collapse;
-    margin: 16px 0;
-  }
-
-  th,
-  td {
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    padding: 6px 12px;
-  }
+const AuthorCard = styled.div`
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.secondary};
 `;
 
 const ExternalNotice = styled.p`
-  margin-top: 24px;
-  font-weight: 300;
+  margin-top: 32px;
   color: ${({ theme }) => theme.colors.secondary};
 
   a {
@@ -139,10 +124,6 @@ const ErrorState = styled.div`
     margin-bottom: 12px;
     color: ${({ theme }) => theme.colors.primary};
   }
-
-  p {
-    font-weight: 200;
-  }
 `;
 
 const BackLink = styled(Link)`
@@ -153,37 +134,38 @@ const BackLink = styled(Link)`
   border-radius: 8px;
   font-size: 0.9rem;
   color: ${({ theme }) => theme.colors.primary};
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
 `;
 
 export default function PostPage() {
   const { postId } = useParams();
   const { post, loading } = usePost(postId);
+  const articleRef = useRef(null);
+  const content = post?.content || '';
+  const headings = useArticleHeadings(articleRef, content);
+  const activeId = useActiveHeading(headings);
+  useScrollToHash(headings.length > 0);
 
   if (loading) return <Loading />;
 
-  // 캐시된 포스트가 있으면 refetch 실패(error)와 무관하게 본문을 유지한다.
+  // A cached post stays on screen even if a background refetch fails.
   if (!post) {
     return (
       <>
         <BasicHeader />
-        <Container maxWidth="1024px">
-          <ErrorState>
-            <h2>포스트를 불러올 수 없습니다</h2>
-            <p>존재하지 않거나 삭제된 포스트입니다.</p>
-            <BackLink to="/posts">포스트 목록으로</BackLink>
-          </ErrorState>
-        </Container>
+        <ErrorState>
+          <h2>포스트를 불러올 수 없습니다</h2>
+          <p>존재하지 않거나 삭제된 포스트입니다.</p>
+          <BackLink to="/posts">포스트 목록으로</BackLink>
+        </ErrorState>
         <Footer />
       </>
     );
   }
 
   const externalUrl = toSafeHttpUrl(post.externalUrl);
-  const description = (post.content || post.subtitle || '').slice(0, 80);
+  const description = (post.subtitle || content).slice(0, 80);
+  const author =
+    post.author?.name && post.author?.username ? post.author : null;
 
   return (
     <>
@@ -193,38 +175,68 @@ export default function PostPage() {
       </Helmet>
 
       <BasicHeader />
-      <Container maxWidth="1024px">
-        {post.thumbnail?.url && (
-          <HeroImageContainer>
-            <HeroImage
+      <Layout>
+        <main>
+          <header>
+            <Title>{post.title}</Title>
+            {post.subtitle && <Subtitle>{post.subtitle}</Subtitle>}
+            <MetaRow>
+              {author && (
+                <>
+                  <AuthorLink to={`/${author.username}`}>
+                    {author.name}
+                  </AuthorLink>
+                  <Dot aria-hidden="true" />
+                </>
+              )}
+              <time dateTime={post.createdAt}>
+                {formatDate(post.createdAt)}
+              </time>
+              {content && (
+                <>
+                  <Dot aria-hidden="true" />
+                  <span>{`${estimateReadingMinutes(content)}분 읽기`}</span>
+                </>
+              )}
+            </MetaRow>
+          </header>
+
+          {post.thumbnail?.url && (
+            <Thumbnail
               src={post.thumbnail.url}
               alt={post.thumbnail.altText || ''}
             />
-          </HeroImageContainer>
-        )}
-        <PostTitle>{post.title}</PostTitle>
-        <MetaRow>
-          {/* 백엔드가 아직 author 필드를 내려주지 않아 현재는 날짜만 표시된다.
-              author 추가가 백엔드에 요청되어 있어 분기를 유지한다. */}
-          {post.author?.name && <AuthorName>{post.author.name}</AuthorName>}
-          <PostDate>{formatDate(post.createdAt)}</PostDate>
-        </MetaRow>
-        <Divider visible={true} margin="0" />
-        {post.content ? (
-          <MarkdownBody>
-            <Markdown remarkPlugins={[remarkGfm]}>{post.content}</Markdown>
-          </MarkdownBody>
-        ) : (
-          externalUrl && (
-            <ExternalNotice>
-              이 포스트의 본문은 외부 블로그에 있습니다.{' '}
-              <a href={externalUrl} target="_blank" rel="noopener noreferrer">
-                원문 보러가기
-              </a>
-            </ExternalNotice>
-          )
-        )}
-      </Container>
+          )}
+
+          {content ? (
+            <ArticleArea>
+              <PostArticle ref={articleRef} content={content} />
+            </ArticleArea>
+          ) : (
+            externalUrl && (
+              <ExternalNotice>
+                이 포스트의 본문은 외부 블로그에 있습니다.{' '}
+                <a href={externalUrl} target="_blank" rel="noopener noreferrer">
+                  원문 보러가기
+                </a>
+              </ExternalNotice>
+            )
+          )}
+
+          {author && (
+            <AuthorCard>
+              <AuthorLink to={`/${author.username}`}>{author.name}</AuthorLink>
+              {' 님의 글'}
+            </AuthorCard>
+          )}
+        </main>
+
+        <Aside>
+          <StickyToc>
+            <PostToc headings={headings} activeId={activeId} />
+          </StickyToc>
+        </Aside>
+      </Layout>
       <Footer />
     </>
   );
