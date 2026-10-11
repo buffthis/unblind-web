@@ -1,5 +1,12 @@
 import { useReducedMotion } from 'framer-motion';
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styled from 'styled-components';
 
 import {
@@ -40,36 +47,36 @@ const Title = styled.figcaption`
   color: ${({ theme }) => theme.colors.secondary};
 `;
 
-// Horizontal insets follow Linear's chart card (measured at 1440px and 390px wide):
-// the left one is the right one plus the y-axis label column. Vertically the same
-// rule applies with half of Linear's top space: the space under the x-axis labels
-// equals the top inset, so the labelled side carries the extra weight. Readout must
-// share the horizontal insets because the scrub hook clamps it against the plot.
-const INSET = { top: 40, right: 62, bottom: 40, left: 110, readoutTop: 10 };
-const INSET_MOBILE = {
-  top: 29,
-  right: 26,
-  bottom: 29,
-  left: 66,
-  readoutTop: 5,
-};
+// Each labelled side gets the opposite side's whitespace plus its labels. Vertically,
+// the space under the x-axis labels equals the top inset. Horizontally, the left
+// inset is the right inset plus the widest y-axis label (measured after render into
+// --y-label-width) plus LABEL_GAP, so the whitespace outside the labels always
+// matches the right side. Readout shares the horizontal insets because the scrub
+// hook clamps it against the plot's width.
+const INSET = { top: 40, right: 62, bottom: 40, readoutTop: 10 };
+const INSET_MOBILE = { top: 29, right: 26, bottom: 29, readoutTop: 5 };
+const LABEL_GAP = 8;
+const DEFAULT_LABEL_WIDTH = 40;
+const leftInset = (right) =>
+  `calc(var(--y-label-width, ${DEFAULT_LABEL_WIDTH}px) + ${LABEL_GAP + right}px)`;
 
 const Frame = styled.div`
   position: relative;
-  padding: ${INSET.top}px ${INSET.right}px ${INSET.bottom}px ${INSET.left}px;
+  padding: ${INSET.top}px ${INSET.right}px ${INSET.bottom}px
+    ${leftInset(INSET.right)};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     padding: ${INSET_MOBILE.top}px ${INSET_MOBILE.right}px
-      ${INSET_MOBILE.bottom}px ${INSET_MOBILE.left}px;
+      ${INSET_MOBILE.bottom}px ${leftInset(INSET_MOBILE.right)};
   }
 `;
 
 const Readout = styled.div`
   position: absolute;
   top: ${INSET.readoutTop}px;
-  left: ${INSET.left}px;
+  left: ${leftInset(INSET.right)};
   right: ${INSET.right}px;
   height: 20px;
   pointer-events: none;
@@ -78,7 +85,7 @@ const Readout = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     top: ${INSET_MOBILE.readoutTop}px;
-    left: ${INSET_MOBILE.left}px;
+    left: ${leftInset(INSET_MOBILE.right)};
     right: ${INSET_MOBILE.right}px;
   }
 `;
@@ -124,7 +131,7 @@ const Gridline = styled.div`
 // Anchored by the right edge so long labels grow leftward instead of into the plot.
 const YTick = styled.span`
   position: absolute;
-  right: calc(100% + 8px);
+  right: calc(100% + ${LABEL_GAP}px);
   white-space: nowrap;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.secondary};
@@ -241,6 +248,30 @@ function useElementWidth(ref) {
   return width;
 }
 
+// Measures the widest y-axis label before paint and again once web fonts settle,
+// writing it to a CSS variable so the left inset follows it without a re-render.
+function useYLabelWidth(frameRef, plotRef, ticksKey) {
+  useLayoutEffect(() => {
+    let cancelled = false;
+    const measure = () => {
+      const frame = frameRef.current;
+      const plot = plotRef.current;
+      if (cancelled || !frame || !plot) return;
+      const labels = plot.querySelectorAll('[data-role="ytick"]');
+      const widest = Math.max(
+        0,
+        ...Array.from(labels, (label) => label.offsetWidth)
+      );
+      if (widest > 0) frame.style.setProperty('--y-label-width', `${widest}px`);
+    };
+    measure();
+    document.fonts?.ready.then(measure);
+    return () => {
+      cancelled = true;
+    };
+  }, [frameRef, plotRef, ticksKey]);
+}
+
 // skipDrawIn is read on mount only: it tells a remounted chart that it was already
 // drawn, and later changes must not reset the clip of a chart that is on screen.
 export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
@@ -259,6 +290,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
   const tableId = `chart-table-${uid}`;
 
   const rootRef = useRef(null);
+  const frameRef = useRef(null);
   const plotRef = useRef(null);
   const clipRectRef = useRef(null);
   const aheadRef = useRef(null);
@@ -298,13 +330,15 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
 
   const width = useElementWidth(plotRef);
   const stride = labelStride(count, width);
+  const tickLabels = domain.ticks.map((tick) => formatValue(tick, unit));
+  useYLabelWidth(frameRef, plotRef, tickLabels.join('|'));
   const topOf = (value) =>
     `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
 
   return (
     <Figure ref={rootRef} data-shown="false" aria-label={title ?? '선 그래프'}>
       {title && <Title>{title}</Title>}
-      <Frame>
+      <Frame ref={frameRef}>
         <Readout aria-hidden="true">
           <ReadoutInner ref={readoutRef} data-role="readout">
             {series.map((s, k) => (
@@ -328,11 +362,11 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
           aria-describedby={tableId}
           {...scrub}
         >
-          {domain.ticks.map((tick) => (
+          {domain.ticks.map((tick, i) => (
             <React.Fragment key={tick}>
               <Gridline style={{ top: topOf(tick) }} />
-              <YTick style={{ top: topOf(tick) }}>
-                {formatValue(tick, unit)}
+              <YTick data-role="ytick" style={{ top: topOf(tick) }}>
+                {tickLabels[i]}
               </YTick>
             </React.Fragment>
           ))}

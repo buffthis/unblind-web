@@ -2,7 +2,7 @@ import theme from '@styles/theme/theme';
 import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { ThemeProvider } from 'styled-components';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import LineChart from './LineChart';
 
@@ -87,5 +87,27 @@ describe('LineChart', () => {
       'tabindex',
       '0'
     );
+  });
+
+  it('sizes the left inset from the widest y-axis label', () => {
+    // jsdom has no layout, so give each label a width proportional to its text.
+    const offsetWidth = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockImplementation(function width() {
+        return this.dataset.role === 'ytick' ? this.textContent.length * 7 : 0;
+      });
+    try {
+      renderChart();
+      const frame = screen.getByRole('group').parentElement;
+      expect(frame.style.getPropertyValue('--y-label-width')).toBe('28px');
+    } finally {
+      offsetWidth.mockRestore();
+    }
+  });
+
+  it('keeps the default inset when labels cannot be measured', () => {
+    renderChart();
+    const frame = screen.getByRole('group').parentElement;
+    expect(frame.style.getPropertyValue('--y-label-width')).toBe('');
   });
 });
