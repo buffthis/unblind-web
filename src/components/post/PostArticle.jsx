@@ -1,6 +1,7 @@
 import 'highlight.js/styles/github.css';
 
-import CodeBlock from '@components/post/CodeBlock';
+import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
+import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
 import React, { forwardRef } from 'react';
@@ -138,14 +139,25 @@ function LazyImage({ node: _node, alt, ...rest }) {
   return <img loading="lazy" alt={alt || ''} {...rest} />;
 }
 
+function PreBlock({ node: _node, children }) {
+  if (getLanguage(children) === 'chart') {
+    return <ChartBlock source={codeText(children)}>{children}</ChartBlock>;
+  }
+  return <CodeBlock>{children}</CodeBlock>;
+}
+
 // Module-level constants keep plugin and component identities stable across renders.
 // rehype-raw is deliberately absent: anyone can publish, so raw HTML must stay inert text.
 const REMARK_PLUGINS = [remarkGfm];
-const REHYPE_PLUGINS = [rehypeSlug, rehypeHighlight];
+// plainText keeps chart blocks as raw text so the parser sees exactly what was written.
+const REHYPE_PLUGINS = [
+  rehypeSlug,
+  [rehypeHighlight, { plainText: ['chart'] }],
+];
 const COMPONENTS = {
   h2: makeHeading('h2'),
   h3: makeHeading('h3'),
-  pre: CodeBlock,
+  pre: PreBlock,
   img: LazyImage,
 };
 

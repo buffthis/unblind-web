@@ -19,6 +19,29 @@ afterEach(() => {
 });
 
 describe('PostArticle', () => {
+  it('renders chart code blocks as charts and keeps other code highlighted', () => {
+    const { container } = renderArticle(
+      '```chart\ntitle: 전환 비율\n---\n월, a\n1월, 1\n2월, 2\n```\n\n```js\nconst a = 1;\n```'
+    );
+    expect(
+      screen.getByRole('figure', { name: '전환 비율' })
+    ).toBeInTheDocument();
+    expect(container.querySelector('code.hljs.language-js')).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(1);
+  });
+
+  it('shows the syntax error under the code while a chart is being typed', () => {
+    const { rerender } = renderArticle('```chart\n월, a\n1월, x\n```');
+    expect(screen.getByText(/^차트 문법 오류 · /)).toBeInTheDocument();
+    rerender(
+      <ThemeProvider theme={theme}>
+        <PostArticle content={'```chart\n월, a\n1월, 1\n2월, 2\n```'} />
+      </ThemeProvider>
+    );
+    expect(screen.queryByText(/^차트 문법 오류 · /)).not.toBeInTheDocument();
+    expect(screen.getByRole('figure')).toBeInTheDocument();
+  });
+
   it('adds Korean slug ids to h2 and h3', () => {
     renderArticle('## 소개 Intro!\n\n### Spring Boot 3.4 적용기');
     expect(screen.getByRole('heading', { level: 2 })).toHaveAttribute(
