@@ -8,13 +8,6 @@ export const SPRING = { stiffness: 400, damping: 40, mass: 1 };
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
-// DOM writes live outside the hook so the compiler lint does not read them as
-// mutations of the hook's arguments (the refs).
-const setStyle = (element, style) => Object.assign(element.style, style);
-const setText = (element, text) => {
-  element.textContent = text;
-};
-
 // One spring drives a fractional point index; every moving part is derived from it
 // and written straight to the DOM, so scrubbing never re-renders the chart.
 export default function useChartScrub({
@@ -26,32 +19,39 @@ export default function useChartScrub({
 }) {
   const count = chart.labels.length;
   const last = count - 1;
+  const {
+    root: rootRef,
+    plot: plotRef,
+    clipRect: clipRectRef,
+    crosshair: crosshairRef,
+    readout: readoutRef,
+    label: labelRef,
+    points: pointsRef,
+    values: valuesRef,
+  } = refs;
   const position = useSpring(last, SPRING);
   const active = useRef(false);
   const target = useRef(last);
 
   function place(at) {
     if (drawIn.isDone()) {
-      refs.clipRect.current?.setAttribute(
+      clipRectRef.current?.setAttribute(
         'width',
         String(xAt(at, count) + CLIP_PAD)
       );
     }
     if (!active.current) return;
     const percent = (xAt(at, count) / VIEW) * 100;
-    const crosshair = refs.crosshair.current;
-    if (crosshair) setStyle(crosshair, { left: `${percent}%` });
+    if (crosshairRef.current) crosshairRef.current.style.left = `${percent}%`;
     chart.series.forEach((s, k) => {
-      const point = refs.points.current[k];
+      const point = pointsRef.current[k];
       if (!point) return;
       const value = valueAt(s.values, at);
-      setStyle(point, {
-        left: `${percent}%`,
-        top: `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`,
-      });
+      point.style.left = `${percent}%`;
+      point.style.top = `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
     });
-    const readout = refs.readout.current;
-    const plot = refs.plot.current;
+    const readout = readoutRef.current;
+    const plot = plotRef.current;
     if (readout && plot) {
       const plotWidth = plot.clientWidth;
       const ownWidth = readout.offsetWidth;
@@ -60,7 +60,7 @@ export default function useChartScrub({
         0,
         Math.max(0, plotWidth - ownWidth)
       );
-      setStyle(readout, { transform: `translateX(${left}px)` });
+      readout.style.transform = `translateX(${left}px)`;
     }
   }
 
@@ -68,11 +68,11 @@ export default function useChartScrub({
 
   function writeReadout(index) {
     chart.series.forEach((s, k) => {
-      const element = refs.values.current[k];
-      if (element) setText(element, formatValue(s.values[index], chart.unit));
+      const element = valuesRef.current[k];
+      if (element)
+        element.textContent = formatValue(s.values[index], chart.unit);
     });
-    const label = refs.label.current;
-    if (label) setText(label, chart.labels[index]);
+    if (labelRef.current) labelRef.current.textContent = chart.labels[index];
   }
 
   // jump() emits no change event when the value is unchanged (the spring rests on the
@@ -92,14 +92,14 @@ export default function useChartScrub({
   function enter(index) {
     if (!drawIn.isDone()) drawIn.finish();
     active.current = true;
-    refs.root.current?.setAttribute('data-shown', 'true');
+    rootRef.current?.setAttribute('data-shown', 'true');
     moveTo(index, true);
   }
 
   function leave() {
     if (!active.current) return;
     active.current = false;
-    refs.root.current?.setAttribute('data-shown', 'false');
+    rootRef.current?.setAttribute('data-shown', 'false');
     if (reduced) {
       position.jump(last);
       place(last);
@@ -115,7 +115,7 @@ export default function useChartScrub({
   }, [last, position]);
 
   function indexFromPointer(event) {
-    const rect = refs.plot.current.getBoundingClientRect();
+    const rect = plotRef.current.getBoundingClientRect();
     const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;
     return indexFromRatio(ratio, count);
   }

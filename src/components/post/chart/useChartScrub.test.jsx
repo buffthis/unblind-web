@@ -27,6 +27,12 @@ const chart = {
   ],
 };
 
+const longer = {
+  ...chart,
+  labels: [...chart.labels, '6월'],
+  series: chart.series.map((s) => ({ ...s, values: [...s.values, 60] })),
+};
+
 function renderChart(data = chart) {
   const utils = render(
     <ThemeProvider theme={theme}>
@@ -126,14 +132,12 @@ describe('useChartScrub with reduced motion', () => {
     expect(c.figure()).toHaveAttribute('data-shown', 'false');
   });
 
-  it('refills to the new end when the row count changes while idle', () => {
+  it('steps from the new last row when the row count changes while idle', () => {
     const c = renderChart();
-    c.rerenderChart({
-      ...chart,
-      labels: [...chart.labels, '6월'],
-      series: chart.series.map((s) => ({ ...s, values: [...s.values, 60] })),
-    });
-    expect(c.clip()).toHaveAttribute('width', '1020');
+    c.rerenderChart(longer);
+    c.plot.focus();
+    fireEvent.keyDown(c.plot, { key: 'ArrowLeft' });
+    expect(c.readout().textContent).toContain('5월');
   });
 });
 
@@ -160,5 +164,13 @@ describe('useChartScrub with motion', () => {
     expect(animate.mock.results[0].value.stop).toHaveBeenCalled();
     expect(c.ahead().style.opacity).toBe('1');
     expect(c.clip()).toHaveAttribute('width', '520');
+  });
+
+  it('refills to the new end when the row count changes right after leaving', async () => {
+    const c = renderChart();
+    fireEvent.pointerMove(c.plot, { clientX: 0 });
+    fireEvent.pointerLeave(c.plot);
+    c.rerenderChart(longer);
+    await waitFor(() => expect(c.clip()).toHaveAttribute('width', '1020'));
   });
 });
