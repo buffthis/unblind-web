@@ -10,6 +10,7 @@ import {
   VIEW,
 } from './chartGeometry';
 import { computeDomain, formatValue } from './chartScale';
+import useChartScrub from './useChartScrub';
 import useDrawIn from './useDrawIn';
 
 export const PALETTE = [
@@ -238,7 +239,23 @@ export default function LineChart({ chart }) {
   const valueRefs = useRef([]);
 
   const reduced = useReducedMotion() === true;
-  useDrawIn({ rootRef, clipRectRef, aheadRef, reduced });
+  const drawIn = useDrawIn({ rootRef, clipRectRef, aheadRef, reduced });
+  const scrub = useChartScrub({
+    chart,
+    domain,
+    reduced,
+    drawIn,
+    refs: {
+      root: rootRef,
+      plot: plotRef,
+      clipRect: clipRectRef,
+      crosshair: crosshairRef,
+      readout: readoutRef,
+      label: labelRef,
+      points: pointRefs,
+      values: valueRefs,
+    },
+  });
 
   const width = useElementWidth(plotRef);
   const stride = labelStride(count, width);
@@ -270,6 +287,7 @@ export default function LineChart({ chart }) {
           role="group"
           aria-label={`${title ?? '선 그래프'}. 화살표 키로 지점별 값을 볼 수 있습니다`}
           aria-describedby={tableId}
+          {...scrub}
         >
           {domain.ticks.map((tick) => (
             <React.Fragment key={tick}>
