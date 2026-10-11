@@ -146,7 +146,7 @@ const Gridline = styled.div`
   margin-top: -1px;
   background: #ececec;
   /* Across the article column the line is 1px; over the stretches hanging outside it
-     the line thins to a point while it fades out. */
+     the line thins to a point while it fades to 60% strength. */
   clip-path: polygon(
     0 50%,
     var(--plot-inset) 33.333%,
@@ -157,17 +157,17 @@ const Gridline = styled.div`
   );
   -webkit-mask-image: linear-gradient(
     to right,
-    transparent,
+    rgba(0, 0, 0, 0.6),
     #000 var(--plot-inset),
     #000 calc(100% - var(--plot-inset)),
-    transparent
+    rgba(0, 0, 0, 0.6)
   );
   mask-image: linear-gradient(
     to right,
-    transparent,
+    rgba(0, 0, 0, 0.6),
     #000 var(--plot-inset),
     #000 calc(100% - var(--plot-inset)),
-    transparent
+    rgba(0, 0, 0, 0.6)
   );
 `;
 
