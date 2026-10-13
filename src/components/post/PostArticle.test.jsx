@@ -170,4 +170,48 @@ describe('PostArticle', () => {
     expect(inside).not.toHaveAttribute('data-center');
     expect(inside).toHaveAttribute('alt', '중간 | center | 설명');
   });
+
+  it('turns a [!NOTE] quote into an alert and keeps its body', () => {
+    renderArticle('> [!WARNING]\n> 배포 전에 **백업**하세요.\n\n> 그냥 인용');
+    const alert = screen.getByRole('note', { name: '경고' });
+
+    expect(alert).toHaveTextContent('경고');
+    expect(alert).toHaveTextContent('배포 전에 백업하세요.');
+    expect(alert).not.toHaveTextContent('[!WARNING]');
+    expect(alert.querySelector('strong')).toHaveTextContent('백업');
+    expect(
+      screen.queryByRole('note', { name: '참고' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('그냥 인용').closest('blockquote')).not.toBeNull();
+  });
+
+  it('accepts an alert whose body starts on the next paragraph', () => {
+    renderArticle('> [!TIP]\n>\n> 두 번째 문단');
+    expect(screen.getByRole('note', { name: '팁' })).toHaveTextContent(
+      '두 번째 문단'
+    );
+  });
+
+  it('draws a caption under an image with a markdown title', () => {
+    const { container } = renderArticle(
+      '![차트 | center](https://a/b.png "그림 1. 월별 방문자")'
+    );
+    const figure = container.querySelector('[data-figure]');
+    const image = figure.querySelector('img');
+
+    expect(image).toHaveAttribute('alt', '차트');
+    expect(image).not.toHaveAttribute('title');
+    expect(figure).toHaveAttribute('data-center');
+    expect(figure.querySelector('[data-caption]')).toHaveTextContent(
+      '그림 1. 월별 방문자'
+    );
+    expect(figure.querySelector('[data-caption]')).toHaveStyle({
+      textAlign: 'center',
+    });
+  });
+
+  it('draws no figure for an image without a title', () => {
+    const { container } = renderArticle('![그냥](https://a/c.png)');
+    expect(container.querySelector('[data-figure]')).toBeNull();
+  });
 });

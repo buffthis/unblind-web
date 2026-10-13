@@ -1,5 +1,6 @@
 import 'highlight.js/styles/github.css';
 
+import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import { LAYOUT } from '@styles/constants';
@@ -119,6 +120,32 @@ const Body = styled.div`
     border: 1px solid #ececec;
   }
 
+  /* A captioned image is as wide as the image, so the caption centers under it. */
+  span[data-figure] {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 24px 0 8px;
+  }
+
+  span[data-figure][data-center] {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  span[data-figure] img {
+    display: block;
+  }
+
+  span[data-caption] {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    color: ${({ theme }) => theme.colors.inkSub};
+  }
+
   /* Images shrink to the column but never grow, so a small one needs this to sit in the middle. */
   img[data-center] {
     display: block;
@@ -177,9 +204,18 @@ function parseImageAlt(alt) {
   return { text: parts.join(' | '), flags };
 }
 
-function LazyImage({ node: _node, alt, ...rest }) {
+// A quote starting with [!NOTE] and friends becomes an alert; any other quote stays a quote.
+function Quote({ node: _node, children }) {
+  const alert = parseAlert(children);
+  if (!alert) return <blockquote>{children}</blockquote>;
+  return <Alert type={alert.type}>{alert.children}</Alert>;
+}
+
+// The markdown title ("![alt](url "caption")") becomes a caption centered under the image.
+// Spans keep the markup valid, since an image sits inside a paragraph.
+function LazyImage({ node: _node, alt, title, ...rest }) {
   const { text, flags } = parseImageAlt(alt);
-  return (
+  const image = (
     <img
       loading="lazy"
       alt={text}
@@ -187,6 +223,13 @@ function LazyImage({ node: _node, alt, ...rest }) {
       data-center={flags.has('center') ? '' : undefined}
       {...rest}
     />
+  );
+  if (!title) return image;
+  return (
+    <span data-figure="" data-center={flags.has('center') ? '' : undefined}>
+      {image}
+      <span data-caption="">{title}</span>
+    </span>
   );
 }
 
@@ -210,6 +253,7 @@ const COMPONENTS = {
   h3: makeHeading('h3'),
   pre: PreBlock,
   img: LazyImage,
+  blockquote: Quote,
 };
 
 const PostArticle = forwardRef(function PostArticle({ content }, ref) {
