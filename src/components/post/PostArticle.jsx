@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
+import TreeBlock from '@components/post/tree/TreeBlock';
 import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
@@ -253,8 +254,12 @@ function LazyImage({ node: _node, alt, title, ...rest }) {
 }
 
 function PreBlock({ node: _node, children }) {
-  if (getLanguage(children) === 'chart') {
+  const language = getLanguage(children);
+  if (language === 'chart') {
     return <ChartBlock source={codeText(children)}>{children}</ChartBlock>;
+  }
+  if (language === 'tree') {
+    return <TreeBlock source={codeText(children)}>{children}</TreeBlock>;
   }
   return <CodeBlock>{children}</CodeBlock>;
 }
@@ -268,11 +273,11 @@ const REMARK_PLUGINS = [
   [remarkMath, { singleDollarTextMath: false }],
 ];
 // rehypeKatex runs before rehypeHighlight so highlight.js never sees the language-math code.
-// plainText keeps chart blocks as raw text so the parser sees exactly what was written.
+// plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.
 const REHYPE_PLUGINS = [
   rehypeSlug,
   rehypeKatex,
-  [rehypeHighlight, { plainText: ['chart'] }],
+  [rehypeHighlight, { plainText: ['chart', 'tree'] }],
 ];
 const COMPONENTS = {
   h2: makeHeading('h2'),

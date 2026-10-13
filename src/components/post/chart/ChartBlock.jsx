@@ -1,18 +1,9 @@
+import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
 import React, { useCallback, useMemo, useState } from 'react';
-import styled from 'styled-components';
 
 import LineChart from './LineChart';
 import { formatChartError, parseChart } from './parseChart';
-
-// && beats PostArticle's `p` margin so the note sits right under the code block.
-const ErrorNote = styled.p`
-  && {
-    margin: -12px 0 20px;
-    font-size: 0.85rem;
-    color: #d93025;
-  }
-`;
 
 export function codeText(children) {
   const [code] = React.Children.toArray(children);
@@ -60,7 +51,7 @@ export default function ChartBlock({ source, children }) {
     return (
       <>
         <CodeBlock>{children}</CodeBlock>
-        <ErrorNote>{`차트 문법 오류 · ${formatChartError(result.error)}`}</ErrorNote>
+        <BlockErrorNote>{`차트 문법 오류 · ${formatChartError(result.error)}`}</BlockErrorNote>
       </>
     );
   }
