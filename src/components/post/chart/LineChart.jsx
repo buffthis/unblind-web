@@ -266,15 +266,19 @@ const Dot = styled.span`
 // && beats PostArticle's `table` rule, which sets display: block and overflow-x: auto.
 // display: table undoes the block display, which can drop table semantics from the
 // accessibility tree; the rest keeps the table visually hidden.
+// A table cannot shrink below its content, so the 1px box on the table alone still widens the
+// page on narrow screens. This wrapper clips it, and overflow inside it never reaches the page.
+const HiddenBox = styled.div`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+`;
+
 const HiddenTable = styled.table`
   && {
     display: table;
-    position: absolute;
-    width: 1px;
-    height: 1px;
     margin: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
     white-space: nowrap;
   }
 `;
@@ -493,29 +497,31 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
           </span>
         ))}
       </Legend>
-      <HiddenTable id={tableId} aria-label={title ?? '선 그래프 데이터'}>
-        <caption>{title ?? '선 그래프 데이터'}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{xLabel}</th>
-            {series.map((s, k) => (
-              <th key={k} scope="col">
-                {s.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {labels.map((label, i) => (
-            <tr key={i}>
-              <th scope="row">{label}</th>
+      <HiddenBox>
+        <HiddenTable id={tableId} aria-label={title ?? '선 그래프 데이터'}>
+          <caption>{title ?? '선 그래프 데이터'}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{xLabel}</th>
               {series.map((s, k) => (
-                <td key={k}>{formatValue(s.values[i], unit)}</td>
+                <th key={k} scope="col">
+                  {s.name}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </HiddenTable>
+          </thead>
+          <tbody>
+            {labels.map((label, i) => (
+              <tr key={i}>
+                <th scope="row">{label}</th>
+                {series.map((s, k) => (
+                  <td key={k}>{formatValue(s.values[i], unit)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </HiddenTable>
+      </HiddenBox>
     </Figure>
   );
 }
