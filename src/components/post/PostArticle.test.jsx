@@ -214,4 +214,14 @@ describe('PostArticle', () => {
     const { container } = renderArticle('![그냥](https://a/c.png)');
     expect(container.querySelector('[data-figure]')).toBeNull();
   });
+
+  it('renders $$ math and leaves single dollars as text', () => {
+    const { container } = renderArticle(
+      '가격은 $5 에서 $10 입니다. 식은 $$x^2$$ 입니다.\n\n$$\n\\frac{a}{b}\n$$'
+    );
+
+    expect(container.querySelectorAll('.katex').length).toBe(2);
+    expect(container.querySelector('.katex-display')).not.toBeNull();
+    expect(container).toHaveTextContent('가격은 $5 에서 $10 입니다');
+  });
 });

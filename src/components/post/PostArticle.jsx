@@ -1,4 +1,5 @@
 import 'highlight.js/styles/github.css';
+import 'katex/dist/katex.min.css';
 
 import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
@@ -8,8 +9,10 @@ import { copyHeadingLink } from '@utils/headingLink';
 import React, { forwardRef } from 'react';
 import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import styled from 'styled-components';
 
 const AnchorButton = styled.button`
@@ -242,10 +245,17 @@ function PreBlock({ node: _node, children }) {
 
 // Module-level constants keep plugin and component identities stable across renders.
 // rehype-raw is deliberately absent: anyone can publish, so raw HTML must stay inert text.
-const REMARK_PLUGINS = [remarkGfm];
+// A single $ is left alone so prices like "$5 and $10" never turn into math; write inline
+// math as $$x^2$$ and display math as a $$ block on its own lines.
+const REMARK_PLUGINS = [
+  remarkGfm,
+  [remarkMath, { singleDollarTextMath: false }],
+];
+// rehypeKatex runs before rehypeHighlight so highlight.js never sees the language-math code.
 // plainText keeps chart blocks as raw text so the parser sees exactly what was written.
 const REHYPE_PLUGINS = [
   rehypeSlug,
+  rehypeKatex,
   [rehypeHighlight, { plainText: ['chart'] }],
 ];
 const COMPONENTS = {
