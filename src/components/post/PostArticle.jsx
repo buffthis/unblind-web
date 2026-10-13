@@ -6,7 +6,7 @@ import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
@@ -14,6 +14,8 @@ import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styled from 'styled-components';
+
+import useScrollReveal from './useScrollReveal';
 
 const AnchorButton = styled.button`
   margin-left: 8px;
@@ -173,6 +175,20 @@ const Body = styled.div`
     border: 1px solid ${({ theme }) => theme.colors.border};
     padding: 6px 12px;
   }
+
+  /* Only opacity and transform move, so the entrance stays off the layout path. */
+  &[data-reveal] > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 400ms ease-out,
+      transform 400ms ease-out;
+  }
+
+  &[data-reveal] > [data-shown] {
+    opacity: 1;
+    transform: none;
+  }
 `;
 
 function makeHeading(Tag) {
@@ -266,9 +282,17 @@ const COMPONENTS = {
   blockquote: Quote,
 };
 
-const PostArticle = forwardRef(function PostArticle({ content }, ref) {
+// `reveal` fades blocks in on scroll; the editor preview leaves it off so blocks
+// do not fade in again while typing.
+const PostArticle = forwardRef(function PostArticle(
+  { content, reveal = false },
+  ref
+) {
+  const bodyRef = useRef(null);
+  useImperativeHandle(ref, () => bodyRef.current);
+  const revealing = useScrollReveal(bodyRef, reveal, content);
   return (
-    <Body ref={ref}>
+    <Body ref={bodyRef} data-reveal={revealing ? '' : undefined}>
       <Markdown
         remarkPlugins={REMARK_PLUGINS}
         rehypePlugins={REHYPE_PLUGINS}

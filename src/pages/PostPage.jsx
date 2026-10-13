@@ -297,7 +297,7 @@ export default function PostPage() {
 
           {content ? (
             <ArticleArea>
-              <PostArticle ref={articleRef} content={content} />
+              <PostArticle ref={articleRef} content={content} reveal />
             </ArticleArea>
           ) : (
             externalUrl && (
