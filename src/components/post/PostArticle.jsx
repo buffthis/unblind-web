@@ -194,9 +194,19 @@ const Body = styled.div`
     margin-right: auto;
   }
 
+  /* A link reads as part of the text, marked by a light underline that darkens
+     on hover. text-decoration, unlike a drawn line, follows a link across lines. */
   a {
-    color: ${({ theme }) => theme.colors.accent};
-    text-decoration: underline;
+    color: inherit;
+    text-decoration: underline 1px;
+    /* Slightly darker than the border token, which all but vanishes under text. */
+    text-decoration-color: #d9d9d9;
+    text-underline-offset: 4px;
+    transition: text-decoration-color 0.2s;
+  }
+
+  a:hover {
+    text-decoration-color: ${({ theme }) => theme.colors.inkSoft};
   }
 
   table {
