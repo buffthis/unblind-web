@@ -61,7 +61,7 @@ describe('PostPage', () => {
     ).toBeTruthy();
   });
 
-  it('shows author, date and reading time in the meta row', () => {
+  it('shows author and date in the meta row without a reading time', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();
 
@@ -70,7 +70,7 @@ describe('PostPage', () => {
       '/hyeongjun'
     );
     expect(screen.getByText('2026.10.01')).toBeInTheDocument();
-    expect(screen.getByText('1분 읽기')).toBeInTheDocument();
+    expect(screen.queryByText(/분 읽기/)).not.toBeInTheDocument();
   });
 
   it('lists the tags under the title without a # prefix', () => {
@@ -132,7 +132,6 @@ describe('PostPage', () => {
       'href',
       'https://shady-dev.tistory.com/1'
     );
-    expect(screen.queryByText(/분 읽기/)).not.toBeInTheDocument();
   });
 
   it('shows the error state when the post is missing', () => {

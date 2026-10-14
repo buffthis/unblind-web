@@ -11,7 +11,6 @@ import useArticleHeadings, {
 import usePost from '@hooks/usePost';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
-import { estimateReadingMinutes } from '@utils/readingTime';
 import { normalizeTags } from '@utils/tags';
 import { toSafeHttpUrl } from '@utils/url';
 import React, { useRef } from 'react';
@@ -142,12 +141,6 @@ const EditLink = styled(Link)`
   color: ${({ theme }) => theme.colors.inkSub};
 `;
 
-const Dot = styled.span`
-  &::before {
-    content: '·';
-  }
-`;
-
 const Thumbnail = styled.img`
   width: 100%;
   margin-top: 40px;
@@ -274,12 +267,6 @@ export default function PostPage() {
                   <time dateTime={post.createdAt}>
                     {formatDate(post.createdAt)}
                   </time>
-                  {content && (
-                    <>
-                      <Dot aria-hidden="true" />
-                      <span>{`${estimateReadingMinutes(content)}분 읽기`}</span>
-                    </>
-                  )}
                 </MetaDetails>
               </Byline>
               {canEdit && (
