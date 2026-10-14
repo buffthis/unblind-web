@@ -16,6 +16,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styled from 'styled-components';
 
+import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import useScrollReveal from './useScrollReveal';
 
@@ -308,6 +309,7 @@ const REMARK_PLUGINS = [
   remarkGfm,
   [remarkMath, { singleDollarTextMath: false }],
   remarkHighlight,
+  remarkBreaks,
 ];
 // rehypeKatex runs before rehypeHighlight so highlight.js never sees the language-math code.
 // plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.

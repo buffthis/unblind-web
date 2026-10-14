@@ -252,4 +252,25 @@ describe('PostArticle', () => {
     expect(marks[1].parentElement.tagName).toBe('STRONG');
     expect(container).not.toHaveTextContent('==');
   });
+
+  it('breaks the line on a single Enter and starts a paragraph on a blank line', () => {
+    const { container } = renderArticle('첫 줄\n둘째 줄\n\n새 문단');
+
+    const paragraphs = container.querySelectorAll('p');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0].querySelectorAll('br')).toHaveLength(1);
+    expect(paragraphs[0]).toHaveTextContent('첫 줄 둘째 줄');
+    expect(paragraphs[1].querySelector('br')).toBeNull();
+  });
+
+  it('leaves newlines inside code and keeps an alert marker on its own line', () => {
+    const { container } = renderArticle(
+      '```js\na\nb\n```\n\n> [!NOTE]\n> 본문 첫 줄\n> 둘째 줄'
+    );
+
+    expect(container.querySelector('pre code')).toHaveTextContent('a b');
+    expect(container).toHaveTextContent('참고');
+    expect(container).not.toHaveTextContent('[!NOTE]');
+    expect(container.querySelectorAll('br')).toHaveLength(1);
+  });
 });

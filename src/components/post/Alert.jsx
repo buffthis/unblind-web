@@ -27,7 +27,12 @@ export function parseAlert(children) {
   if (!match) return null;
 
   const remaining = head.slice(match[0].length);
-  const content = remaining ? [remaining, ...rest] : rest;
+  // The marker line ends in a line break element when the body starts on the next line.
+  const body =
+    !remaining && React.isValidElement(rest[0]) && rest[0].type === 'br'
+      ? rest.slice(1)
+      : rest;
+  const content = remaining ? [remaining, ...rest] : body;
   const next = [...items];
   if (content.length > 0) {
     next[index] = React.cloneElement(paragraph, {}, ...content);
