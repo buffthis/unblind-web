@@ -1,5 +1,6 @@
 import Logo from '@components/common/Logo';
 import ProfileSection from '@components/header/ProfileSection';
+import WriteButton from '@components/header/WriteButton';
 import SearchButton from '@components/search/SearchButton';
 import useAtPageTop from '@hooks/useAtPageTop';
 import useProfileDropdown from '@hooks/useProfileDropdown';
@@ -48,6 +49,7 @@ function Header({ sectionVisibility }) {
             )}
           </NavMenu>
           <HeaderSide $justify="flex-start">
+            <WriteButton />
             <SearchButton />
             <ProfileSection
               user={user}

@@ -1,5 +1,6 @@
 import Logo from '@components/common/Logo';
 import ProfileSection from '@components/header/ProfileSection';
+import WriteButton from '@components/header/WriteButton';
 import SearchButton from '@components/search/SearchButton';
 import useAtPageTop from '@hooks/useAtPageTop';
 import useProfileDropdown from '@hooks/useProfileDropdown';
@@ -43,6 +44,7 @@ function BasicHeader() {
             </LogoLink>
           </HeaderSide>
           <HeaderSide $justify="flex-end">
+            <WriteButton />
             <SearchButton />
             <ProfileSection
               user={user}
