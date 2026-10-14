@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import React from 'react';
 import { FaStar } from 'react-icons/fa';
 import styled, { keyframes } from 'styled-components';
@@ -43,29 +43,33 @@ export const ScrollAnimation = ({
   once = true,
   className = '',
 }) => {
+  // reducedMotion lives here rather than at the app root, so the root never imports
+  // framer-motion and it stays out of the entry chunk.
   return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{
-        once,
-        margin,
-        amount: 'some', // 요소가 하나라도 보일 때 애니메이션 시작
-      }}
-      variants={{
-        ...variants,
-        visible: {
-          ...variants.visible,
-          transition: {
-            ...variants.visible.transition,
-            delay,
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{
+          once,
+          margin,
+          amount: 'some', // 요소가 하나라도 보일 때 애니메이션 시작
+        }}
+        variants={{
+          ...variants,
+          visible: {
+            ...variants.visible,
+            transition: {
+              ...variants.visible.transition,
+              delay,
+            },
           },
-        },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+        }}
+        className={className}
+      >
+        {children}
+      </motion.div>
+    </MotionConfig>
   );
 };
 
@@ -134,22 +138,24 @@ export function StarRatingAnimation({
   };
 
   return (
-    <AnimatePresence>
-      {show && (
-        <StarContainer
-          variants={starContainerVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          style={style}
-        >
-          {Array.from({ length: count }).map((_, i) => (
-            <Star key={i} variants={starVariants} $size={size} $color={color}>
-              <FaStar />
-            </Star>
-          ))}
-        </StarContainer>
-      )}
-    </AnimatePresence>
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {show && (
+          <StarContainer
+            variants={starContainerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={style}
+          >
+            {Array.from({ length: count }).map((_, i) => (
+              <Star key={i} variants={starVariants} $size={size} $color={color}>
+                <FaStar />
+              </Star>
+            ))}
+          </StarContainer>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }

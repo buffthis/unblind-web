@@ -1,4 +1,6 @@
-import { ProfileCard, ProfileCardSkeleton } from '@components/cards';
+import ProfileCard, {
+  ProfileCardSkeleton,
+} from '@components/cards/ProfileCard';
 import Footer from '@components/common/Footer';
 import { Section } from '@components/common/Section';
 import BasicHeader from '@components/header/BasicHeader';

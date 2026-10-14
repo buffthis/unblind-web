@@ -1,4 +1,4 @@
-import { PostCard } from '@components/cards';
+import PostCard from '@components/cards/PostCard';
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
 import { Section, SectionTitle } from '@components/common/Section';

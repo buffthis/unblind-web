@@ -33,12 +33,19 @@ vi.mock('@apis/postApi', () => ({
   fetchPosts: vi.fn().mockResolvedValue([]),
 }));
 
+// Every page is lazy, so the first render waits for the page module to load; under a
+// busy full test run that can exceed waitFor's 1s default.
+const PAGE_LOAD = { timeout: 5000 };
+
 describe('App', () => {
   it('/ 진입 시 사용자 목록으로 리다이렉트되어 사용자 카드를 렌더링한다', async () => {
     window.history.pushState({}, '', '/');
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+    await waitFor(
+      () => expect(screen.getByText('tester')).toBeInTheDocument(),
+      PAGE_LOAD
+    );
     expect(screen.getByText('테스터')).toBeInTheDocument();
   });
 
@@ -46,8 +53,12 @@ describe('App', () => {
     window.history.pushState({}, '', '/no/such/page');
     render(<App />);
 
-    await waitFor(() =>
-      expect(screen.getByText('페이지를 찾을 수 없습니다')).toBeInTheDocument()
+    await waitFor(
+      () =>
+        expect(
+          screen.getByText('페이지를 찾을 수 없습니다')
+        ).toBeInTheDocument(),
+      PAGE_LOAD
     );
   });
 });
