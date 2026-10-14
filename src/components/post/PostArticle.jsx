@@ -16,6 +16,7 @@ import { ENTRANCE_DURATION } from './entrance';
 import { useRehypePlugins } from './markdownPlugins';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
+import remarkHtmlAsText from './remarkHtmlAsText';
 import useScrollReveal from './useScrollReveal';
 
 // Sits in the left gutter so the rule after an h2 starts right at the text.
@@ -308,6 +309,8 @@ const REMARK_PLUGINS = [
   remarkGfm,
   [remarkMath, { singleDollarTextMath: false }],
   remarkHighlight,
+  // Before remarkBreaks, so a multi-line HTML block keeps its line breaks.
+  remarkHtmlAsText,
   remarkBreaks,
 ];
 // Math and code highlighting are added by useRehypePlugins once a post needs them.

@@ -137,6 +137,20 @@ describe('PostArticle', () => {
     expect(screen.getByText('<b>bold</b>')).toBeInTheDocument();
   });
 
+  it('sets a raw HTML block in its own paragraph like any other block', () => {
+    const { container } = renderArticle(
+      '앞 문단\n\n<div>\n<i>x</i>\n</div>\n\n뒤 문단'
+    );
+    const blocks = Array.from(container.firstChild.childNodes).filter(
+      (node) => node.nodeType !== Node.TEXT_NODE || node.textContent.trim()
+    );
+    expect(blocks.map((node) => node.nodeName)).toEqual(['P', 'P', 'P']);
+    expect(blocks[1].querySelectorAll('br')).toHaveLength(2);
+    expect(blocks[1].textContent.replace(/\n/g, '')).toBe(
+      '<div><i>x</i></div>'
+    );
+  });
+
   it('strips javascript: links', () => {
     renderArticle('[x](javascript:alert(1))');
     expect(screen.getByText('x').getAttribute('href') || '').not.toContain(
