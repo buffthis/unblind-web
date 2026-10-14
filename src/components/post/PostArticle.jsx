@@ -16,6 +16,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styled from 'styled-components';
 
+import remarkHighlight from './remarkHighlight';
 import useScrollReveal from './useScrollReveal';
 
 // Sits in the left gutter so the rule after an h2 starts right at the text.
@@ -122,6 +123,15 @@ const Body = styled.div`
 
   blockquote > :last-child {
     margin-bottom: 0;
+  }
+
+  /* A highlighter stroke over the lower part of the line, repeated on each wrapped line. */
+  mark {
+    padding: 0 2px;
+    background: linear-gradient(transparent 50%, #fff3a3 50%);
+    color: inherit;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 
   code {
@@ -296,6 +306,7 @@ function PreBlock({ node: _node, children }) {
 const REMARK_PLUGINS = [
   remarkGfm,
   [remarkMath, { singleDollarTextMath: false }],
+  remarkHighlight,
 ];
 // rehypeKatex runs before rehypeHighlight so highlight.js never sees the language-math code.
 // plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.

@@ -224,4 +224,32 @@ describe('PostArticle', () => {
     expect(container.querySelector('.katex-display')).not.toBeNull();
     expect(container).toHaveTextContent('가격은 $5 에서 $10 입니다');
   });
+
+  it('marks ==text== as a highlight and leaves code and spaced equals alone', () => {
+    const { container } = renderArticle(
+      '앞 ==핵심 문장== 뒤, ==a==, `==코드==`, a == b == c'
+    );
+
+    const marks = Array.from(container.querySelectorAll('mark'));
+    expect(marks.map((mark) => mark.textContent)).toEqual(['핵심 문장', 'a']);
+    expect(container.querySelector('code')).toHaveTextContent('==코드==');
+    expect(container).toHaveTextContent('a == b == c');
+  });
+
+  it('highlights across bold and other inline marks in either nesting', () => {
+    const { container } = renderArticle(
+      '==**굵게** 칠한 문장==, **==굵은 형광펜==**, ==`code` 앞==, ==**전부 굵게**=='
+    );
+
+    const marks = Array.from(container.querySelectorAll('mark'));
+    expect(marks.map((mark) => mark.textContent)).toEqual([
+      '굵게 칠한 문장',
+      '굵은 형광펜',
+      'code 앞',
+      '전부 굵게',
+    ]);
+    expect(marks[0].querySelector('strong')).toHaveTextContent('굵게');
+    expect(marks[1].parentElement.tagName).toBe('STRONG');
+    expect(container).not.toHaveTextContent('==');
+  });
 });
