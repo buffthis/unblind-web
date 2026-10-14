@@ -22,6 +22,7 @@ describe('parseChart', () => {
         unit: '%',
         min: 0,
         max: 100,
+        type: 'line',
         xLabel: '주',
         labels: ['3/8', '3/15'],
         series: [
@@ -70,19 +71,64 @@ describe('parseChart', () => {
     expect(colon.chart.xLabel).toBe('시각: 분');
   });
 
+  it('reads type: bar', () => {
+    const result = parseChart('type: bar\n---\n팀, 인원\nA, 3');
+    expect(result.ok).toBe(true);
+    expect(result.chart).toMatchObject({ type: 'bar', labels: ['A'] });
+  });
+
+  it('defaults to a line chart', () => {
+    expect(parseChart('월, a\n1월, 1\n2월, 2').chart.type).toBe('line');
+  });
+
+  it('lets a bar chart take a negative min and up to 40 rows', () => {
+    const result = parseChart(`type: bar\nmin: -10\n---\n주, a\n${rows(40)}`);
+    expect(result.ok).toBe(true);
+  });
+
   it.each([
     ['', 1, null, '차트 데이터가 비어 있습니다'],
+    [
+      'type: pie\n---\n주, a\n1, 1\n2, 2',
+      1,
+      null,
+      "type은 line, bar 중 하나여야 합니다(지금 'pie')",
+    ],
+    [
+      'type: bar\nmin: 5\n---\n주, a\n1, 6\n2, 7',
+      2,
+      null,
+      '막대 그래프의 min은 0 이하여야 합니다',
+    ],
+    [
+      'min: 5\ntype: bar\n---\n주, a\n1, 6\n2, 7',
+      1,
+      null,
+      '막대 그래프의 min은 0 이하여야 합니다',
+    ],
+    [
+      'type: bar\nmin: -9\nmax: -1\n---\n주, a\n1, -5\n2, -2',
+      3,
+      null,
+      '막대 그래프의 max는 0 이상이어야 합니다',
+    ],
+    [
+      `type: bar\n---\n주, a\n${rows(41)}`,
+      3,
+      null,
+      '데이터 행은 1~40개여야 합니다(지금 41개)',
+    ],
     [
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',

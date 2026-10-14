@@ -28,6 +28,7 @@ describe('computeDomain', () => {
       { min: 50 },
       { min: 50, max: 51, ticks: [50, 50.25, 50.5, 50.75, 51] },
     ],
+    [[-5, -2], { type: 'bar' }, { min: -6, max: 0, ticks: [-6, -4, -2, 0] }],
   ])('maps %j with %j to %j', (values, settings, expected) => {
     expect(computeDomain(values, settings)).toEqual(expected);
   });

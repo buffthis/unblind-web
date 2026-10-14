@@ -11,10 +11,14 @@ export function niceStep(span) {
 }
 
 // Explicit min/max win; otherwise the axis starts at min(0, data) and rounds outward
-// to a nice step, so lines rarely touch the frame by accident.
-export function computeDomain(values, { min = null, max = null } = {}) {
+// to a nice step, so lines rarely touch the frame by accident. A bar chart also
+// reaches up to zero, because a bar is drawn from zero.
+export function computeDomain(
+  values,
+  { min = null, max = null, type = 'line' } = {}
+) {
   let low = min ?? Math.min(0, ...values);
-  let high = max ?? Math.max(...values);
+  let high = max ?? Math.max(type === 'bar' ? 0 : -Infinity, ...values);
   if (high <= low) {
     if (max == null) high = low + 1;
     else low = high - 1;

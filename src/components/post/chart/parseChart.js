@@ -1,4 +1,5 @@
-const SETTING_KEYS = ['title', 'unit', 'min', 'max'];
+const SETTING_KEYS = ['title', 'unit', 'min', 'max', 'type'];
+const TYPES = ['line', 'bar'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
 const NUMBER = /^-?\d+(\.\d+)?$/;
 const SEPARATOR = '---';
@@ -6,6 +7,9 @@ const MIN_SERIES = 1;
 const MAX_SERIES = 6;
 const MIN_ROWS = 2;
 const MAX_ROWS = 200;
+// A single bar still reads as a value, and past 40 groups the bars get too thin to hover.
+const BAR_MIN_ROWS = 1;
+const BAR_MAX_ROWS = 40;
 const TOO_LARGE = '값이 너무 큽니다';
 
 class ChartSyntaxError extends Error {
@@ -81,11 +85,26 @@ function parseSettings(lines) {
       const number = Number(value);
       if (!Number.isFinite(number)) fail(line, null, TOO_LARGE);
       settings[key] = number;
+    } else if (key === 'type' && !TYPES.includes(value)) {
+      fail(
+        line,
+        null,
+        `type은 ${TYPES.join(', ')} 중 하나여야 합니다(지금 '${value}')`
+      );
     } else {
       settings[key] = value;
     }
     lineOf[key] = line;
   });
+  // Bar length encodes the value, so the axis must reach zero.
+  if (settings.type === 'bar') {
+    if (settings.min > 0) {
+      fail(lineOf.min, null, '막대 그래프의 min은 0 이하여야 합니다');
+    }
+    if (settings.max < 0) {
+      fail(lineOf.max, null, '막대 그래프의 max는 0 이상이어야 합니다');
+    }
+  }
   if (
     settings.min != null &&
     settings.max != null &&
@@ -118,11 +137,14 @@ function parseTable(lines, offset, settings) {
   });
 
   const body = lines.slice(1);
-  if (body.length < MIN_ROWS || body.length > MAX_ROWS) {
+  const bar = settings.type === 'bar';
+  const minRows = bar ? BAR_MIN_ROWS : MIN_ROWS;
+  const maxRows = bar ? BAR_MAX_ROWS : MAX_ROWS;
+  if (body.length < minRows || body.length > maxRows) {
     fail(
       headerLine,
       null,
-      `데이터 행은 ${MIN_ROWS}~${MAX_ROWS}개여야 합니다(지금 ${body.length}개)`
+      `데이터 행은 ${minRows}~${maxRows}개여야 합니다(지금 ${body.length}개)`
     );
   }
 
@@ -203,6 +225,7 @@ function parse(rawText) {
     unit: settings.unit ?? '',
     min: settings.min ?? null,
     max: settings.max ?? null,
+    type: settings.type ?? 'line',
     ...table,
   };
 }

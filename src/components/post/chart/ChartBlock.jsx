@@ -2,6 +2,7 @@ import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import BarChart from './BarChart';
 import LineChart from './LineChart';
 import { formatChartError, parseChart } from './parseChart';
 
@@ -42,7 +43,7 @@ class ChartErrorBoundary extends React.Component {
 // live region would announce each intermediate error. `drawn` remembers a finished
 // draw-in, so a chart remounted after a syntax error appears in full instead of
 // playing the draw-in again. It is state rather than a ref because it is read during
-// render; LineChart only reads it on mount, so the extra render changes nothing.
+// render; the charts only read it on mount, so the extra render changes nothing.
 export default function ChartBlock({ source, children }) {
   const result = useMemo(() => parseChart(source), [source]);
   const [drawn, setDrawn] = useState(false);
@@ -55,12 +56,13 @@ export default function ChartBlock({ source, children }) {
       </>
     );
   }
+  const Chart = result.chart.type === 'bar' ? BarChart : LineChart;
   return (
     <ChartErrorBoundary
       source={source}
       fallback={<CodeBlock>{children}</CodeBlock>}
     >
-      <LineChart chart={result.chart} skipDrawIn={drawn} onDrawn={markDrawn} />
+      <Chart chart={result.chart} skipDrawIn={drawn} onDrawn={markDrawn} />
     </ChartErrorBoundary>
   );
 }

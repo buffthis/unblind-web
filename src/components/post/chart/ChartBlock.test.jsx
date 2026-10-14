@@ -4,10 +4,12 @@ import React from 'react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import BarChart from './BarChart';
 import ChartBlock, { codeText } from './ChartBlock';
 import LineChart from './LineChart';
 
 vi.mock('./LineChart', () => ({ default: vi.fn() }));
+vi.mock('./BarChart', () => ({ default: vi.fn() }));
 
 const VALID = 'title: 전환 비율\n---\n월, a\n1월, 1\n2월, 2\n';
 
@@ -23,6 +25,7 @@ function renderBlock(source) {
 
 afterEach(() => {
   LineChart.mockReset();
+  BarChart.mockReset();
 });
 
 describe('codeText', () => {
@@ -41,6 +44,17 @@ describe('ChartBlock', () => {
     expect(
       screen.getByRole('figure', { name: '전환 비율' })
     ).toBeInTheDocument();
+  });
+
+  it('renders a bar chart for type: bar', () => {
+    BarChart.mockImplementation(({ chart }) => (
+      <figure aria-label={chart.title} />
+    ));
+    renderBlock(`type: bar\n${VALID}`);
+    expect(
+      screen.getByRole('figure', { name: '전환 비율' })
+    ).toBeInTheDocument();
+    expect(LineChart).not.toHaveBeenCalled();
   });
 
   it('falls back to the code block with the first syntax error', () => {
