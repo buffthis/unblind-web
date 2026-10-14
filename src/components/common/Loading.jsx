@@ -1,6 +1,8 @@
 import Logo from '@components/common/Logo';
-import React from 'react';
-import styled from 'styled-components';
+import React, { useEffect, useState } from 'react';
+import styled, { keyframes } from 'styled-components';
+
+import { loadingRun } from './loadingRun';
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -10,15 +12,41 @@ const LoadingContainer = styled.div`
   margin-top: ${({ $marginTop }) => $marginTop || '0px'};
 `;
 
-const Loading = ({ height, marginTop }) => (
-  <LoadingContainer
-    $height={height}
-    $marginTop={marginTop}
-    role="status"
-    aria-label="로딩 중"
-  >
-    <Logo variant="black" size={120} />
-  </LoadingContainer>
-);
+const appear = keyframes`
+  from {
+    opacity: 0;
+  }
+`;
+
+// The delay keeps the logo hidden until the run has lasted SHOW_AFTER. A loader
+// that takes over a logo already up skips the fade so the logo does not blink.
+const Mark = styled.div`
+  animation: ${appear} 150ms ease-out backwards;
+`;
+
+const Loading = ({ height, marginTop }) => {
+  const [delay] = useState(() => loadingRun.start(performance.now()));
+  useEffect(() => {
+    loadingRun.attach();
+    return () => loadingRun.detach(performance.now());
+  }, []);
+
+  return (
+    <LoadingContainer
+      $height={height}
+      $marginTop={marginTop}
+      role="status"
+      aria-label="로딩 중"
+    >
+      <Mark
+        style={
+          delay > 0 ? { animationDelay: `${delay}ms` } : { animation: 'none' }
+        }
+      >
+        <Logo variant="black" size={120} />
+      </Mark>
+    </LoadingContainer>
+  );
+};
 
 export default Loading;

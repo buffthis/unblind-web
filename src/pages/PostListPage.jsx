@@ -1,6 +1,7 @@
 import PostCard from '@components/cards/PostCard';
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
+import { useLoadingHold } from '@components/common/loadingRun';
 import { Section, SectionTitle } from '@components/common/Section';
 import BasicHeader from '@components/header/BasicHeader';
 import usePosts from '@hooks/usePosts';
@@ -18,8 +19,9 @@ const StatusBlock = styled.div`
 
 export default function PostListPage() {
   const { posts, loading, error } = usePosts();
+  const waiting = useLoadingHold(loading);
 
-  if (loading) return <Loading />;
+  if (waiting) return <Loading />;
 
   return (
     <>

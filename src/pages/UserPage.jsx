@@ -6,6 +6,7 @@ import Footer from '@components/common/Footer';
 import HeaderNotice from '@components/common/HeaderNotice';
 import HoverImage from '@components/common/HoverImage';
 import Loading from '@components/common/Loading';
+import { useLoadingHold } from '@components/common/loadingRun';
 import { Section, SectionTitle } from '@components/common/Section';
 import Header from '@components/header/Header';
 import { useAuth } from '@contexts/AuthContext';
@@ -36,13 +37,14 @@ import { POST_EDITOR_ENABLED, SITE_NAME, SITE_URL } from '@/config';
 export default function UserPage() {
   const { username } = useParams();
   const { user, loading, error } = useUser(username);
+  const waiting = useLoadingHold(loading);
   const { user: me } = useAuth();
   const isMe =
     POST_EDITOR_ENABLED &&
     me?.username != null &&
     me.username === user?.username;
 
-  if (loading) return <Loading />;
+  if (waiting) return <Loading />;
 
   // 캐시된 프로필이 있는 상태에서 백그라운드 refetch만 실패한 경우에는
   // 데이터를 그대로 보여주고, 데이터 자체가 없을 때만 NotFound를 렌더링한다.

@@ -1,5 +1,6 @@
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
+import { useLoadingHold } from '@components/common/loadingRun';
 import BasicHeader from '@components/header/BasicHeader';
 import { BODY_ENTRANCE, riseIn } from '@components/post/entrance';
 import PostArticle from '@components/post/PostArticle';
@@ -210,6 +211,7 @@ const BackLink = styled(Link)`
 export default function PostPage() {
   const { postId } = useParams();
   const { post, loading } = usePost(postId);
+  const waiting = useLoadingHold(loading);
   const { user } = useAuth();
   const articleRef = useRef(null);
   const content = post?.content || '';
@@ -221,7 +223,7 @@ export default function PostPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const entrance = useMemo(() => !window.location.hash, [postId]);
 
-  if (loading) return <Loading />;
+  if (waiting) return <Loading />;
 
   // A cached post stays on screen even if a background refetch fails.
   if (!post) {
