@@ -1,5 +1,11 @@
 import theme from '@styles/theme/theme';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { animate, useInView, useReducedMotion } from 'framer-motion';
 import React from 'react';
 import { ThemeProvider } from 'styled-components';
@@ -36,14 +42,16 @@ afterEach(() => {
 });
 
 describe('PostArticle', () => {
-  it('renders chart code blocks as charts and keeps other code highlighted', () => {
+  it('renders chart code blocks as charts and keeps other code highlighted', async () => {
     const { container } = renderArticle(
       '```chart\ntitle: 전환 비율\n---\n월, a\n1월, 1\n2월, 2\n```\n\n```js\nconst a = 1;\n```'
     );
     expect(
       screen.getByRole('figure', { name: '전환 비율' })
     ).toBeInTheDocument();
-    expect(container.querySelector('code.hljs.language-js')).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelector('code.hljs.language-js')).not.toBeNull()
+    );
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(1);
   });
 
@@ -136,9 +144,11 @@ describe('PostArticle', () => {
     );
   });
 
-  it('highlights fenced code', () => {
+  it('highlights fenced code once the highlighter has loaded', async () => {
     const { container } = renderArticle('```java\nint a = 1;\n```');
-    expect(container.querySelector('code.hljs.language-java')).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelector('code.hljs.language-java')).not.toBeNull()
+    );
   });
 
   it('draws a border only when the alt text ends with |border', () => {
@@ -215,12 +225,14 @@ describe('PostArticle', () => {
     expect(container.querySelector('[data-figure]')).toBeNull();
   });
 
-  it('renders $$ math and leaves single dollars as text', () => {
+  it('renders $$ math once KaTeX has loaded and leaves single dollars as text', async () => {
     const { container } = renderArticle(
       '가격은 $5 에서 $10 입니다. 식은 $$x^2$$ 입니다.\n\n$$\n\\frac{a}{b}\n$$'
     );
 
-    expect(container.querySelectorAll('.katex').length).toBe(2);
+    await waitFor(() =>
+      expect(container.querySelectorAll('.katex').length).toBe(2)
+    );
     expect(container.querySelector('.katex-display')).not.toBeNull();
     expect(container).toHaveTextContent('가격은 $5 에서 $10 입니다');
   });

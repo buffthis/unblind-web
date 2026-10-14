@@ -1,6 +1,3 @@
-import 'highlight.js/styles/github.css';
-import 'katex/dist/katex.min.css';
-
 import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
@@ -10,13 +7,12 @@ import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import Markdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styled from 'styled-components';
 
+import { useRehypePlugins } from './markdownPlugins';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import useScrollReveal from './useScrollReveal';
@@ -312,13 +308,9 @@ const REMARK_PLUGINS = [
   remarkHighlight,
   remarkBreaks,
 ];
-// rehypeKatex runs before rehypeHighlight so highlight.js never sees the language-math code.
-// plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.
-const REHYPE_PLUGINS = [
-  rehypeSlug,
-  rehypeKatex,
-  [rehypeHighlight, { plainText: ['chart', 'tree'] }],
-];
+// Math and code highlighting are added by useRehypePlugins once a post needs them.
+// Its plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.
+const REHYPE_PLUGINS = [rehypeSlug];
 const COMPONENTS = {
   h2: makeHeading('h2'),
   h3: makeHeading('h3'),
@@ -337,11 +329,12 @@ const PostArticle = forwardRef(function PostArticle(
   const bodyRef = useRef(null);
   useImperativeHandle(ref, () => bodyRef.current);
   const revealing = useScrollReveal(bodyRef, reveal, content);
+  const rehypePlugins = useRehypePlugins(content, REHYPE_PLUGINS);
   return (
     <Body ref={bodyRef} data-reveal={revealing ? '' : undefined}>
       <Markdown
         remarkPlugins={REMARK_PLUGINS}
-        rehypePlugins={REHYPE_PLUGINS}
+        rehypePlugins={rehypePlugins}
         components={COMPONENTS}
       >
         {content}
