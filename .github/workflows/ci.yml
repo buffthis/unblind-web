@@ -33,3 +33,4 @@ jobs:
         run: npm run build
         env:
           VITE_API_BASE_URL: https://api.unblind.kr
+          VITE_POST_EDITOR_ENABLED: 'true'
