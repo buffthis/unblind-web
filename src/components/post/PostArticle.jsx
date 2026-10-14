@@ -235,7 +235,7 @@ const Body = styled.div`
   a[data-footnote-ref]::after {
     content: '';
     position: absolute;
-    inset: -3px -4px;
+    inset: -2px -3px;
   }
 
   a[data-footnote-ref]:hover {
