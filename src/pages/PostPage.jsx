@@ -15,7 +15,7 @@ import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
 import { toSafeHttpUrl } from '@utils/url';
-import React, { useMemo, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -208,6 +208,18 @@ const BackLink = styled(Link)`
   color: ${({ theme }) => theme.colors.primary};
 `;
 
+// A #hash that names an element lands mid-article, past the header the entrance
+// starts with. One left over from a renamed heading leaves the page at the top.
+function landsOnTarget() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return false;
+  try {
+    return document.getElementById(decodeURIComponent(hash)) != null;
+  } catch {
+    return false;
+  }
+}
+
 export default function PostPage() {
   const { postId } = useParams();
   const { post, loading } = usePost(postId);
@@ -218,10 +230,18 @@ export default function PostPage() {
   const headings = useArticleHeadings(articleRef, content);
   const activeId = useActiveHeading(headings);
   useScrollToHash(headings.length > 0);
-  // A #hash link lands mid-article, past the header the entrance starts with.
-  // Read once per post so following a toc link later does not replay it.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const entrance = useMemo(() => !window.location.hash, [postId]);
+  // Decided once per post, so following a toc link later does not replay it.
+  // It runs after the article is in the DOM but before it is painted, since
+  // only then can a #hash be checked against the heading ids.
+  const [entranceFor, setEntranceFor] = useState(null);
+  const articleShown = !waiting && post != null;
+  useLayoutEffect(() => {
+    if (!articleShown) return;
+    setEntranceFor((current) =>
+      current?.postId === postId ? current : { postId, on: !landsOnTarget() }
+    );
+  }, [articleShown, postId]);
+  const entrance = entranceFor?.postId === postId && entranceFor.on;
 
   if (waiting) return <Loading />;
 

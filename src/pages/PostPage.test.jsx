@@ -6,7 +6,7 @@ import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PostPage from './PostPage';
 
@@ -173,6 +173,29 @@ describe('PostPage', () => {
     expect(
       screen.queryByRole('link', { name: '수정' })
     ).not.toBeInTheDocument();
+  });
+
+  describe('entrance', () => {
+    afterEach(() => window.history.replaceState(null, '', '/'));
+
+    const entranceOn = (hash) => {
+      window.history.replaceState(null, '', `/posts/3${hash}`);
+      usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+      const { container } = renderPage();
+      return container.querySelector('[data-entrance]') != null;
+    };
+
+    it('plays when the page opens at the top', () => {
+      expect(entranceOn('')).toBe(true);
+    });
+
+    it('is skipped when the #hash lands on a heading', () => {
+      expect(entranceOn(`#${encodeURIComponent('소개')}`)).toBe(false);
+    });
+
+    it('plays when the #hash matches no heading', () => {
+      expect(entranceOn('#renamed-section')).toBe(true);
+    });
   });
 
   it('hides the edit link from anonymous visitors', () => {
