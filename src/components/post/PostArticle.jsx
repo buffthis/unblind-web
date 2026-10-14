@@ -18,9 +18,12 @@ import styled from 'styled-components';
 
 import useScrollReveal from './useScrollReveal';
 
+// Sits in the left gutter so the rule after an h2 starts right at the text.
 const AnchorButton = styled.button`
-  margin-left: 8px;
-  padding: 0 4px;
+  position: absolute;
+  top: 0;
+  right: 100%;
+  padding: 0 6px;
   border: none;
   background: none;
   font: inherit;
@@ -48,6 +51,7 @@ const Body = styled.div`
 
   h2,
   h3 {
+    position: relative;
     margin-bottom: 40px;
     font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
@@ -61,7 +65,18 @@ const Body = styled.div`
   }
 
   h2 {
+    display: flex;
+    align-items: flex-start;
     margin-top: 64px;
+  }
+
+  /* A hairline runs from the title to the column edge, centered on its first line. */
+  h2::after {
+    content: '';
+    flex: 1 0 24px;
+    height: 1px;
+    margin: 12px 0 0 8px;
+    background: ${({ theme }) => theme.colors.inkSurface};
   }
 
   /* The page already spaces the article from the header above it. */
@@ -205,7 +220,8 @@ function makeHeading(Tag) {
   return function Heading({ node: _node, id, children, ...rest }) {
     return (
       <Tag id={id} {...rest}>
-        {children}
+        {/* One wrapper keeps inline code or emphasis in the same line box when the h2 is a flex row. */}
+        <span>{children}</span>
         {id && (
           <AnchorButton
             type="button"
