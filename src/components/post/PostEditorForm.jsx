@@ -5,6 +5,7 @@ import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { useQueryClient } from '@tanstack/react-query';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
+import { tagLimitError } from '@utils/tags';
 import React, {
   useDeferredValue,
   useLayoutEffect,
@@ -198,6 +199,8 @@ function validate(values) {
   const errors = {};
   if (!values.title.trim()) errors.title = '제목을 입력해 주세요.';
   if (!values.content.trim()) errors.content = '본문을 입력해 주세요.';
+  const tagError = tagLimitError(values.tags);
+  if (tagError) errors.tags = tagError;
   if (values.thumbnailUrl.trim() && !isAbsoluteHttpUrl(values.thumbnailUrl)) {
     errors.thumbnailUrl = 'http 또는 https 주소를 입력해 주세요.';
   }

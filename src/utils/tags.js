@@ -12,6 +12,20 @@ export function parseTags(text) {
     });
 }
 
+// The server's limits, counted after the same cleanup parseTags does. Length is in
+// UTF-16 units to match Java's String.length(), so an emoji counts as two.
+const MAX_TAGS = 10;
+const MAX_TAG_LENGTH = 30;
+
+export function tagLimitError(text) {
+  const tags = parseTags(text ?? '');
+  if (tags.length > MAX_TAGS) {
+    return `태그는 ${MAX_TAGS}개까지 쓸 수 있습니다(지금 ${tags.length}개).`;
+  }
+  const long = tags.find((tag) => tag.length > MAX_TAG_LENGTH);
+  return long ? `태그는 ${MAX_TAG_LENGTH}자까지 쓸 수 있습니다: ${long}` : null;
+}
+
 export function formatTags(tags) {
   return normalizeTags(tags).join(', ');
 }

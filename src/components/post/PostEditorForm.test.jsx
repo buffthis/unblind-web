@@ -182,6 +182,22 @@ describe('PostEditorForm', () => {
     expect(localStorage.getItem('post-draft:new')).not.toBeNull();
   });
 
+  it('blocks publishing with more tags than the server accepts', () => {
+    renderForm();
+    type('제목', '제목');
+    type('본문', '본문');
+    type('태그', Array.from({ length: 11 }, (_, i) => `t${i}`).join(', '));
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+    const tagField = screen
+      .getByPlaceholderText(/쉼표로 구분/)
+      .closest('label');
+    expect(
+      within(tagField).getByText('태그는 10개까지 쓸 수 있습니다(지금 11개).')
+    ).toBeInTheDocument();
+    expect(savePost).not.toHaveBeenCalled();
+  });
+
   it('shows server field errors', async () => {
     savePost.mockRejectedValue(
       httpError(400, { errors: { title: '제목이 너무 깁니다' } })
