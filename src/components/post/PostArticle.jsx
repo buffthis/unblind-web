@@ -224,10 +224,18 @@ const Body = styled.div`
   }
 
   a[data-footnote-ref] {
+    position: relative;
     color: ${({ theme }) => theme.colors.inkMuted};
     text-decoration: none;
     transition: color 0.2s;
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
+  }
+
+  /* The number is only a few pixels wide; an invisible pad makes it easier to hit. */
+  a[data-footnote-ref]::after {
+    content: '';
+    position: absolute;
+    inset: -4px -6px;
   }
 
   a[data-footnote-ref]:hover {
