@@ -47,6 +47,31 @@ describe('syncBlocks', () => {
     syncBlocks(up, 800);
     expect(shownIndexes(up)).toEqual([0]);
   });
+
+  const delays = (root) =>
+    Array.from(root.children).map((block) =>
+      block.style.getPropertyValue('--reveal-delay')
+    );
+
+  it('staggers the blocks an entrance shows, up to a cap', () => {
+    const root = blocksAt([0, 100, 200, 300, 400, 900]);
+    syncBlocks(root, 800, { start: 250, step: 50, max: 350 });
+    expect(delays(root)).toEqual([
+      '250ms',
+      '300ms',
+      '350ms',
+      '350ms',
+      '350ms',
+      '',
+    ]);
+  });
+
+  it('drops the entrance delays on later syncs', () => {
+    const root = blocksAt([0, 100]);
+    syncBlocks(root, 800, { start: 250, step: 50, max: 350 });
+    syncBlocks(root, 800);
+    expect(delays(root)).toEqual(['', '']);
+  });
 });
 
 describe('PostArticle reveal', () => {
@@ -88,6 +113,16 @@ describe('PostArticle reveal', () => {
     const [{ target, callback }] = observed;
     act(() => callback([]));
     expect(target).toHaveAttribute('data-shown');
+  });
+
+  it('staggers only the first sync when given an entrance', () => {
+    const entrance = { start: 250, step: 50, max: 450 };
+    renderArticle({ reveal: true, entrance });
+    const [{ target, callback }] = observed;
+    act(() => callback([]));
+    expect(target.style.getPropertyValue('--reveal-delay')).toBe('250ms');
+    act(() => callback([]));
+    expect(target.style.getPropertyValue('--reveal-delay')).toBe('');
   });
 
   it('stays off without the prop, as in the editor preview', () => {

@@ -9,13 +9,26 @@ const REVEAL_LINE = 0.92;
 // replays its entrance. Blocks above the viewport stay shown, including those
 // above a #hash landing spot. All rects are read before any attribute changes so
 // the browser lays out once.
-export function syncBlocks(root, viewportHeight) {
+//
+// With `entrance`, the blocks shown by this sync start one after another so the
+// first screen follows the page header in. Any later sync clears those delays,
+// which leaves a transition that already started untouched.
+export function syncBlocks(root, viewportHeight, entrance = null) {
   const line = viewportHeight * REVEAL_LINE;
   const blocks = Array.from(root.children);
   const shown = blocks.map((block) => block.getBoundingClientRect().top < line);
-  blocks.forEach((block, index) =>
-    block.toggleAttribute('data-shown', shown[index])
-  );
+  let order = 0;
+  blocks.forEach((block, index) => {
+    block.toggleAttribute('data-shown', shown[index]);
+    if (entrance && shown[index]) {
+      const { start, step, max } = entrance;
+      const delay = Math.min(start + step * order, max);
+      block.style.setProperty('--reveal-delay', `${delay}ms`);
+      order += 1;
+    } else {
+      block.style.removeProperty('--reveal-delay');
+    }
+  });
 }
 
 // The observer only says when to look again. Its entries are not used directly: a
@@ -27,20 +40,23 @@ const OPTIONS = {
 
 // Returns whether reveal is active, so the caller can mark the container for CSS.
 // `content` re-runs the effect because the markdown renders new block elements.
-export default function useScrollReveal(ref, enabled, content) {
+// `entrance` ({ start, step, max } in ms) staggers the blocks of the first sync;
+// pass a stable object so it does not re-run the effect.
+export default function useScrollReveal(ref, enabled, content, entrance) {
   const reduced = useReducedMotion();
   const active = Boolean(enabled && !reduced);
 
   useEffect(() => {
     const root = ref.current;
     if (!active || !root) return undefined;
-    const observer = new IntersectionObserver(
-      () => syncBlocks(root, window.innerHeight),
-      OPTIONS
-    );
+    let pending = entrance ?? null;
+    const observer = new IntersectionObserver(() => {
+      syncBlocks(root, window.innerHeight, pending);
+      pending = null;
+    }, OPTIONS);
     Array.from(root.children).forEach((block) => observer.observe(block));
     return () => observer.disconnect();
-  }, [ref, active, content]);
+  }, [ref, active, content, entrance]);
 
   return active;
 }

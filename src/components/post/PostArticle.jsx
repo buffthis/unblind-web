@@ -12,6 +12,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styled from 'styled-components';
 
+import { ENTRANCE_DURATION } from './entrance';
 import { useRehypePlugins } from './markdownPlugins';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
@@ -215,8 +216,9 @@ const Body = styled.div`
     opacity: 0;
     transform: translateY(16px);
     transition:
-      opacity 400ms ease-out,
-      transform 400ms ease-out;
+      opacity ${ENTRANCE_DURATION}ms ease-out,
+      transform ${ENTRANCE_DURATION}ms ease-out;
+    transition-delay: var(--reveal-delay, 0ms);
   }
 
   &[data-reveal] > [data-shown] {
@@ -321,14 +323,14 @@ const COMPONENTS = {
 };
 
 // `reveal` fades blocks in on scroll; the editor preview leaves it off so blocks
-// do not fade in again while typing.
+// do not fade in again while typing. `entrance` staggers the first screen of blocks.
 const PostArticle = forwardRef(function PostArticle(
-  { content, reveal = false },
+  { content, reveal = false, entrance },
   ref
 ) {
   const bodyRef = useRef(null);
   useImperativeHandle(ref, () => bodyRef.current);
-  const revealing = useScrollReveal(bodyRef, reveal, content);
+  const revealing = useScrollReveal(bodyRef, reveal, content, entrance);
   const rehypePlugins = useRehypePlugins(content, REHYPE_PLUGINS);
   return (
     <Body ref={bodyRef} data-reveal={revealing ? '' : undefined}>

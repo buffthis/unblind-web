@@ -1,6 +1,7 @@
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
 import BasicHeader from '@components/header/BasicHeader';
+import { BODY_ENTRANCE, riseIn } from '@components/post/entrance';
 import PostArticle from '@components/post/PostArticle';
 import PostToc from '@components/post/PostToc';
 import { useAuth } from '@contexts/AuthContext';
@@ -13,7 +14,7 @@ import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
 import { toSafeHttpUrl } from '@utils/url';
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -74,6 +75,7 @@ const Title = styled.h1`
   letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.ink};
   word-break: keep-all;
+  ${riseIn(0)}
 `;
 
 const Subtitle = styled.p`
@@ -83,6 +85,7 @@ const Subtitle = styled.p`
   letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.inkSub};
   word-break: keep-all;
+  ${riseIn(1)}
 `;
 
 const TagList = styled.ul`
@@ -90,6 +93,7 @@ const TagList = styled.ul`
   flex-wrap: wrap;
   margin-top: 16px;
   list-style: none;
+  ${riseIn(2)}
 `;
 
 const Tag = styled.li`
@@ -108,6 +112,7 @@ const Meta = styled.div`
   align-items: center;
   gap: 12px;
   margin-top: 24px;
+  ${riseIn(3)}
 `;
 
 const Byline = styled.div`
@@ -147,6 +152,7 @@ const Thumbnail = styled.img`
   border-radius: ${({ theme }) => theme.radius.md};
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  ${riseIn(4)}
 `;
 
 const ArticleArea = styled.div`
@@ -210,6 +216,10 @@ export default function PostPage() {
   const headings = useArticleHeadings(articleRef, content);
   const activeId = useActiveHeading(headings);
   useScrollToHash(headings.length > 0);
+  // A #hash link lands mid-article, past the header the entrance starts with.
+  // Read once per post so following a toc link later does not replay it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const entrance = useMemo(() => !window.location.hash, [postId]);
 
   if (loading) return <Loading />;
 
@@ -244,7 +254,7 @@ export default function PostPage() {
       </Helmet>
 
       <BasicHeader />
-      <Layout>
+      <Layout key={postId} data-entrance={entrance ? '' : undefined}>
         <Main>
           <header>
             <Title>{post.title}</Title>
@@ -284,7 +294,12 @@ export default function PostPage() {
 
           {content ? (
             <ArticleArea>
-              <PostArticle ref={articleRef} content={content} reveal />
+              <PostArticle
+                ref={articleRef}
+                content={content}
+                reveal
+                entrance={entrance ? BODY_ENTRANCE : undefined}
+              />
             </ArticleArea>
           ) : (
             externalUrl && (
