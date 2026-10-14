@@ -1,3 +1,4 @@
+import { pillButton } from '@components/common/pillButton';
 import { useSearch } from '@components/search/SearchProvider';
 import { isMacLike } from '@utils/platform';
 import React from 'react';
@@ -5,25 +6,7 @@ import { FiSearch } from 'react-icons/fi';
 import styled from 'styled-components';
 
 const Button = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 28px;
-  min-width: 28px;
-  padding: 4px 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
-  color: ${({ theme }) => theme.colors.secondary};
-  font-family: inherit;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover,
-  &:focus-visible {
-    background: rgba(0, 0, 0, 0.05);
-  }
+  ${pillButton}
 `;
 
 const Kbd = styled.kbd`
