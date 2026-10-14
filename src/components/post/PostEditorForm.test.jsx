@@ -228,58 +228,6 @@ describe('PostEditorForm', () => {
     ).toBeInTheDocument();
   });
 
-  it('edits the already created post on retry after hiding failed', async () => {
-    savePost
-      .mockRejectedValueOnce(
-        Object.assign(httpError(500, {}), { createdPost: { id: 9 } })
-      )
-      .mockResolvedValueOnce({ id: 9, hidden: true });
-    renderForm();
-    type('제목', '제목');
-    type('본문', '본문');
-
-    fireEvent.click(screen.getByRole('button', { name: '숨김으로 저장' }));
-    expect(
-      await screen.findByText(/숨김 처리에 실패했습니다/)
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '숨김으로 저장' }));
-    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(2));
-    expect(savePost.mock.calls[1][0]).toMatchObject({
-      postId: 9,
-      hidden: true,
-    });
-  });
-
-  it('does not register the thumbnail twice when the retry follows a partial hide failure', async () => {
-    savePost
-      .mockRejectedValueOnce(
-        Object.assign(httpError(500, {}), {
-          createdPost: {
-            id: 9,
-            thumbnail: { url: 'https://i.imgur.com/a.png' },
-          },
-        })
-      )
-      .mockResolvedValueOnce({ id: 9, hidden: true });
-    renderForm();
-    type('제목', '제목');
-    type('본문', '본문');
-    type('썸네일 이미지 URL', 'https://i.imgur.com/a.png');
-
-    fireEvent.click(screen.getByRole('button', { name: '숨김으로 저장' }));
-    expect(
-      await screen.findByText(/숨김 처리에 실패했습니다/)
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '숨김으로 저장' }));
-    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(2));
-    expect(savePost.mock.calls[1][0]).toMatchObject({
-      postId: 9,
-      initialThumbnailUrl: 'https://i.imgur.com/a.png',
-    });
-  });
-
   it('offers to restore an existing draft and does not overwrite it meanwhile', async () => {
     localStorage.setItem(
       'post-draft:new',

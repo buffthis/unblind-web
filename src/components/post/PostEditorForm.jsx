@@ -33,9 +33,6 @@ const FORM_MESSAGES = {
   unknown: '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.',
 };
 
-const PARTIAL_HIDE_MESSAGE =
-  '글은 공개 상태로 저장됐지만 숨김 처리에 실패했습니다. "숨김으로 저장"을 다시 눌러 주세요.';
-
 const Page = styled.div`
   max-width: 1280px;
   margin: 0 auto;
@@ -396,13 +393,7 @@ export default function PostEditorForm({
     } catch (error) {
       const { kind, fieldErrors: serverErrors } = toSaveError(error);
       setFieldErrors(toFieldErrors(serverErrors));
-      if (error.createdPost) {
-        setPostId(error.createdPost.id);
-        setThumbnailBaseline(error.createdPost.thumbnail?.url);
-        setFormError(PARTIAL_HIDE_MESSAGE);
-      } else {
-        setFormError(FORM_MESSAGES[kind]);
-      }
+      setFormError(FORM_MESSAGES[kind]);
       setSaving(false);
       return;
     }

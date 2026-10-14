@@ -59,6 +59,7 @@ describe('savePost', () => {
       title: '제목',
       subtitle: '',
       content: '본문',
+      hidden: false,
     });
     expect(client.patch).not.toHaveBeenCalled();
   });
@@ -77,6 +78,7 @@ describe('savePost', () => {
       subtitle: '',
       content: '본문',
       tags: ['GPU', 'Kubernetes'],
+      hidden: false,
     });
   });
 
@@ -95,24 +97,16 @@ describe('savePost', () => {
     );
   });
 
-  it('creates then hides a new hidden post', async () => {
-    client.post.mockResolvedValue({ data: { id: 9 } });
-    client.patch.mockResolvedValue({ data: { id: 9, hidden: true } });
+  it('creates a new hidden post in one request', async () => {
+    client.post.mockResolvedValue({ data: { id: 9, hidden: true } });
 
     await savePost({ postId: null, values, hidden: true });
 
-    expect(client.patch).toHaveBeenCalledWith('/posts/9', { hidden: true });
-  });
-
-  it('attaches the created post when hiding fails', async () => {
-    client.post.mockResolvedValue({ data: { id: 9 } });
-    client.patch.mockRejectedValue(httpError(500, {}));
-
-    await expect(
-      savePost({ postId: null, values, hidden: true })
-    ).rejects.toMatchObject({
-      createdPost: { id: 9 },
-    });
+    expect(client.post).toHaveBeenCalledWith(
+      '/posts',
+      expect.objectContaining({ hidden: true })
+    );
+    expect(client.patch).not.toHaveBeenCalled();
   });
 
   it('patches an existing post with hidden in one request', async () => {

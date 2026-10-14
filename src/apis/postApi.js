@@ -55,9 +55,6 @@ export async function uploadImage(file) {
   return response.data;
 }
 
-// PostCreateRequest has no hidden field yet, so a new hidden post takes two requests.
-// If the second fails, the created post rides on the error so the caller can switch to
-// editing it instead of creating a duplicate on retry.
 export async function savePost({
   postId,
   values,
@@ -71,28 +68,14 @@ export async function savePost({
     content: values.content,
     ...(values.tags != null && { tags: parseTags(values.tags) }),
     ...(thumbnailId != null && { thumbnailId }),
+    hidden,
   };
 
-  if (postId != null) {
-    const response = await client.patch(ENDPOINTS.POSTS.BY_ID(postId), {
-      ...body,
-      hidden,
-    });
-    return response.data;
-  }
-
-  const created = (await client.post(ENDPOINTS.POSTS.LIST, body)).data;
-  if (!hidden) return created;
-
-  try {
-    const response = await client.patch(ENDPOINTS.POSTS.BY_ID(created.id), {
-      hidden: true,
-    });
-    return response.data;
-  } catch (error) {
-    error.createdPost = created;
-    throw error;
-  }
+  const response =
+    postId != null
+      ? await client.patch(ENDPOINTS.POSTS.BY_ID(postId), body)
+      : await client.post(ENDPOINTS.POSTS.LIST, body);
+  return response.data;
 }
 
 const KIND_BY_STATUS = {
