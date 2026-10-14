@@ -211,6 +211,14 @@ function toFieldErrors(serverErrors) {
   return { ...rest, thumbnailUrl: rest.thumbnailUrl ?? url };
 }
 
+// POST /images/uploads names the problem under errors.file (size, format, empty file).
+function uploadErrorReason(error) {
+  const message = error?.response?.data?.errors?.file;
+  return typeof message === 'string' && message
+    ? message
+    : '잠시 후 다시 시도해 주세요.';
+}
+
 function formatTime(date) {
   return date.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
@@ -313,9 +321,9 @@ export default function PostEditorForm({
       let replacement = '';
       try {
         replacement = imageMarkdown(await uploadImage(file), file);
-      } catch {
+      } catch (error) {
         setFormError(
-          `이미지를 올리지 못했습니다: ${file.name}. 잠시 후 다시 시도해 주세요.`
+          `이미지를 올리지 못했습니다: ${file.name}. ${uploadErrorReason(error)}`
         );
       }
       setValues((prev) => ({

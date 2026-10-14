@@ -464,6 +464,21 @@ describe('PostEditorForm', () => {
       expect(body()).toHaveValue('글');
     });
 
+    it('shows why the server refused the file', async () => {
+      uploadImage.mockRejectedValue(
+        httpError(400, {
+          errors: { file: '이미지는 5MB까지 올릴 수 있습니다' },
+        })
+      );
+      renderForm();
+
+      fireEvent.paste(body(), { clipboardData: { files: [png] } });
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        '이미지를 올리지 못했습니다: shot.png. 이미지는 5MB까지 올릴 수 있습니다'
+      );
+    });
+
     it('refuses to save while an upload is running', () => {
       uploadImage.mockReturnValue(new Promise(() => {}));
       renderForm();

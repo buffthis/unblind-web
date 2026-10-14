@@ -1,7 +1,12 @@
 import client from '@apis/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchEditablePost, savePost, toSaveError } from './postApi';
+import {
+  fetchEditablePost,
+  savePost,
+  toSaveError,
+  uploadImage,
+} from './postApi';
 
 vi.mock('@apis/client', () => ({
   default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
@@ -157,6 +162,23 @@ describe('savePost', () => {
     });
 
     expect(client.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('uploadImage', () => {
+  it('posts the file as multipart form data to /images/uploads', async () => {
+    client.post.mockResolvedValue({
+      data: { id: 3, url: 'https://img/a.png' },
+    });
+    const file = new File(['x'], 'a.png', { type: 'image/png' });
+
+    expect(await uploadImage(file)).toEqual({
+      id: 3,
+      url: 'https://img/a.png',
+    });
+    const [path, body] = client.post.mock.calls[0];
+    expect(path).toBe('/images/uploads');
+    expect(body.get('file')).toBe(file);
   });
 });
 
