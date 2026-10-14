@@ -17,11 +17,16 @@ function headingText(element) {
 
 export function readHeadings(root) {
   if (!root) return [];
-  return Array.from(root.querySelectorAll('h2[id], h3[id]')).map((element) => ({
-    id: element.id,
-    level: element.tagName === 'H2' ? 2 : 3,
-    text: headingText(element),
-  }));
+  return (
+    Array.from(root.querySelectorAll('h2[id], h3[id]'))
+      // The footnotes carry a hidden heading of their own for screen readers.
+      .filter((element) => !element.closest('[data-footnotes]'))
+      .map((element) => ({
+        id: element.id,
+        level: element.tagName === 'H2' ? 2 : 3,
+        text: headingText(element),
+      }))
+  );
 }
 
 // Reads headings from the rendered DOM instead of re-slugging the markdown,

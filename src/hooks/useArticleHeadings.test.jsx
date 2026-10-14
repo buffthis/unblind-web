@@ -42,6 +42,20 @@ describe('useArticleHeadings', () => {
       { id: '배경', level: 3, text: '배경' },
     ]);
   });
+
+  it('leaves the footnote label out of the toc', () => {
+    const onHeadings = vi.fn();
+    render(
+      <Probe
+        content={'## 소개\n\n본문[^1]\n\n[^1]: 각주'}
+        onHeadings={onHeadings}
+      />
+    );
+
+    expect(onHeadings).toHaveBeenLastCalledWith([
+      { id: '소개', level: 2, text: '소개' },
+    ]);
+  });
 });
 
 function HashProbe({ ready }) {

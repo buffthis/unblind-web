@@ -151,6 +151,18 @@ describe('PostArticle', () => {
     );
   });
 
+  it('links a footnote reference and its note both ways in Korean', () => {
+    const { container } = renderArticle('본문[^1]\n\n[^1]: 출처 설명');
+
+    const reference = container.querySelector('sup a[data-footnote-ref]');
+    expect(reference).toHaveAttribute('href', '#user-content-fn-1');
+    const label = screen.getByRole('heading', { name: '각주' });
+    expect(label.querySelector('button')).toBeNull();
+    expect(
+      screen.getByRole('link', { name: '1번 각주를 단 곳으로 돌아가기' })
+    ).toHaveAttribute('href', '#user-content-fnref-1');
+  });
+
   it('strips javascript: links', () => {
     renderArticle('[x](javascript:alert(1))');
     expect(screen.getByText('x').getAttribute('href') || '').not.toContain(

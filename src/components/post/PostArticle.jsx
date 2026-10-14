@@ -212,6 +212,103 @@ const Body = styled.div`
     padding: 6px 12px;
   }
 
+  /* Footnotes: a small grey number in the text, and the notes in small grey type
+     under a short rule at the end. Raw HTML stays text, so every sup is a reference. */
+  sup {
+    display: inline-block;
+    height: 0.6em;
+    padding-left: 0.35em;
+    font-size: 0.6em;
+    line-height: 1;
+    vertical-align: super;
+  }
+
+  a[data-footnote-ref] {
+    color: ${({ theme }) => theme.colors.inkMuted};
+    text-decoration: none;
+    transition: color 0.2s;
+    scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
+  }
+
+  a[data-footnote-ref]:hover {
+    color: ${({ theme }) => theme.colors.ink};
+  }
+
+  section[data-footnotes] {
+    margin-top: 40px;
+  }
+
+  section[data-footnotes]::before {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 1px;
+    background: ${({ theme }) => theme.colors.border};
+  }
+
+  /* The label is for screen readers only. */
+  section[data-footnotes] > h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  section[data-footnotes] ol {
+    margin: 0;
+    padding: 48px 0 0 4px;
+    list-style: none;
+    counter-reset: footnote;
+  }
+
+  section[data-footnotes] li {
+    position: relative;
+    margin: 0;
+    padding: 0 0 9px 4px;
+    counter-increment: footnote;
+    font-size: 13px;
+    line-height: 1.5;
+    color: ${({ theme }) => theme.colors.inkMuted};
+    scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
+  }
+
+  section[data-footnotes] li::before {
+    content: counter(footnote);
+    position: absolute;
+    top: 0;
+    right: 100%;
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  section[data-footnotes] li p {
+    margin: 0;
+  }
+
+  /* The back link covers the whole note, so clicking anywhere on it returns to
+     the reference; links inside the note sit above it. */
+  a[data-footnote-backref] {
+    position: absolute;
+    inset: 0 0 9px;
+    z-index: 1;
+    overflow: hidden;
+    text-indent: -9999px;
+  }
+
+  section[data-footnotes] li a:not([data-footnote-backref]) {
+    position: relative;
+    z-index: 2;
+    color: ${({ theme }) => theme.colors.inkSoft};
+  }
+
+  section[data-footnotes] li a:not([data-footnote-backref]):hover {
+    color: ${({ theme }) => theme.colors.ink};
+  }
+
   /* Only opacity and transform move, so the entrance stays off the layout path. */
   &[data-reveal] > * {
     opacity: 0;
@@ -228,8 +325,18 @@ const Body = styled.div`
   }
 `;
 
+// The id remark-rehype gives the hidden heading of the footnotes.
+const FOOTNOTE_LABEL_ID = 'footnote-label';
+
 function makeHeading(Tag) {
   return function Heading({ node: _node, id, children, ...rest }) {
+    if (id === FOOTNOTE_LABEL_ID) {
+      return (
+        <Tag id={id} {...rest}>
+          {children}
+        </Tag>
+      );
+    }
     return (
       <Tag id={id} {...rest}>
         {/* One wrapper keeps inline code or emphasis in the same line box when the h2 is a flex row. */}
@@ -316,6 +423,14 @@ const REMARK_PLUGINS = [
 // Math and code highlighting are added by useRehypePlugins once a post needs them.
 // Its plainText keeps chart and tree blocks as raw text so the parser sees exactly what was written.
 const REHYPE_PLUGINS = [rehypeSlug];
+// Footnotes are written [^1] in the text and "[^1]: note" anywhere in the post.
+const REMARK_REHYPE_OPTIONS = {
+  footnoteLabel: '각주',
+  footnoteBackLabel: (referenceIndex, rereferenceIndex) =>
+    `${referenceIndex + 1}번 각주를 단 곳${
+      rereferenceIndex > 1 ? `(${rereferenceIndex}번째)` : ''
+    }으로 돌아가기`,
+};
 const COMPONENTS = {
   h2: makeHeading('h2'),
   h3: makeHeading('h3'),
@@ -340,6 +455,7 @@ const PostArticle = forwardRef(function PostArticle(
       <Markdown
         remarkPlugins={REMARK_PLUGINS}
         rehypePlugins={rehypePlugins}
+        remarkRehypeOptions={REMARK_REHYPE_OPTIONS}
         components={COMPONENTS}
       >
         {content}
