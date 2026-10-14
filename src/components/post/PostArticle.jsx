@@ -35,9 +35,10 @@ const AnchorButton = styled.button`
 
 const Body = styled.div`
   width: 100%;
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 1.6;
+  font-size: 15px;
+  font-weight: 460;
+  line-height: 24px;
+  letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.ink};
   /* macOS renders subpixel text visibly heavier; grayscale keeps weight 400 looking like 400. */
   -webkit-font-smoothing: antialiased;
@@ -47,33 +48,41 @@ const Body = styled.div`
 
   h2,
   h3 {
-    margin-bottom: 4px;
-    font-weight: 700;
+    margin-bottom: 40px;
+    font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
   }
 
+  h2,
+  h3 {
+    font-size: 15px;
+    line-height: 24px;
+  }
+
   h2 {
-    margin-top: 40px;
-    font-size: 30px;
-    line-height: 1.55;
+    margin-top: 64px;
+  }
+
+  /* The page already spaces the article from the header above it. */
+  & > h2:first-child {
+    margin-top: 0;
   }
 
   h3 {
-    margin-top: 24px;
-    font-size: 24px;
-    line-height: 1.6;
+    margin-top: 44px;
+    margin-bottom: 24px;
   }
 
   h2:hover ${AnchorButton}, h3:hover ${AnchorButton} {
     opacity: 1;
   }
 
-  /* Blocks open with 24px and close with 8px; adjacent margins collapse to a 24px gap. */
+  /* Blocks open with 20px and close with 0; adjacent margins collapse to a 20px gap. */
   p,
   ul,
   ol {
-    margin: 24px 0 8px;
+    margin: 20px 0 0;
   }
 
   ul,

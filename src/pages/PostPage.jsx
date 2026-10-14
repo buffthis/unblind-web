@@ -21,10 +21,10 @@ import styled from 'styled-components';
 
 import { POST_EDITOR_ENABLED } from '@/config';
 
-const ARTICLE_WIDTH = 700;
+const ARTICLE_WIDTH = 550;
 const TOC_WIDTH = 220;
 const TOC_GAP = 48;
-const SIDE_PADDING = 20;
+const SIDE_PADDING = 24;
 // The article stays centered on the page and the toc sits in the right gutter,
 // so both gutters must fit the toc before it can be shown.
 const TOC_MIN_VIEWPORT =
@@ -33,7 +33,7 @@ const GUTTER = 'minmax(0, 1fr)';
 
 const Layout = styled.div`
   width: 100%;
-  /* border-box: the side padding is included, so the column itself maxes out at 700px. */
+  /* border-box: the side padding is included, so the column itself maxes out at 550px. */
   max-width: ${ARTICLE_WIDTH + 2 * SIDE_PADDING}px;
   margin: 0 auto;
   padding: 48px ${SIDE_PADDING}px 96px;
@@ -69,22 +69,21 @@ const StickyToc = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.ink};
   word-break: keep-all;
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
-    font-size: 32px;
-  }
 `;
 
 const Subtitle = styled.p`
-  margin-top: 12px;
-  font-size: 19px;
-  line-height: 1.6;
+  font-size: 15px;
+  font-weight: 460;
+  line-height: 24px;
+  letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.inkSub};
+  word-break: keep-all;
 `;
 
 const TagList = styled.ul`
@@ -95,13 +94,13 @@ const TagList = styled.ul`
 `;
 
 const Tag = styled.li`
-  margin: 0 8px 10px 0;
-  padding: 2px 10px;
-  border-radius: 8px;
+  margin: 0 6px 6px 0;
+  padding: 0 8px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.inkSurface};
   font-size: 13px;
-  font-weight: 600;
-  line-height: 1.6;
+  font-weight: 460;
+  line-height: 22px;
   color: ${({ theme }) => theme.colors.inkSoft};
 `;
 
@@ -119,9 +118,9 @@ const Byline = styled.div`
 `;
 
 const AuthorLink = styled(Link)`
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   color: ${({ theme }) => theme.colors.inkSub};
 `;
 
@@ -130,7 +129,7 @@ const MetaDetails = styled.div`
   flex-wrap: wrap;
   gap: 6px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 20px;
   color: ${({ theme }) => theme.colors.inkMuted};
 `;
 
@@ -176,7 +175,8 @@ const AuthorCard = styled.div`
 
 const ExternalNotice = styled.p`
   margin-top: 40px;
-  font-size: 17px;
+  font-size: 15px;
+  line-height: 24px;
   color: ${({ theme }) => theme.colors.inkSub};
 
   a {
