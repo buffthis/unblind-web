@@ -69,9 +69,9 @@ const StickyToc = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
-  line-height: 24px;
+  line-height: 30px;
   letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.ink};
   word-break: keep-all;

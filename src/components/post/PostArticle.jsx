@@ -59,7 +59,6 @@ const Body = styled.div`
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
   }
 
-  h2,
   h3 {
     font-size: 15px;
     line-height: 24px;
@@ -68,7 +67,9 @@ const Body = styled.div`
   h2 {
     display: flex;
     align-items: flex-start;
-    margin-top: 64px;
+    margin-top: 128px;
+    font-size: 22px;
+    line-height: 30px;
   }
 
   /* A hairline runs from the title to the column edge, centered on its first line. */
@@ -76,7 +77,7 @@ const Body = styled.div`
     content: '';
     flex: 1 0 24px;
     height: 1px;
-    margin: 12px 0 0 8px;
+    margin: 15px 0 0 8px;
     background: ${({ theme }) => theme.colors.inkSurface};
   }
 
