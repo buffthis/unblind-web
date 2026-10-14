@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
+import GitHubLink from '@components/post/GitHubLink';
 import TreeBlock from '@components/post/tree/TreeBlock';
 import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
@@ -324,6 +325,7 @@ const COMPONENTS = {
   pre: PreBlock,
   img: LazyImage,
   blockquote: Quote,
+  a: GitHubLink,
 };
 
 // `reveal` fades blocks in on scroll; the editor preview leaves it off so blocks
