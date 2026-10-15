@@ -4,13 +4,12 @@ import axios from 'axios';
 // 세션 확인용 요청은 "비로그인"이 정상 응답이므로 401 리다이렉트 대상에서 제외한다.
 const AUTH_EXEMPT_PATHS = [ENDPOINTS.SESSIONS, ENDPOINTS.ME];
 
+// No default Content-Type: axios marks plain objects as JSON on its own, and a JSON
+// default would make it flatten FormData into JSON, dropping uploaded files.
 export const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 function shouldRedirectToLogin(error) {
