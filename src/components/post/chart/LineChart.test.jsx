@@ -57,6 +57,43 @@ describe('LineChart', () => {
     expect(limit).toHaveTextContent('목표 80%');
   });
 
+  it.each([
+    [3, '2.5'],
+    [60, '2'],
+    [120, '1.5'],
+    [300, '1'],
+  ])('draws a line of %i points %s px thick', (count, width) => {
+    const labels = Array.from({ length: count }, (_, i) => `${i}초`);
+    const values = Array.from({ length: count }, (_, i) => i % 50);
+    const { container } = renderChart({
+      labels,
+      series: [{ name: 'a', values }],
+    });
+
+    expect(
+      container.querySelector('g[data-layer="past"] polyline')
+    ).toHaveStyle({ strokeWidth: width });
+  });
+
+  it('draws far fewer points than the data has when it is very dense', () => {
+    const count = 5000;
+    const labels = Array.from({ length: count }, (_, i) => `${i}초`);
+    const values = Array.from({ length: count }, (_, i) => (i * 7) % 100);
+    const { container } = renderChart({
+      labels,
+      series: [{ name: 'a', values }],
+    });
+
+    const drawn = container
+      .querySelector('g[data-layer="past"] polyline')
+      .getAttribute('points')
+      .trim()
+      .split(' ').length;
+    expect(drawn / 2).toBeLessThan(2000);
+    // The hidden table still lists every row for screen readers.
+    expect(container.querySelectorAll('table tbody tr')).toHaveLength(count);
+  });
+
   it('labels the y axis with formatted ticks', () => {
     renderChart();
     ['0%', '25%', '50%', '75%', '100%'].forEach((tick) => {

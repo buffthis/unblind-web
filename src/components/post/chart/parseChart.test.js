@@ -83,6 +83,18 @@ describe('parseChart', () => {
     expect(parseChart('월, a\n1월, 1\n2월, 2').chart.type).toBe('line');
   });
 
+  it('rejects a line chart of more than 2000 rows', () => {
+    expect(errorOf(`주, a\n${rows(2001)}`)).toEqual({
+      line: 1,
+      column: null,
+      message: '데이터 행은 2~2000개여야 합니다(지금 2001개)',
+    });
+  });
+
+  it('takes up to 2000 rows in a line chart', () => {
+    expect(parseChart(`주, a\n${rows(2000)}`).ok).toBe(true);
+  });
+
   it('lets a bar chart take a negative min and up to 40 rows', () => {
     const result = parseChart(`type: bar\nmin: -10\n---\n주, a\n${rows(40)}`);
     expect(result.ok).toBe(true);
@@ -253,13 +265,7 @@ describe('parseChart', () => {
     ],
     ['주, a, \n1, 1, 1\n2, 2, 2', 1, 3, '이름이 비어 있습니다'],
     ['주, a, a\n1, 1, 1\n2, 2, 2', 1, 3, "계열 이름이 중복됩니다: 'a'"],
-    ['주, a\n1, 1', 1, null, '데이터 행은 2~200개여야 합니다(지금 1개)'],
-    [
-      `주, a\n${rows(201)}`,
-      1,
-      null,
-      '데이터 행은 2~200개여야 합니다(지금 201개)',
-    ],
+    ['주, a\n1, 1', 1, null, '데이터 행은 2~2000개여야 합니다(지금 1개)'],
     ['주, a, b\n1, 1, 1\n2, 2', 3, null, '칸이 3개여야 하는데 2개입니다'],
     ['주, a\n1, 1\n2, 1,000', 3, null, '칸이 2개여야 하는데 3개입니다'],
     ['주, a\n, 1\n2, 2', 2, 1, '레이블이 비어 있습니다'],

@@ -6,6 +6,7 @@ import {
   CLIP_FULL,
   CLIP_PAD,
   labelStride,
+  strokeWidthFor,
   toPoints,
   VIEW,
 } from './chartGeometry';
@@ -143,6 +144,13 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
 
   const width = useElementWidth(innerRef);
   const stride = labelStride(count, width);
+  const strokeWidth = strokeWidthFor(count);
+  // One bucket per pixel of the plot, at most two points each.
+  const buckets = Math.max(50, Math.round(width));
+  const paths = useMemo(
+    () => series.map((s) => toPoints(s.values, domain, buckets)),
+    [series, domain, buckets]
+  );
   const tickLabels = domain.ticks.map((tick) => formatValue(tick, unit));
   useYLabelWidth(frameRef, plotRef, tickLabels.join('|'));
 
@@ -191,8 +199,9 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
                 {series.map((s, k) => (
                   <Line
                     key={k}
-                    points={toPoints(s.values, domain)}
+                    points={paths[k]}
                     stroke={color(PALETTE[k], AHEAD_ALPHA)}
+                    style={{ strokeWidth }}
                     vectorEffect="non-scaling-stroke"
                   />
                 ))}
@@ -201,8 +210,9 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
                 {series.map((s, k) => (
                   <Line
                     key={k}
-                    points={toPoints(s.values, domain)}
+                    points={paths[k]}
                     stroke={color(PALETTE[k])}
+                    style={{ strokeWidth }}
                     vectorEffect="non-scaling-stroke"
                   />
                 ))}

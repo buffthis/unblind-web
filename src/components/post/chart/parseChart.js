@@ -12,7 +12,9 @@ const SEPARATOR = '---';
 const MIN_SERIES = 1;
 const MAX_SERIES = 6;
 const MIN_ROWS = 2;
-const MAX_ROWS = 200;
+// A line chart thins what it draws (see chartGeometry), so it can take far more rows
+// than a bar chart, which draws every one.
+const MAX_ROWS = 2000;
 // A single bar still reads as a value, and past 40 groups the bars get too thin to hover.
 // Dot charts share these limits.
 const BAR_MIN_ROWS = 1;
