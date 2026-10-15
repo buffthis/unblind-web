@@ -12,11 +12,17 @@ export function niceStep(span) {
 
 // Explicit min/max win; otherwise the axis starts at min(0, data) and rounds outward
 // to a nice step, so lines rarely touch the frame by accident. A bar chart also
-// reaches up to zero, because a bar is drawn from zero.
+// reaches up to zero, because a bar is drawn from zero. A reference line or range
+// counts as data, so it is always on the axis.
 export function computeDomain(
-  values,
-  { min = null, max = null, type = 'line' } = {}
+  data,
+  { min = null, max = null, type = 'line', limit = null, band = null } = {}
 ) {
+  const values = [
+    ...data,
+    ...(limit ? [limit.value] : []),
+    ...(band ? [band.from, band.to] : []),
+  ];
   let low = min ?? Math.min(0, ...values);
   let high = max ?? Math.max(type === 'bar' ? 0 : -Infinity, ...values);
   if (high <= low) {

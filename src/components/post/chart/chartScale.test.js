@@ -29,6 +29,17 @@ describe('computeDomain', () => {
       { min: 50, max: 51, ticks: [50, 50.25, 50.5, 50.75, 51] },
     ],
     [[-5, -2], { type: 'bar' }, { min: -6, max: 0, ticks: [-6, -4, -2, 0] }],
+    // A reference line or range always fits on the axis.
+    [
+      [10, 20],
+      { limit: { value: 256, label: '한도' } },
+      { min: 0, max: 300, ticks: [0, 100, 200, 300] },
+    ],
+    [
+      [10, 20],
+      { band: { from: -30, to: 40, label: '기준 구간' } },
+      { min: -40, max: 40, ticks: [-40, -20, 0, 20, 40] },
+    ],
   ])('maps %j with %j to %j', (values, settings, expected) => {
     expect(computeDomain(values, settings)).toEqual(expected);
   });

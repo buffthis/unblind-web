@@ -1,7 +1,13 @@
-const SETTING_KEYS = ['title', 'unit', 'min', 'max', 'type'];
+const SETTING_KEYS = ['title', 'unit', 'min', 'max', 'type', 'limit', 'band'];
 const TYPES = ['line', 'bar'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
 const NUMBER = /^-?\d+(\.\d+)?$/;
+const NUMBER_TEXT = '-?\\d+(?:\\.\\d+)?';
+const LIMIT_VALUE = new RegExp(`^(${NUMBER_TEXT})(?:\\s+(.+))?$`);
+const BAND_VALUE = new RegExp(
+  `^(${NUMBER_TEXT})\\s*~\\s*(${NUMBER_TEXT})(?:\\s+(.+))?$`
+);
+const MAX_GUIDE_LABEL = 20;
 const SEPARATOR = '---';
 const MIN_SERIES = 1;
 const MAX_SERIES = 6;
@@ -11,6 +17,10 @@ const MAX_ROWS = 200;
 const BAR_MIN_ROWS = 1;
 const BAR_MAX_ROWS = 40;
 const TOO_LARGE = '값이 너무 큽니다';
+const LIMIT_FORMAT =
+  'limit은 "숫자 이름" 형식이어야 합니다(예: limit: 256 한도)';
+const BAND_FORMAT =
+  'band는 "시작~끝 이름" 형식이어야 합니다(예: band: 200~256 권장 구간)';
 
 class ChartSyntaxError extends Error {
   constructor(line, column, message) {
@@ -62,6 +72,60 @@ function rejectBlankLines(lines, offset) {
   });
 }
 
+function toNumber(text, line) {
+  const number = Number(text);
+  if (!Number.isFinite(number)) fail(line, null, TOO_LARGE);
+  return number;
+}
+
+function guideLabel(text, fallback, line) {
+  const label = text?.trim() || fallback;
+  if (label.length > MAX_GUIDE_LABEL) {
+    fail(line, null, `이름은 ${MAX_GUIDE_LABEL}자까지 쓸 수 있습니다`);
+  }
+  return label;
+}
+
+// An explicit min or max fixes the axis, so a guide outside it could not be drawn.
+// The error points at whichever of the two lines came later.
+function checkGuidesInRange(settings, lineOf) {
+  const { min, max, limit, band } = settings;
+  const at = (key, bound) => Math.max(lineOf[key], lineOf[bound]);
+  if (limit) {
+    if (min != null && limit.value < min) {
+      fail(
+        at('limit', 'min'),
+        null,
+        `limit(${limit.value})이 min(${min})보다 작습니다`
+      );
+    }
+    if (max != null && limit.value > max) {
+      fail(
+        at('limit', 'max'),
+        null,
+        `limit(${limit.value})이 max(${max})보다 큽니다`
+      );
+    }
+  }
+  if (band) {
+    const range = `band(${band.from}~${band.to})`;
+    if (min != null && band.from < min) {
+      fail(
+        at('band', 'min'),
+        null,
+        `${range}가 min(${min})보다 작은 곳까지 내려갑니다`
+      );
+    }
+    if (max != null && band.to > max) {
+      fail(
+        at('band', 'max'),
+        null,
+        `${range}가 max(${max})보다 큰 곳까지 올라갑니다`
+      );
+    }
+  }
+}
+
 function parseSettings(lines) {
   const settings = {};
   const lineOf = {};
@@ -85,6 +149,24 @@ function parseSettings(lines) {
       const number = Number(value);
       if (!Number.isFinite(number)) fail(line, null, TOO_LARGE);
       settings[key] = number;
+    } else if (key === 'limit') {
+      const match = value.match(LIMIT_VALUE);
+      if (!match) fail(line, null, LIMIT_FORMAT);
+      settings.limit = {
+        value: toNumber(match[1], line),
+        label: guideLabel(match[2], '한도', line),
+      };
+    } else if (key === 'band') {
+      const match = value.match(BAND_VALUE);
+      if (!match) fail(line, null, BAND_FORMAT);
+      const from = toNumber(match[1], line);
+      const to = toNumber(match[2], line);
+      if (to <= from) fail(line, null, 'band의 끝값은 시작값보다 커야 합니다');
+      settings.band = {
+        from,
+        to,
+        label: guideLabel(match[3], '기준 구간', line),
+      };
     } else if (key === 'type' && !TYPES.includes(value)) {
       fail(
         line,
@@ -112,6 +194,7 @@ function parseSettings(lines) {
   ) {
     fail(Math.max(lineOf.min, lineOf.max), null, 'max는 min보다 커야 합니다');
   }
+  checkGuidesInRange(settings, lineOf);
   return settings;
 }
 
@@ -226,6 +309,8 @@ function parse(rawText) {
     min: settings.min ?? null,
     max: settings.max ?? null,
     type: settings.type ?? 'line',
+    limit: settings.limit ?? null,
+    band: settings.band ?? null,
     ...table,
   };
 }

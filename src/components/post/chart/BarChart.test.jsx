@@ -112,6 +112,24 @@ describe('BarChart', () => {
     ).toBeInTheDocument();
   });
 
+  it('draws a reference line and range with their names and values', () => {
+    const c = renderChart({
+      ...chart,
+      limit: { value: 40, label: '정원' },
+      band: { from: 10, to: 20, label: '적정 인원' },
+    });
+    const limit = c.container.querySelector('[data-role="limit"]');
+    expect(parseFloat(limit.style.top)).toBeCloseTo(10);
+    expect(limit).toHaveTextContent('정원 40명');
+    const band = c.container.querySelector('[data-role="range"]');
+    expect(parseFloat(band.style.top)).toBeCloseTo(30);
+    expect(parseFloat(band.style.height)).toBeCloseTo(10);
+    expect(band).toHaveTextContent('적정 인원 10~20명');
+    expect(
+      screen.getByRole('table', { name: '팀별 인원' }).querySelector('caption')
+    ).toHaveTextContent('정원 40명, 적정 인원 10~20명');
+  });
+
   it('falls back to a generic name without a title', () => {
     renderChart({ ...chart, title: null });
     expect(

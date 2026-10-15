@@ -50,6 +50,13 @@ describe('LineChart', () => {
     );
   });
 
+  it('draws a reference line across the plot', () => {
+    const { container } = renderChart({ limit: { value: 80, label: '목표' } });
+    const limit = container.querySelector('[data-role="limit"]');
+    expect(parseFloat(limit.style.top)).toBeCloseTo(20);
+    expect(limit).toHaveTextContent('목표 80%');
+  });
+
   it('labels the y axis with formatted ticks', () => {
     renderChart();
     ['0%', '25%', '50%', '75%', '100%'].forEach((tick) => {

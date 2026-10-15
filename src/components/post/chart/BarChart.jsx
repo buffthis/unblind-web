@@ -12,8 +12,10 @@ import {
   Figure,
   Frame,
   Inner,
+  LimitGuide,
   PALETTE,
   Plot,
+  RangeGuide,
   Title,
   topOf,
   useElementWidth,
@@ -200,6 +202,7 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
               data-role="band"
               style={{ width: `${100 / count}%` }}
             />
+            <RangeGuide chart={chart} domain={domain} />
             {labels.map((label, i) => (
               <Column
                 key={i}
@@ -228,6 +231,7 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
                 })}
               </Column>
             ))}
+            <LimitGuide chart={chart} domain={domain} />
           </Inner>
         </BarPlot>
         <XAxis aria-hidden="true" data-axis="x">

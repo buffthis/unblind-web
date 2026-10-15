@@ -23,6 +23,8 @@ describe('parseChart', () => {
         min: 0,
         max: 100,
         type: 'line',
+        limit: null,
+        band: null,
         xLabel: '주',
         labels: ['3/8', '3/15'],
         series: [
@@ -86,6 +88,80 @@ describe('parseChart', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('reads a reference line with its name', () => {
+    const result = parseChart('limit: 256 메모리 한도\n---\n주, a\n1, 1\n2, 2');
+    expect(result.chart.limit).toEqual({ value: 256, label: '메모리 한도' });
+  });
+
+  it('names a reference line 한도 when no name is given', () => {
+    const result = parseChart('limit: -1.5\n---\n주, a\n1, 1\n2, 2');
+    expect(result.chart.limit).toEqual({ value: -1.5, label: '한도' });
+  });
+
+  it('reads a reference range with its name', () => {
+    const result = parseChart(
+      'band: -10 ~ -5 정상 범위\n---\n주, a\n1, 1\n2, 2'
+    );
+    expect(result.chart.band).toEqual({
+      from: -10,
+      to: -5,
+      label: '정상 범위',
+    });
+  });
+
+  it('names a reference range 기준 구간 when no name is given', () => {
+    const result = parseChart('band: 200~256\n---\n주, a\n1, 1\n2, 2');
+    expect(result.chart.band).toEqual({
+      from: 200,
+      to: 256,
+      label: '기준 구간',
+    });
+  });
+
+  it.each([
+    [
+      'limit: 한도\n---\n주, a\n1, 1\n2, 2',
+      1,
+      null,
+      'limit은 "숫자 이름" 형식이어야 합니다(예: limit: 256 한도)',
+    ],
+    [
+      'band: 200\n---\n주, a\n1, 1\n2, 2',
+      1,
+      null,
+      'band는 "시작~끝 이름" 형식이어야 합니다(예: band: 200~256 권장 구간)',
+    ],
+    [
+      'band: 256~200\n---\n주, a\n1, 1\n2, 2',
+      1,
+      null,
+      'band의 끝값은 시작값보다 커야 합니다',
+    ],
+    [
+      `limit: 1 ${'가'.repeat(21)}\n---\n주, a\n1, 1\n2, 2`,
+      1,
+      null,
+      '이름은 20자까지 쓸 수 있습니다',
+    ],
+    [
+      'max: 100\nlimit: 300\n---\n주, a\n1, 1\n2, 2',
+      2,
+      null,
+      'limit(300)이 max(100)보다 큽니다',
+    ],
+    [
+      'band: -5~5\nmin: 0\n---\n주, a\n1, 1\n2, 2',
+      2,
+      null,
+      'band(-5~5)가 min(0)보다 작은 곳까지 내려갑니다',
+    ],
+  ])(
+    'rejects guide setting %j at line %i column %s',
+    (text, line, column, message) => {
+      expect(errorOf(text)).toEqual({ line, column, message });
+    }
+  );
+
   it.each([
     ['', 1, null, '차트 데이터가 비어 있습니다'],
     [
@@ -122,13 +198,13 @@ describe('parseChart', () => {
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max, type만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',

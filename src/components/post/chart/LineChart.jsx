@@ -18,8 +18,10 @@ import {
   Figure,
   Frame,
   Inner,
+  LimitGuide,
   PALETTE,
   Plot,
+  RangeGuide,
   Title,
   useElementWidth,
   useYLabelWidth,
@@ -164,6 +166,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
         >
           <YGrid domain={domain} labels={tickLabels} />
           <Inner ref={innerRef} data-role="plot-inner">
+            <RangeGuide chart={chart} domain={domain} />
             <Svg
               viewBox={`0 0 ${VIEW} ${VIEW}`}
               preserveAspectRatio="none"
@@ -205,6 +208,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
                 ))}
               </g>
             </Svg>
+            <LimitGuide chart={chart} domain={domain} />
             <Crosshair ref={crosshairRef} data-role="crosshair" />
             {series.map((s, k) => (
               <Point

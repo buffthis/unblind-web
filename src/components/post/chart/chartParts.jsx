@@ -302,12 +302,112 @@ export function ChartLegend({ series }) {
   );
 }
 
+// The text each guide shows, e.g. "한도 256MB" and "권장 구간 200~256MB".
+export function guideTexts({ limit, band, unit }) {
+  return {
+    limit: limit && `${limit.label} ${formatValue(limit.value, unit)}`,
+    band:
+      band &&
+      `${band.label} ${formatValue(band.from, '')}~${formatValue(band.to, unit)}`,
+  };
+}
+
+// A guide's name sits just above its upper edge, or just below it when that edge
+// is too close to the top of the plot to leave room.
+const LABEL_FLIP = 12;
+
+const GuideLabel = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: ${({ theme }) => theme.colors.inkSoft};
+
+  &[data-below='true'] {
+    top: 3px;
+    bottom: auto;
+  }
+`;
+
+const LimitLine = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed ${({ theme }) => theme.colors.inkSoft};
+  pointer-events: none;
+`;
+
+const RangeShade = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(107, 118, 132, 0.09);
+  pointer-events: none;
+`;
+
+const RangeEdge = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+`;
+
+function labelBelow(value, domain) {
+  return parseFloat(topOf(value, domain)) < LABEL_FLIP;
+}
+
+// Drawn over the data so bars and lines never hide it.
+export function LimitGuide({ chart, domain }) {
+  if (!chart.limit) return null;
+  return (
+    <LimitLine
+      data-role="limit"
+      aria-hidden="true"
+      style={{ top: topOf(chart.limit.value, domain) }}
+    >
+      <GuideLabel data-below={String(labelBelow(chart.limit.value, domain))}>
+        {guideTexts(chart).limit}
+      </GuideLabel>
+    </LimitLine>
+  );
+}
+
+// Drawn under the data, as a backdrop. Its name hangs off the upper edge, outside
+// the shade, so a thin range still has room for it.
+export function RangeGuide({ chart, domain }) {
+  if (!chart.band) return null;
+  const { from, to } = chart.band;
+  const top = topOf(to, domain);
+  return (
+    <RangeShade
+      data-role="range"
+      aria-hidden="true"
+      style={{
+        top,
+        height: `${((to - from) / (domain.max - domain.min)) * 100}%`,
+      }}
+    >
+      <RangeEdge>
+        <GuideLabel data-below={String(labelBelow(to, domain))}>
+          {guideTexts(chart).band}
+        </GuideLabel>
+      </RangeEdge>
+    </RangeShade>
+  );
+}
+
 export function ChartTable({ id, name, chart }) {
   const { xLabel, labels, series, unit } = chart;
+  const guides = Object.values(guideTexts(chart)).filter(Boolean);
   return (
     <HiddenBox>
       <HiddenTable id={id} aria-label={name}>
-        <caption>{name}</caption>
+        <caption>
+          {guides.length > 0 ? `${name}. ${guides.join(', ')}` : name}
+        </caption>
         <thead>
           <tr>
             <th scope="col">{xLabel}</th>
