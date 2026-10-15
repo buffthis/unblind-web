@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
-// KaTeX and highlight.js are most of the article bundle, and most posts use neither,
-// so each is fetched the first time a post needs it and kept for the rest of the visit.
+// KaTeX, highlight.js and the diagram renderer are most of the article bundle, and most
+// posts use none of them, so each is fetched the first time a post needs it and kept
+// for the rest of the visit.
 
 // remark-math only reads $$ (single dollars stay text), so $$ is the whole signal.
 const MATH = /\$\$/;
 // A fence opening with a language, also inside quotes and list items.
 const FENCE = /^[ \t>*+\-\d.)]*(?:`{3,}|~{3,})[ \t]*([^\s`]+)/gm;
 // Blocks drawn from their raw text never reach the highlighter's output.
-export const PLAIN_TEXT = ['chart', 'tree', 'math'];
+export const PLAIN_TEXT = ['chart', 'tree', 'mermaid', 'math'];
 
 export function neededPlugins(content) {
   const languages = Array.from(content.matchAll(FENCE), (match) => match[1]);
@@ -30,6 +31,9 @@ const LOADERS = {
       import('rehype-highlight'),
       import('highlight.js/styles/github.css'),
     ]).then(([module]) => [module.default, { plainText: PLAIN_TEXT }]),
+  // Not a rehype plugin: MermaidBlock calls it to draw each mermaid block.
+  mermaid: () =>
+    import('beautiful-mermaid').then((module) => module.renderMermaidSVG),
 };
 
 const pending = {};

@@ -13,6 +13,7 @@ describe('neededPlugins', () => {
     ['- ```bash\n  ls\n  ```', { math: false, code: true }],
     ['```chart\n월, a\n1월, 1\n```', { math: false, code: false }],
     ['```tree\na/\n```', { math: false, code: false }],
+    ['```mermaid\nflowchart TD\n```', { math: false, code: false }],
     ['```\nno language\n```', { math: false, code: false }],
     ['`inline` code only', { math: false, code: false }],
   ])('reads %j as %j', (content, expected) => {
