@@ -5,6 +5,13 @@ on:
     branches:
       - main
 
+# Every run swaps the same staging and live folders on the instance, so two runs
+# at once can move each other's files away. A running deploy always finishes; a
+# newer push replaces any run still waiting, so only the latest one deploys next.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
