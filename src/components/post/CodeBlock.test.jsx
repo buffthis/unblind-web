@@ -33,6 +33,41 @@ function lineNumber(container, n) {
 }
 
 describe('CodeBlock', () => {
+  it('scrolls the whole row sideways, so the scrollbar spans the box under the line numbers', () => {
+    const { container } = renderBlock('hljs language-java', 'a\nb');
+
+    const pre = container.querySelector('pre');
+    const scroller = pre.parentElement.parentElement;
+    expect(scroller).toHaveStyle({ overflowX: 'auto' });
+    expect(scroller).toContainElement(
+      container.querySelector('[aria-hidden="true"]')
+    );
+    expect(pre).not.toHaveStyle({ overflowX: 'auto' });
+  });
+
+  it('keeps the line numbers in place while the code scrolls under them', () => {
+    const { container } = renderBlock('hljs language-java', 'a\nb');
+
+    expect(container.querySelector('[aria-hidden="true"]')).toHaveStyle({
+      position: 'sticky',
+      left: '0px',
+    });
+  });
+
+  it('marks the active line behind the line numbers too', () => {
+    const { container } = renderBlock('hljs language-java', 'a\nb\nc');
+
+    fireEvent.click(lineNumber(container, 2));
+
+    const gutter = container.querySelector('[aria-hidden="true"]');
+    expect(gutter).toContainElement(screen.getByTestId('active-line-gutter'));
+    expect(screen.getByTestId('active-line-gutter')).toHaveStyle({
+      top: '36px',
+      height: '20px',
+    });
+    expect(screen.getByTestId('active-line')).toHaveStyle({ top: '36px' });
+  });
+
   it('numbers each line without counting the trailing newline', () => {
     const { container } = renderBlock(
       'hljs language-java',

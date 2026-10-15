@@ -144,12 +144,15 @@ const Body = styled.div`
     border-radius: 4px;
   }
 
-  /* highlight.js sets pre code.hljs padding; this selector outranks it regardless of load order. */
+  /* highlight.js sets pre code.hljs padding and its own horizontal scroll; this selector
+     outranks it regardless of load order. The pre scrolls instead (see CodeBlock), so
+     the scrollbar sits at the bottom edge of the box, under the padding. */
   pre code,
   pre code.hljs {
     padding: 0;
     background: none;
     font-size: inherit;
+    overflow: visible;
   }
 
   img {

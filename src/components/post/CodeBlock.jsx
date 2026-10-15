@@ -6,6 +6,7 @@ const COPIED_RESET_MS = 1500;
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 const LINE_HEIGHT = 20;
 const BLOCK_PADDING = 16;
+const SURFACE = '#fafafa';
 // replaceState does not fire hashchange, so blocks hear about line anchors through this.
 const LINE_ANCHOR_EVENT = 'codelineanchor';
 
@@ -14,7 +15,7 @@ const Wrapper = styled.div`
   margin: 24px 0;
   border-radius: 8px;
   /* The page is white, so the box sits one step below it to read as its own surface. */
-  background: #fafafa;
+  background: ${SURFACE};
   /* A 1px ring instead of a border, so the radius stays crisp, plus a faint lift. */
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.08),
@@ -81,13 +82,24 @@ const IconLayer = styled.span`
         `}
 `;
 
+// The whole row scrolls sideways, so the scrollbar spans the box. The line numbers
+// hold still (see Gutter) while the code slides under them.
 const Body = styled.div`
   position: relative;
-  display: flex;
+  overflow-x: auto;
+  scrollbar-width: thin;
   font-family: ${CODE_FONT};
   font-size: 13px;
   line-height: ${LINE_HEIGHT}px;
   color: #171717;
+`;
+
+// As wide as the longest line, but never narrower than the box.
+const Row = styled.div`
+  position: relative;
+  display: flex;
+  width: max-content;
+  min-width: 100%;
 `;
 
 const ActiveLine = styled.div`
@@ -99,8 +111,13 @@ const ActiveLine = styled.div`
   pointer-events: none;
 `;
 
+// Sticky, with the box's own color so code passing under it is hidden. The active
+// line is drawn once more inside it, since the full-width one is covered here.
 const Gutter = styled.div`
-  position: relative;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: ${SURFACE};
   flex: none;
   display: flex;
   flex-direction: column;
@@ -114,6 +131,7 @@ const Gutter = styled.div`
 `;
 
 const LineNumber = styled.button`
+  position: relative;
   height: ${LINE_HEIGHT}px;
   padding: 0 16px 0 0;
   border: none;
@@ -126,11 +144,9 @@ const LineNumber = styled.button`
 
 const Pre = styled.pre`
   position: relative;
-  flex: 1;
-  min-width: 0;
+  flex: 1 0 auto;
   margin: 0;
   padding: ${BLOCK_PADDING}px ${BLOCK_PADDING}px ${BLOCK_PADDING}px 0;
-  overflow-x: auto;
   font: inherit;
 
   @media (max-width: 600px) {
@@ -359,37 +375,46 @@ export default function CodeBlock({ children }) {
     setHoveredLine(line >= 1 && line <= lineCount ? line : null);
   };
 
+  const activeLineStyle = activeRange && {
+    top: BLOCK_PADDING + (activeRange.start - 1) * LINE_HEIGHT,
+    height: (activeRange.end - activeRange.start + 1) * LINE_HEIGHT,
+  };
+
   return (
     <Wrapper ref={wrapperRef}>
       <Body
         onMouseMove={handlePointerMove}
         onMouseLeave={() => setHoveredLine(null)}
       >
-        {activeRange && (
-          <ActiveLine
-            data-testid="active-line"
-            style={{
-              top: BLOCK_PADDING + (activeRange.start - 1) * LINE_HEIGHT,
-              height: (activeRange.end - activeRange.start + 1) * LINE_HEIGHT,
-            }}
-          />
-        )}
-        <Gutter aria-hidden="true">
-          {Array.from({ length: lineCount }, (_, i) => (
-            <LineNumber
-              key={i}
-              type="button"
-              tabIndex={-1}
-              $hovered={hoveredLine === i + 1}
-              // Shift would otherwise extend the page's text selection on press.
-              onMouseDown={(event) => event.shiftKey && event.preventDefault()}
-              onClick={(event) => handleLineClick(event, i + 1)}
-            >
-              {i + 1}
-            </LineNumber>
-          ))}
-        </Gutter>
-        <Pre ref={preRef}>{children}</Pre>
+        <Row>
+          {activeRange && (
+            <ActiveLine data-testid="active-line" style={activeLineStyle} />
+          )}
+          <Gutter aria-hidden="true">
+            {activeRange && (
+              <ActiveLine
+                data-testid="active-line-gutter"
+                style={activeLineStyle}
+              />
+            )}
+            {Array.from({ length: lineCount }, (_, i) => (
+              <LineNumber
+                key={i}
+                type="button"
+                tabIndex={-1}
+                $hovered={hoveredLine === i + 1}
+                // Shift would otherwise extend the page's text selection on press.
+                onMouseDown={(event) =>
+                  event.shiftKey && event.preventDefault()
+                }
+                onClick={(event) => handleLineClick(event, i + 1)}
+              >
+                {i + 1}
+              </LineNumber>
+            ))}
+          </Gutter>
+          <Pre ref={preRef}>{children}</Pre>
+        </Row>
       </Body>
       <CopyButton
         type="button"
