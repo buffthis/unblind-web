@@ -31,6 +31,13 @@ const basePost = {
   author: { id: 7, username: 'hyeongjun', name: '형준' },
 };
 
+// What useUser returns for the author: a profile with no photo and no careers.
+const profile = (user = {}) => ({
+  user: { profileImage: { url: '' }, careers: [], ...user },
+  loading: false,
+  error: false,
+});
+
 function renderPage() {
   return render(
     <HelmetProvider>
@@ -47,21 +54,15 @@ function renderPage() {
 
 beforeEach(() => {
   usePost.mockReset();
-  useUser.mockReset().mockReturnValue({
-    user: { profileImage: { url: '' } },
-    loading: false,
-    error: false,
-  });
+  useUser.mockReset().mockReturnValue(profile());
   useAuth.mockReturnValue({ user: null, loading: false });
 });
 
 describe('PostPage', () => {
   it('puts the author profile photo to the left of the name and date', () => {
-    useUser.mockReturnValue({
-      user: { profileImage: { url: 'https://example.com/me.png' } },
-      loading: false,
-      error: false,
-    });
+    useUser.mockReturnValue(
+      profile({ profileImage: { url: 'https://example.com/me.png' } })
+    );
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     const { container } = renderPage();
 
@@ -69,12 +70,68 @@ describe('PostPage', () => {
     const photo = container.querySelector('header img');
     expect(photo).toHaveAttribute('src', 'https://example.com/me.png');
     expect(photo).toHaveAttribute('alt', '');
-    expect(photo).toHaveAttribute('width', '35');
+    expect(photo).toHaveAttribute('width', '33');
     const name = within(container.querySelector('header')).getByRole('link', {
       name: '형준',
     });
     expect(
       photo.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows the job under the name and the date at the right end of the row', () => {
+    useUser.mockReturnValue(
+      profile({
+        careers: [
+          { endDate: '2024-06-28', position: '옛 직무' },
+          { endDate: null, position: '백엔드 개발자' },
+        ],
+      })
+    );
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    const { container } = renderPage();
+
+    const header = within(container.querySelector('header'));
+    const name = header.getByRole('link', { name: '형준' });
+    const job = header.getByText('백엔드 개발자');
+    const date = header.getByText('2026.10.01');
+    expect(name.parentElement.contains(job)).toBe(true);
+    expect(header.queryByText('옛 직무')).toBeNull();
+    expect(name.parentElement.contains(date)).toBe(false);
+    expect(
+      name.compareDocumentPosition(date) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows only the name on the left when the author has no current job', () => {
+    useUser.mockReturnValue(
+      profile({
+        careers: [
+          { endDate: '2024-06-28', position: '옛 직무' },
+          { endDate: null, position: '' },
+        ],
+      })
+    );
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    const { container } = renderPage();
+
+    const header = within(container.querySelector('header'));
+    const name = header.getByRole('link', { name: '형준' });
+    expect(name.parentElement.textContent).toBe('형준');
+    expect(header.getByText('2026.10.01')).toBeInTheDocument();
+  });
+
+  it('puts the date just before the edit button for the owner', () => {
+    useAuth.mockReturnValue({ user: { id: 7 }, loading: false });
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    const { container } = renderPage();
+
+    const header = within(container.querySelector('header'));
+    const date = header.getByText('2026.10.01');
+    const edit = header.getByRole('link', { name: '수정' });
+    expect(date.parentElement).toBe(edit.parentElement);
+    expect(
+      date.compareDocumentPosition(edit) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 

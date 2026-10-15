@@ -20,7 +20,7 @@ import { splitThumbnail } from '@utils/thumbnail';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 import { POST_EDITOR_ENABLED } from '@/config';
 
@@ -119,30 +119,62 @@ const Meta = styled.div`
 `;
 
 const Byline = styled.div`
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 `;
 
+// A long job title is cut with an ellipsis instead of pushing the edit button away.
+const Job = styled.span`
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
 const AuthorLink = styled(Link)`
-  font-size: 14px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 17.5px;
+  line-height: 16.5px;
   color: ${({ theme }) => theme.colors.inkSub};
+`;
+
+// The light small text under the name (the job) and at the right end (the date).
+// With the name's 16.5px line, the 16px line keeps the two lines about 5.5px apart.
+const subtleText = css`
+  font-size: 12.6px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  line-height: 16px;
+  color: ${({ theme }) => theme.colors.inkMuted};
 `;
 
 const MetaDetails = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 300;
-  line-height: 17.5px;
-  color: ${({ theme }) => theme.colors.inkMuted};
+  ${subtleText}
+`;
+
+const PostDate = styled.time`
+  white-space: nowrap;
+  ${subtleText}
+`;
+
+// The date and the edit button stay at the right end and never shrink, so a long
+// job title is the one that gives way.
+const MetaAside = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
 `;
 
 const EditLink = styled(Link)`
-  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 4px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
@@ -264,6 +296,8 @@ export default function PostPage() {
   const description = (post.subtitle || content).slice(0, 80);
   const author =
     post.author?.name && post.author?.username ? post.author : null;
+  // The job title of the author's current career (one with no end date).
+  const job = authorProfile.careers.find((career) => !career.endDate)?.position;
   const canEdit =
     POST_EDITOR_ENABLED && user != null && post.author?.id === user.id;
 
@@ -291,7 +325,7 @@ export default function PostPage() {
               {author && (
                 <Avatar
                   src={authorProfile.profileImage?.url}
-                  size={35}
+                  size={33}
                   borderWidth={0.75}
                 />
               )}
@@ -301,15 +335,20 @@ export default function PostPage() {
                     {author.name}
                   </AuthorLink>
                 )}
-                <MetaDetails>
-                  <time dateTime={post.createdAt}>
-                    {formatDate(post.createdAt)}
-                  </time>
-                </MetaDetails>
+                {job && (
+                  <MetaDetails>
+                    <Job>{job}</Job>
+                  </MetaDetails>
+                )}
               </Byline>
-              {canEdit && (
-                <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
-              )}
+              <MetaAside>
+                <PostDate dateTime={post.createdAt}>
+                  {formatDate(post.createdAt)}
+                </PostDate>
+                {canEdit && (
+                  <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
+                )}
+              </MetaAside>
             </Meta>
           </header>
 
