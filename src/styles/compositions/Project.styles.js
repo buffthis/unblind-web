@@ -36,7 +36,7 @@ export const ProjectCard = styled.div`
 
 export const ProjectImageContainer = styled.div`
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: ${({ $ratio }) => $ratio || '4 / 3'};
   overflow: hidden;
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);

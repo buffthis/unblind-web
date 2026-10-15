@@ -30,7 +30,7 @@ export default function PostCard({ post }) {
 
   const body = (
     <>
-      <ProjectImageContainer>
+      <ProjectImageContainer $ratio="16 / 9">
         <HoverImage
           baseImage={thumbnail.src}
           alt={post.title}
