@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   fetchEditablePost,
+  fetchPostById,
+  fetchPosts,
+  isExternalPost,
   savePost,
   toSaveError,
   uploadImage,
@@ -29,6 +32,36 @@ beforeEach(() => {
   client.get.mockReset();
   client.post.mockReset();
   client.patch.mockReset();
+});
+
+// Posts that only pointed to an outside blog are no longer shown anywhere.
+describe('external posts', () => {
+  it('drops them from the post list along with hidden posts', async () => {
+    client.get.mockResolvedValue({
+      data: [
+        { id: 1, externalUrl: 'https://velog.io/@a/1' },
+        { id: 2, externalUrl: null },
+        { id: 3, externalUrl: '' },
+        { id: 4, hidden: true },
+      ],
+    });
+    expect((await fetchPosts()).map((post) => post.id)).toEqual([2, 3]);
+  });
+
+  it('treats one as not found when opened by its address', async () => {
+    client.get.mockResolvedValue({
+      data: { id: 1, content: '', externalUrl: 'https://velog.io/@a/1' },
+    });
+    await expect(fetchPostById(1)).rejects.toMatchObject({
+      code: 'POST_NOT_FOUND',
+    });
+  });
+
+  it('tells them apart by a non-empty externalUrl', () => {
+    expect(isExternalPost({ externalUrl: 'https://a.b' })).toBe(true);
+    expect(isExternalPost({ externalUrl: '' })).toBe(false);
+    expect(isExternalPost({})).toBe(false);
+  });
 });
 
 describe('fetchEditablePost', () => {

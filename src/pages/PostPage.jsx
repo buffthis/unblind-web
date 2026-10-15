@@ -14,7 +14,6 @@ import usePost from '@hooks/usePost';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
-import { toSafeHttpUrl } from '@utils/url';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
@@ -173,18 +172,6 @@ const AuthorCard = styled.div`
   }
 `;
 
-const ExternalNotice = styled.p`
-  margin-top: 40px;
-  font-size: 15px;
-  line-height: 24px;
-  color: ${({ theme }) => theme.colors.inkSub};
-
-  a {
-    color: ${({ theme }) => theme.colors.accent};
-    text-decoration: underline;
-  }
-`;
-
 const ErrorState = styled.div`
   width: 100%;
   text-align: center;
@@ -260,7 +247,6 @@ export default function PostPage() {
     );
   }
 
-  const externalUrl = toSafeHttpUrl(post.externalUrl);
   const tags = normalizeTags(post.tags);
   const description = (post.subtitle || content).slice(0, 80);
   const author =
@@ -314,7 +300,7 @@ export default function PostPage() {
             />
           )}
 
-          {content ? (
+          {content && (
             <ArticleArea>
               <PostArticle
                 ref={articleRef}
@@ -323,15 +309,6 @@ export default function PostPage() {
                 entrance={entrance ? BODY_ENTRANCE : undefined}
               />
             </ArticleArea>
-          ) : (
-            externalUrl && (
-              <ExternalNotice>
-                이 포스트의 본문은 외부 블로그에 있습니다.{' '}
-                <a href={externalUrl} target="_blank" rel="noopener noreferrer">
-                  원문 보러가기
-                </a>
-              </ExternalNotice>
-            )
           )}
 
           {author && (

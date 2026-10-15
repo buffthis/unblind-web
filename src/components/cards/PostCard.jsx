@@ -9,7 +9,6 @@ import {
   ProjectTitle,
 } from '@styles/compositions/Project.styles';
 import { formatDate } from '@utils/format';
-import { toSafeHttpUrl } from '@utils/url';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -20,18 +19,11 @@ const cardLinkStyle = css`
   text-decoration: none;
 `;
 
-const ExternalLink = styled.a`
+const CardLink = styled(Link)`
   ${cardLinkStyle}
 `;
 
-const InternalLink = styled(Link)`
-  ${cardLinkStyle}
-`;
-
-// 외부 블로그 글은 새 탭으로, 그 외에는 내부 포스트 상세 페이지로 연결한다.
 export default function PostCard({ post }) {
-  const externalUrl = toSafeHttpUrl(post.externalUrl);
-  // 외부 블로그 글은 프리페치할 상세 데이터가 없으므로 내부 링크에만 적용한다.
   const prefetchHandlers = useHoverPrefetch(usePrefetchPost(post.id));
 
   const body = (
@@ -57,19 +49,9 @@ export default function PostCard({ post }) {
 
   return (
     <ProjectCard $width="256px">
-      {externalUrl ? (
-        <ExternalLink
-          href={externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {body}
-        </ExternalLink>
-      ) : (
-        <InternalLink to={`/posts/${post.id}`} {...prefetchHandlers}>
-          {body}
-        </InternalLink>
-      )}
+      <CardLink to={`/posts/${post.id}`} {...prefetchHandlers}>
+        {body}
+      </CardLink>
     </ProjectCard>
   );
 }

@@ -10,6 +10,7 @@ import { useLoadingHold } from '@components/common/loadingRun';
 import { Section, SectionTitle } from '@components/common/Section';
 import Header from '@components/header/Header';
 import { useAuth } from '@contexts/AuthContext';
+import { isExternalPost } from '@apis/postApi';
 import useUser from '@hooks/useUser';
 import NotFoundPage from '@pages/NotFoundPage';
 import { PulseAnimation, ScrollAnimation } from '@styles/AnimationStyles';
@@ -217,11 +218,13 @@ export default function UserPage() {
         {isMe && <Link to="/posts/new">글쓰기</Link>}
 
         <ProjectList>
-          {user.posts.map((post, index) => (
-            <ScrollAnimation key={post.id ?? index} delay={0.3}>
-              <PostCard post={post} />
-            </ScrollAnimation>
-          ))}
+          {user.posts
+            .filter((post) => !isExternalPost(post))
+            .map((post, index) => (
+              <ScrollAnimation key={post.id ?? index} delay={0.3}>
+                <PostCard post={post} />
+              </ScrollAnimation>
+            ))}
         </ProjectList>
       </Section>
 

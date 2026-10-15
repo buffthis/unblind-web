@@ -116,24 +116,6 @@ describe('PostPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('falls back to the external link when there is no content', () => {
-    usePost.mockReturnValue({
-      post: {
-        ...basePost,
-        content: '',
-        externalUrl: 'https://shady-dev.tistory.com/1',
-      },
-      loading: false,
-      error: false,
-    });
-    renderPage();
-
-    expect(screen.getByRole('link', { name: '원문 보러가기' })).toHaveAttribute(
-      'href',
-      'https://shady-dev.tistory.com/1'
-    );
-  });
-
   it('shows the error state when the post is missing', () => {
     usePost.mockReturnValue({ post: null, loading: false, error: true });
     renderPage();

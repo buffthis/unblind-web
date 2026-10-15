@@ -1,7 +1,6 @@
 import { fetchPosts } from '@apis/postApi';
 import { fetchUsersCursor } from '@apis/userApi';
 import { useQuery } from '@tanstack/react-query';
-import { toSafeHttpUrl } from '@utils/url';
 import { useMemo } from 'react';
 
 const SEARCH_PAGE_SIZE = 50;
@@ -48,20 +47,15 @@ export function buildEntries(users, posts) {
 
   const postEntries = posts
     .filter((post) => post.id != null)
-    .map((post) => {
-      const externalUrl = toSafeHttpUrl(post.externalUrl);
-      return {
-        id: `post-${post.id}`,
-        type: 'post',
-        title: post.title || '',
-        subtitle: post.subtitle || '',
-        keywords: [],
-        image: post.thumbnail?.url || '',
-        action: externalUrl
-          ? { href: externalUrl }
-          : { to: `/posts/${post.id}` },
-      };
-    });
+    .map((post) => ({
+      id: `post-${post.id}`,
+      type: 'post',
+      title: post.title || '',
+      subtitle: post.subtitle || '',
+      keywords: [],
+      image: post.thumbnail?.url || '',
+      action: { to: `/posts/${post.id}` },
+    }));
 
   return [...userEntries, ...postEntries];
 }
