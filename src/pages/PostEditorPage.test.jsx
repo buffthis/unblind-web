@@ -88,6 +88,26 @@ describe('PostEditorPage', () => {
     );
   });
 
+  it('splits #border off a saved thumbnail into the switch', async () => {
+    useAuth.mockReturnValue({ user: { id: 7 }, loading: false });
+    fetchEditablePost.mockResolvedValue({
+      id: 3,
+      title: '숨긴 글',
+      content: '본문',
+      thumbnail: { url: 'https://i.imgur.com/a.png#border' },
+      author: { id: 7, username: 'me', name: '나' },
+    });
+    renderAt('/posts/3/edit');
+
+    expect(await screen.findByDisplayValue('숨긴 글')).toBeInTheDocument();
+    expect(screen.getByLabelText('썸네일 이미지 URL')).toHaveValue(
+      'https://i.imgur.com/a.png'
+    );
+    expect(
+      screen.getByRole('checkbox', { name: '썸네일 테두리' })
+    ).toBeChecked();
+  });
+
   it("refuses to edit someone else's post", async () => {
     useAuth.mockReturnValue({ user: { id: 7 }, loading: false });
     fetchEditablePost.mockResolvedValue({

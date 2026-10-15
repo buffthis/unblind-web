@@ -14,6 +14,7 @@ import usePost from '@hooks/usePost';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
+import { splitThumbnail } from '@utils/thumbnail';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
@@ -153,6 +154,10 @@ const Thumbnail = styled.img`
   aspect-ratio: 16 / 9;
   object-fit: cover;
   ${riseIn(4)}
+
+  &[data-border] {
+    border: 1px solid #ececec;
+  }
 `;
 
 const ArticleArea = styled.div`
@@ -248,6 +253,7 @@ export default function PostPage() {
   }
 
   const tags = normalizeTags(post.tags);
+  const thumbnail = splitThumbnail(post.thumbnail?.url);
   const description = (post.subtitle || content).slice(0, 80);
   const author =
     post.author?.name && post.author?.username ? post.author : null;
@@ -293,10 +299,11 @@ export default function PostPage() {
             </Meta>
           </header>
 
-          {post.thumbnail?.url && (
+          {thumbnail.src && (
             <Thumbnail
-              src={post.thumbnail.url}
+              src={thumbnail.src}
               alt={post.thumbnail.altText || ''}
+              data-border={thumbnail.border ? '' : undefined}
             />
           )}
 

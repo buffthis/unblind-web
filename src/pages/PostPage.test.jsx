@@ -49,6 +49,32 @@ beforeEach(() => {
 });
 
 describe('PostPage', () => {
+  it('draws the thumbnail without #border and with a border when it carries it', () => {
+    usePost.mockReturnValue({
+      post: {
+        ...basePost,
+        thumbnail: {
+          url: 'https://i.imgur.com/a.png#border',
+          altText: '썸네일',
+        },
+      },
+      loading: false,
+      error: false,
+    });
+    renderPage();
+
+    const thumbnail = screen.getByAltText('썸네일');
+    expect(thumbnail).toHaveAttribute('src', 'https://i.imgur.com/a.png');
+    expect(thumbnail).toHaveAttribute('data-border');
+  });
+
+  it('draws a plain thumbnail without a border', () => {
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    expect(screen.getByAltText('썸네일')).not.toHaveAttribute('data-border');
+  });
+
   it('shows the title before the thumbnail', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();

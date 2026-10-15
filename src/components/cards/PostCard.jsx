@@ -9,6 +9,7 @@ import {
   ProjectTitle,
 } from '@styles/compositions/Project.styles';
 import { formatDate } from '@utils/format';
+import { splitThumbnail } from '@utils/thumbnail';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -24,15 +25,17 @@ const CardLink = styled(Link)`
 `;
 
 export default function PostCard({ post }) {
+  const thumbnail = splitThumbnail(post.thumbnail?.url);
   const prefetchHandlers = useHoverPrefetch(usePrefetchPost(post.id));
 
   const body = (
     <>
       <ProjectImageContainer>
         <HoverImage
-          baseImage={post.thumbnail?.url}
+          baseImage={thumbnail.src}
           alt={post.title}
           showButton={false}
+          bordered={thumbnail.border}
         />
       </ProjectImageContainer>
       <ProjectContent>

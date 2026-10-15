@@ -138,6 +138,69 @@ describe('PostEditorForm', () => {
     expect(localStorage.getItem('post-draft:new')).toBeNull();
   });
 
+  it('saves the thumbnail border as #border on the address', async () => {
+    savePost.mockResolvedValue({ id: 7 });
+    renderForm();
+    type('제목', '제목');
+    type('본문', '## 소개');
+    type('썸네일 이미지 URL', 'https://i.imgur.com/a.png');
+    fireEvent.click(screen.getByRole('checkbox', { name: '썸네일 테두리' }));
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+    expect(await screen.findByText('상세 페이지')).toBeInTheDocument();
+    expect(savePost.mock.calls[0][0].values).toEqual({
+      title: '제목',
+      subtitle: '',
+      thumbnailUrl: 'https://i.imgur.com/a.png#border',
+      content: '## 소개',
+    });
+  });
+
+  it('keeps the border switch on a saved thumbnail when saving again', async () => {
+    savePost.mockResolvedValue({ id: 7 });
+    renderForm({
+      postId: 7,
+      initialValues: {
+        ...empty,
+        title: '제목',
+        content: '본문',
+        thumbnailUrl: 'https://i.imgur.com/a.png',
+        thumbnailBorder: true,
+      },
+      initialThumbnailUrl: 'https://i.imgur.com/a.png#border',
+    });
+
+    expect(
+      screen.getByRole('checkbox', { name: '썸네일 테두리' })
+    ).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(1));
+    expect(savePost.mock.calls[0][0]).toMatchObject({
+      values: { thumbnailUrl: 'https://i.imgur.com/a.png#border' },
+      initialThumbnailUrl: 'https://i.imgur.com/a.png#border',
+    });
+  });
+
+  it('turns the border off by clearing the switch', async () => {
+    savePost.mockResolvedValue({ id: 7 });
+    renderForm({
+      initialValues: {
+        ...empty,
+        title: '제목',
+        content: '본문',
+        thumbnailUrl: 'https://i.imgur.com/a.png',
+        thumbnailBorder: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: '썸네일 테두리' }));
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+    await waitFor(() => expect(savePost).toHaveBeenCalledTimes(1));
+    expect(savePost.mock.calls[0][0].values.thumbnailUrl).toBe(
+      'https://i.imgur.com/a.png'
+    );
+  });
+
   it('does not report a failure when only clearing the draft fails after a successful save', async () => {
     const removeItem = vi
       .spyOn(Storage.prototype, 'removeItem')

@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
 import { tagLimitError } from '@utils/tags';
+import { joinThumbnail, splitThumbnail } from '@utils/thumbnail';
 import React, {
   useDeferredValue,
   useLayoutEffect,
@@ -57,6 +58,20 @@ const Field = styled.label`
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     font: inherit;
     outline: none;
+  }
+`;
+
+const CheckField = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.secondary};
+  cursor: pointer;
+
+  input {
+    margin: 0;
   }
 `;
 
@@ -382,11 +397,19 @@ export default function PostEditorForm({
     setSaving(true);
     setFormError(null);
 
+    // The border switch is stored on the thumbnail address, not as a field of its own.
+    const { thumbnailBorder, ...rest } = values;
+    const typed = splitThumbnail(values.thumbnailUrl.trim());
+    const storedThumbnail = joinThumbnail(
+      typed.src,
+      Boolean(thumbnailBorder) || typed.border
+    );
+
     let saved;
     try {
       saved = await savePost({
         postId,
-        values: { ...values, thumbnailUrl: values.thumbnailUrl.trim() },
+        values: { ...rest, thumbnailUrl: storedThumbnail },
         hidden,
         initialThumbnailUrl: thumbnailBaseline,
       });
@@ -405,7 +428,7 @@ export default function PostEditorForm({
       setDirty(false);
       // Hidden saves keep the form mounted in edit mode, so the baseline must follow the save.
       setThumbnailBaseline(
-        saved.thumbnail?.url ?? (values.thumbnailUrl.trim() || undefined)
+        saved.thumbnail?.url ?? (storedThumbnail || undefined)
       );
       await Promise.all(
         [['post'], ['posts'], ['user'], ['post-edit']].map((queryKey) =>
@@ -478,6 +501,19 @@ export default function PostEditorForm({
           <FieldError>{fieldErrors.thumbnailUrl}</FieldError>
         )}
       </Field>
+      <CheckField>
+        <input
+          type="checkbox"
+          checked={Boolean(values.thumbnailBorder)}
+          onChange={(event) =>
+            setValues((prev) => ({
+              ...prev,
+              thumbnailBorder: event.target.checked,
+            }))
+          }
+        />
+        썸네일 테두리
+      </CheckField>
 
       <Tabs role="tablist">
         <ActionButton

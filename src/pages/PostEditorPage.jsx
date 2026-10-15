@@ -5,6 +5,7 @@ import PostEditorForm from '@components/post/PostEditorForm';
 import { useAuth } from '@contexts/AuthContext';
 import { draftKey } from '@hooks/usePostDraft';
 import { formatTags } from '@utils/tags';
+import { splitThumbnail } from '@utils/thumbnail';
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -16,6 +17,7 @@ const EMPTY_VALUES = {
   subtitle: '',
   tags: '',
   thumbnailUrl: '',
+  thumbnailBorder: false,
   content: '',
 };
 
@@ -40,11 +42,13 @@ const Notice = styled.p`
 `;
 
 function toFormValues(post) {
+  const thumbnail = splitThumbnail(post.thumbnail?.url);
   return {
     title: post.title || '',
     subtitle: post.subtitle || '',
     tags: formatTags(post.tags),
-    thumbnailUrl: post.thumbnail?.url || '',
+    thumbnailUrl: thumbnail.src,
+    thumbnailBorder: thumbnail.border,
     content: post.content || '',
   };
 }
