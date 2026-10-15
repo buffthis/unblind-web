@@ -1,4 +1,8 @@
 import Avatar from '@components/common/Avatar';
+import {
+  HEADER_ICON_BORDER,
+  HEADER_ICON_SIZE,
+} from '@components/common/iconButton';
 import LoginButton from '@components/header/LoginButton';
 import ProfileDropdown from '@components/header/ProfileDropdown';
 import React from 'react';
@@ -26,8 +30,8 @@ const AvatarButton = styled.button`
 `;
 
 const Placeholder = styled.div`
-  width: 30px;
-  height: 30px;
+  width: ${HEADER_ICON_SIZE}px;
+  height: ${HEADER_ICON_SIZE}px;
 `;
 
 export default function ProfileSection({
@@ -56,7 +60,11 @@ export default function ProfileSection({
         aria-expanded={isDropdownOpen}
         aria-label="프로필 메뉴"
       >
-        <Avatar src={user.profileImage?.url} size={30} />
+        <Avatar
+          src={user.profileImage?.url}
+          size={HEADER_ICON_SIZE}
+          borderWidth={HEADER_ICON_BORDER}
+        />
       </AvatarButton>
       {isDropdownOpen && (
         <ProfileDropdown

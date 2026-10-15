@@ -41,6 +41,14 @@ describe('WriteButton', () => {
     );
   });
 
+  it('shows only the pen icon, without a text label', () => {
+    renderButton();
+
+    const link = screen.getByRole('link', { name: '글쓰기' });
+    expect(link).toHaveTextContent('');
+    expect(link.querySelector('svg')).not.toBeNull();
+  });
+
   it('is hidden from visitors who are not signed in', () => {
     useAuth.mockReturnValue({ user: null });
     renderButton();

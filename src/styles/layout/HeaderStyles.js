@@ -51,7 +51,7 @@ export const HeaderSide = styled.div`
   display: flex;
   align-items: center;
   justify-content: ${({ $justify }) => $justify || 'flex-start'};
-  gap: 16px;
+  gap: 8px;
 `;
 
 export const LogoLink = styled(Link)`
