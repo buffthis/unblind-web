@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 
 const LANGUAGE_CLASS = /language-([\w-]+)/;
@@ -24,10 +24,9 @@ const Wrapper = styled.div`
   overflow: hidden;
 `;
 
-const CopyButton = styled.button`
+const FloatingButton = styled.button`
   position: absolute;
   top: 16px;
-  right: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,6 +53,20 @@ const CopyButton = styled.button`
   /* Touch screens never hover, so the button would otherwise stay invisible. */
   @media (hover: none) {
     opacity: 1;
+  }
+`;
+
+const CopyButton = styled(FloatingButton)`
+  right: 16px;
+`;
+
+// Beside the copy button (16px edge, 32px button, 8px gap). Like it, shown on hover,
+// so it never sits over the code; darker while wrapping is on.
+const WrapButton = styled(FloatingButton)`
+  right: 56px;
+
+  &[aria-pressed='true'] {
+    background: #ebebeb;
   }
 `;
 
@@ -94,12 +107,20 @@ const Body = styled.div`
   color: #171717;
 `;
 
-// As wide as the longest line, but never narrower than the box.
+// Unwrapped, as wide as the longest line but never narrower than the box. Wrapped,
+// exactly the box, so lines break instead of scrolling.
 const Row = styled.div`
   position: relative;
   display: flex;
-  width: max-content;
-  min-width: 100%;
+  ${({ $wrap }) =>
+    $wrap
+      ? css`
+          width: 100%;
+        `
+      : css`
+          width: max-content;
+          min-width: 100%;
+        `}
 `;
 
 const ActiveLine = styled.div`
@@ -132,6 +153,9 @@ const Gutter = styled.div`
 
 const LineNumber = styled.button`
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
   height: ${LINE_HEIGHT}px;
   padding: 0 16px 0 0;
   border: none;
@@ -144,7 +168,17 @@ const LineNumber = styled.button`
 
 const Pre = styled.pre`
   position: relative;
-  flex: 1 0 auto;
+  ${({ $wrap }) =>
+    $wrap
+      ? css`
+          flex: 1 1 0;
+          min-width: 0;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        `
+      : css`
+          flex: 1 0 auto;
+        `}
   margin: 0;
   padding: ${BLOCK_PADDING}px ${BLOCK_PADDING}px ${BLOCK_PADDING}px 0;
   font: inherit;
@@ -185,6 +219,20 @@ function CopyIcon() {
         d="M10.5 3.5V3A1.5 1.5 0 0 0 9 1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5"
         fill="none"
         stroke="currentColor"
+      />
+    </svg>
+  );
+}
+
+function WrapIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path
+        d="M2.5 4h11M2.5 8h8.5a2.25 2.25 0 0 1 0 4.5H7.5M2.5 12.5H5M9 10.5 7 12.5l2 2"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -272,6 +320,89 @@ function readActiveRange(blockId, lineCount) {
   return start >= 1 && end <= lineCount ? { start, end } : null;
 }
 
+// A wrapped line takes several rows, and highlighted code is not split into line
+// elements, so each line is measured through a range over its own characters.
+function measureLineRows(pre, lineCount) {
+  const nodes = [];
+  let total = 0;
+  const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    nodes.push({ node, start: total });
+    total += node.length;
+  }
+  const locate = (offset) => {
+    const found =
+      nodes.find(({ node, start }) => offset <= start + node.length) ??
+      nodes[nodes.length - 1];
+    return (
+      found && [found.node, Math.min(offset - found.start, found.node.length)]
+    );
+  };
+
+  const lines = pre.textContent.split('\n').slice(0, lineCount);
+  let offset = 0;
+  return lines.map((line) => {
+    const start = locate(offset);
+    const end = locate(offset + line.length);
+    offset += line.length + 1;
+    if (!start || !end || line === '') return 1;
+    const range = document.createRange();
+    range.setStart(...start);
+    range.setEnd(...end);
+    // Boxes less than half a line apart still belong to the same row.
+    const tops = [];
+    Array.from(range.getClientRects?.() ?? [])
+      .map((rect) => rect.top)
+      .sort((a, b) => a - b)
+      .forEach((top) => {
+        if (
+          tops.length === 0 ||
+          top - tops[tops.length - 1] > LINE_HEIGHT / 2
+        ) {
+          tops.push(top);
+        }
+      });
+    return Math.max(1, tops.length);
+  });
+}
+
+// Heights of the lines while wrapping is on, or null when every line is one row.
+function useWrappedLineHeights(preRef, wrap, lineCount, text) {
+  const [heights, setHeights] = useState(null);
+
+  useLayoutEffect(() => {
+    const pre = preRef.current;
+    if (!wrap || !pre) {
+      setHeights(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const measure = () => {
+      if (cancelled) return;
+      const next = measureLineRows(pre, lineCount).map(
+        (rows) => rows * LINE_HEIGHT
+      );
+      setHeights((current) =>
+        current && current.join() === next.join() ? current : next
+      );
+    };
+    measure();
+    // The rows change with the box width and once web fonts settle.
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    observer?.observe(pre);
+    document.fonts?.ready.then(measure);
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+    };
+  }, [preRef, wrap, lineCount, text]);
+
+  return heights;
+}
+
 function useActiveRange(blockId, lineCount) {
   const [range, setRange] = useState(() => readActiveRange(blockId, lineCount));
 
@@ -294,10 +425,19 @@ export default function CodeBlock({ children }) {
   const preRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [hoveredLine, setHoveredLine] = useState(null);
+  const [wrap, setWrap] = useState(false);
   const text = trimFinalNewline(textOf(children));
   const lineCount = text.split('\n').length;
   const blockId = blockIdOf(text);
   const activeRange = useActiveRange(blockId, lineCount);
+  const wrappedHeights = useWrappedLineHeights(preRef, wrap, lineCount, text);
+  const heightOf = (i) => wrappedHeights?.[i] ?? LINE_HEIGHT;
+  // Distance from the top of the code to the top of line `index` (zero-based).
+  const offsetOf = (index) =>
+    Array.from({ length: index }, (_, i) => heightOf(i)).reduce(
+      (sum, height) => sum + height,
+      0
+    );
   // The line a plain click picked; shift-clicks stretch the range from here.
   const anchorLineRef = useRef(null);
 
@@ -370,14 +510,20 @@ export default function CodeBlock({ children }) {
   // Highlighted code is not split into line elements, so the line comes from the pointer height.
   const handlePointerMove = (event) => {
     const top = event.currentTarget.getBoundingClientRect().top;
-    const line =
-      Math.floor((event.clientY - top - BLOCK_PADDING) / LINE_HEIGHT) + 1;
-    setHoveredLine(line >= 1 && line <= lineCount ? line : null);
+    const y = event.clientY - top - BLOCK_PADDING;
+    let line = null;
+    for (let i = 0; i < lineCount; i += 1) {
+      if (y >= offsetOf(i) && y < offsetOf(i + 1)) {
+        line = i + 1;
+        break;
+      }
+    }
+    setHoveredLine(line);
   };
 
   const activeLineStyle = activeRange && {
-    top: BLOCK_PADDING + (activeRange.start - 1) * LINE_HEIGHT,
-    height: (activeRange.end - activeRange.start + 1) * LINE_HEIGHT,
+    top: BLOCK_PADDING + offsetOf(activeRange.start - 1),
+    height: offsetOf(activeRange.end) - offsetOf(activeRange.start - 1),
   };
 
   return (
@@ -386,7 +532,7 @@ export default function CodeBlock({ children }) {
         onMouseMove={handlePointerMove}
         onMouseLeave={() => setHoveredLine(null)}
       >
-        <Row>
+        <Row $wrap={wrap}>
           {activeRange && (
             <ActiveLine data-testid="active-line" style={activeLineStyle} />
           )}
@@ -403,6 +549,7 @@ export default function CodeBlock({ children }) {
                 type="button"
                 tabIndex={-1}
                 $hovered={hoveredLine === i + 1}
+                style={{ height: heightOf(i) }}
                 // Shift would otherwise extend the page's text selection on press.
                 onMouseDown={(event) =>
                   event.shiftKey && event.preventDefault()
@@ -413,9 +560,19 @@ export default function CodeBlock({ children }) {
               </LineNumber>
             ))}
           </Gutter>
-          <Pre ref={preRef}>{children}</Pre>
+          <Pre ref={preRef} $wrap={wrap}>
+            {children}
+          </Pre>
         </Row>
       </Body>
+      <WrapButton
+        type="button"
+        aria-label="줄바꿈"
+        aria-pressed={wrap}
+        onClick={() => setWrap((on) => !on)}
+      >
+        <WrapIcon />
+      </WrapButton>
       <CopyButton
         type="button"
         aria-label={copied ? '복사됨' : '복사'}

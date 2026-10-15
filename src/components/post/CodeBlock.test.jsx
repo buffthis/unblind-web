@@ -24,6 +24,7 @@ function stubClipboard(writeText) {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   delete navigator.clipboard;
   window.history.replaceState(null, '', '/');
 });
@@ -33,6 +34,62 @@ function lineNumber(container, n) {
 }
 
 describe('CodeBlock', () => {
+  it('has a wrap switch that starts off and wraps long lines when pressed', () => {
+    const { container } = renderBlock('hljs language-java', 'a\nb');
+    const pre = container.querySelector('pre');
+    const row = pre.parentElement;
+
+    const toggle = screen.getByRole('button', {
+      name: '줄바꿈',
+      pressed: false,
+    });
+    expect(pre).toHaveStyle({ whiteSpace: 'pre' });
+    expect(row).toHaveStyle({ width: 'max-content' });
+
+    fireEvent.click(toggle);
+
+    expect(
+      screen.getByRole('button', { name: '줄바꿈', pressed: true })
+    ).toBeInTheDocument();
+    expect(pre).toHaveStyle({
+      whiteSpace: 'pre-wrap',
+      overflowWrap: 'anywhere',
+    });
+    expect(row).toHaveStyle({ width: '100%' });
+  });
+
+  it('gives each line number the height of its wrapped line, and the marked line follows', () => {
+    // Lines 1 to 3 take 1, 2 and 1 rows once wrapped.
+    const rows = [1, 2, 1];
+    let call = 0;
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      const count = rows[call++ % rows.length];
+      return {
+        setStart: () => {},
+        setEnd: () => {},
+        getClientRects: () =>
+          Array.from({ length: count }, (_, k) => ({
+            top: k * 20,
+            height: 15,
+            width: 10,
+          })),
+      };
+    });
+    const { container } = renderBlock('hljs language-java', 'a\nb\nc');
+    expect(lineNumber(container, 2)).toHaveStyle({ height: '20px' });
+
+    fireEvent.click(screen.getByRole('button', { name: '줄바꿈' }));
+
+    expect(lineNumber(container, 1)).toHaveStyle({ height: '20px' });
+    expect(lineNumber(container, 2)).toHaveStyle({ height: '40px' });
+    expect(lineNumber(container, 3)).toHaveStyle({ height: '20px' });
+    fireEvent.click(lineNumber(container, 3));
+    expect(screen.getByTestId('active-line')).toHaveStyle({
+      top: '76px',
+      height: '20px',
+    });
+  });
+
   it('scrolls the whole row sideways, so the scrollbar spans the box under the line numbers', () => {
     const { container } = renderBlock('hljs language-java', 'a\nb');
 
