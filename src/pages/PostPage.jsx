@@ -91,30 +91,38 @@ const Subtitle = styled.p`
   ${riseIn(1)}
 `;
 
+const TAG_GAP = 5;
+
 const TagList = styled.ul`
   display: flex;
   flex-wrap: wrap;
-  margin-top: 16px;
+  margin-top: 8px;
+  /* Takes back the space under the last row, so the list ends where its tags end. */
+  margin-bottom: -${TAG_GAP}px;
   list-style: none;
   ${riseIn(2)}
 `;
 
 const Tag = styled.li`
-  margin: 0 6px 6px 0;
-  padding: 0 8px;
-  border-radius: 6px;
+  margin: 0 ${TAG_GAP}px ${TAG_GAP}px 0;
+  padding: 0 7px;
+  border-radius: 5px;
   background: ${({ theme }) => theme.colors.inkSurface};
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 460;
-  line-height: 22px;
+  line-height: 19px;
   color: ${({ theme }) => theme.colors.inkSoft};
 `;
+
+// The photo sits 0.75px inside the 34.5px byline row, so a 31.25px margin leaves the
+// photo 32px from whatever is above it and below it.
+const BYLINE_GAP = 31.25;
 
 const Meta = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 24px;
+  margin-top: ${BYLINE_GAP}px;
   ${riseIn(3)}
 `;
 
@@ -184,7 +192,7 @@ const EditLink = styled(Link)`
 
 const Thumbnail = styled.img`
   width: 100%;
-  margin-top: 40px;
+  margin-top: ${BYLINE_GAP}px;
   border-radius: ${({ theme }) => theme.radius.md};
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -197,6 +205,11 @@ const Thumbnail = styled.img`
 
 const ArticleArea = styled.div`
   margin-top: 40px;
+
+  /* With no thumbnail the body follows the byline directly. */
+  header + & {
+    margin-top: ${BYLINE_GAP}px;
+  }
 `;
 
 const AuthorCard = styled.div`
