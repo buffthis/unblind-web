@@ -10,6 +10,26 @@ export function niceStep(span) {
   return round(factor * power);
 }
 
+// A dot sits on its value rather than growing from zero, so its axis may start
+// anywhere. This share of the data span is added on each side so no dot sits on the
+// edge of the plot.
+const DOT_MARGIN = 0.1;
+
+function dotRange(values) {
+  let low = Math.min(...values);
+  let high = Math.max(...values);
+  if (high === low) {
+    low -= 0.5;
+    high += 0.5;
+  }
+  const margin = (high - low) * DOT_MARGIN;
+  // The margin never carries an axis across zero that the data does not cross.
+  return [
+    low >= 0 ? Math.max(0, low - margin) : low - margin,
+    high <= 0 ? Math.min(0, high + margin) : high + margin,
+  ];
+}
+
 // Explicit min/max win; otherwise the axis starts at min(0, data) and rounds outward
 // to a nice step, so lines rarely touch the frame by accident. A bar chart also
 // reaches up to zero, because a bar is drawn from zero. A reference line or range
@@ -23,8 +43,15 @@ export function computeDomain(
     ...(limit ? [limit.value] : []),
     ...(band ? [band.from, band.to] : []),
   ];
-  let low = min ?? Math.min(0, ...values);
-  let high = max ?? Math.max(type === 'bar' ? 0 : -Infinity, ...values);
+  const [dataLow, dataHigh] =
+    type === 'dot'
+      ? dotRange(values)
+      : [
+          Math.min(0, ...values),
+          Math.max(type === 'bar' ? 0 : -Infinity, ...values),
+        ];
+  let low = min ?? dataLow;
+  let high = max ?? dataHigh;
   if (high <= low) {
     if (max == null) high = low + 1;
     else low = high - 1;

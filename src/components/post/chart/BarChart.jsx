@@ -32,6 +32,7 @@ const GROUP = 0.6;
 const BAR_GAP = 2;
 const MAX_BAR = 40;
 const RADIUS = 3;
+const DOT = 10;
 const DIM_ALPHA = 0.35;
 const GROW = '0.6s cubic-bezier(0.22, 1, 0.36, 1)';
 // The last bar starts growing at most this long after the first.
@@ -90,6 +91,22 @@ const Bar = styled.div`
   }
 `;
 
+// A dot marks its value by position alone, so it pops in where it sits instead of
+// growing from zero. The white ring keeps neighbouring series apart where they overlap.
+const DotMark = styled.div`
+  position: absolute;
+  width: ${DOT}px;
+  height: ${DOT}px;
+  margin: -${DOT / 2}px 0 0 -${DOT / 2}px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #fff;
+  transition: transform ${GROW};
+
+  [data-grown='false'] & {
+    transform: scale(0);
+  }
+`;
+
 // Every bar shares one width: the group's share of the row split across the series,
 // capped so a chart with few rows does not turn into slabs.
 function barWidth(count, seriesCount) {
@@ -121,19 +138,23 @@ function useGrowIn(rootRef, reduced, skipDrawIn, onDrawn) {
   return grown;
 }
 
+// Also draws dot charts (type: dot): the same rows, hover and layout, with a dot at
+// each value in place of a bar.
 export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
   const { title, unit, labels, series } = chart;
+  const dot = chart.type === 'dot';
   const count = labels.length;
   const domain = useMemo(
     () =>
       computeDomain(
         series.flatMap((s) => s.values),
-        { ...chart, type: 'bar' }
+        { ...chart, type: dot ? 'dot' : 'bar' }
       ),
-    [chart, series]
+    [chart, series, dot]
   );
   const tableId = `chart-table-${useId().replace(/:/g, '')}`;
-  const name = title ?? '막대 그래프';
+  const kind = dot ? '점 그래프' : '막대 그래프';
+  const name = title ?? kind;
 
   const rootRef = useRef(null);
   const frameRef = useRef(null);
@@ -214,6 +235,21 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
               >
                 {series.map((s, k) => {
                   const value = s.values[i];
+                  const delay = `${Math.round(i * step)}ms`;
+                  if (dot) {
+                    return (
+                      <DotMark
+                        key={k}
+                        data-role="dot"
+                        style={{
+                          left: `calc(${barLeft(i, k, count, series.length)} + var(--bar-width) / 2)`,
+                          top: topOf(value, domain),
+                          background: color(PALETTE[k]),
+                          transitionDelay: delay,
+                        }}
+                      />
+                    );
+                  }
                   return (
                     <Bar
                       key={k}
@@ -224,7 +260,7 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
                         top: topOf(Math.max(value, 0), domain),
                         height: `${(Math.abs(value) / span) * 100}%`,
                         background: color(PALETTE[k]),
-                        transitionDelay: `${Math.round(i * step)}ms`,
+                        transitionDelay: delay,
                       }}
                     />
                   );
@@ -245,11 +281,7 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
         </XAxis>
       </Frame>
       <ChartLegend series={series} />
-      <ChartTable
-        id={tableId}
-        name={title ?? '막대 그래프 데이터'}
-        chart={chart}
-      />
+      <ChartTable id={tableId} name={title ?? `${kind} 데이터`} chart={chart} />
     </Figure>
   );
 }

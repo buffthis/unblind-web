@@ -118,6 +118,17 @@ describe('parseChart', () => {
     });
   });
 
+  it('lets a dot chart start its axis above zero, with up to 40 rows', () => {
+    const result = parseChart(
+      `type: dot\nmin: 900\n---\n주, a\n${Array.from(
+        { length: 40 },
+        (_, i) => `${i + 1}, ${950 + i}`
+      ).join('\n')}`
+    );
+    expect(result.ok).toBe(true);
+    expect(result.chart).toMatchObject({ type: 'dot', min: 900 });
+  });
+
   it.each([
     [
       'limit: 한도\n---\n주, a\n1, 1\n2, 2',
@@ -155,6 +166,13 @@ describe('parseChart', () => {
       null,
       'band(-5~5)가 min(0)보다 작은 곳까지 내려갑니다',
     ],
+    [
+      'type: dot\n---\n주, a\n' +
+        Array.from({ length: 41 }, (_, i) => `${i}, 1`).join('\n'),
+      3,
+      null,
+      '데이터 행은 1~40개여야 합니다(지금 41개)',
+    ],
   ])(
     'rejects guide setting %j at line %i column %s',
     (text, line, column, message) => {
@@ -168,7 +186,7 @@ describe('parseChart', () => {
       'type: pie\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "type은 line, bar 중 하나여야 합니다(지금 'pie')",
+      "type은 line, bar, dot 중 하나여야 합니다(지금 'pie')",
     ],
     [
       'type: bar\nmin: 5\n---\n주, a\n1, 6\n2, 7',

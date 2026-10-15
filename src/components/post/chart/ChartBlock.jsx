@@ -56,7 +56,7 @@ export default function ChartBlock({ source, children }) {
       </>
     );
   }
-  const Chart = result.chart.type === 'bar' ? BarChart : LineChart;
+  const Chart = result.chart.type === 'line' ? LineChart : BarChart;
   return (
     <ChartErrorBoundary
       source={source}

@@ -29,6 +29,19 @@ describe('computeDomain', () => {
       { min: 50, max: 51, ticks: [50, 50.25, 50.5, 50.75, 51] },
     ],
     [[-5, -2], { type: 'bar' }, { min: -6, max: 0, ticks: [-6, -4, -2, 0] }],
+    // A dot chart hugs its data with a margin, so small gaps between large values show.
+    [
+      [950, 1000],
+      { type: 'dot' },
+      { min: 940, max: 1020, ticks: [940, 960, 980, 1000, 1020] },
+    ],
+    // ...but the margin never pushes an all-positive axis below zero.
+    [[1, 9], { type: 'dot' }, { min: 0, max: 10, ticks: [0, 2.5, 5, 7.5, 10] }],
+    [
+      [70, 70],
+      { type: 'dot' },
+      { min: 69, max: 71, ticks: [69, 69.5, 70, 70.5, 71] },
+    ],
     // A reference line or range always fits on the axis.
     [
       [10, 20],

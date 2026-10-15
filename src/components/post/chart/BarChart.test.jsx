@@ -112,6 +112,30 @@ describe('BarChart', () => {
     ).toBeInTheDocument();
   });
 
+  it('draws dots placed by value instead of bars for a dot chart', () => {
+    const c = renderChart({
+      ...chart,
+      type: 'dot',
+      min: 0,
+      max: 50,
+      series: [{ name: 'a', values: [10, 20, 30, 40] }],
+    });
+    expect(c.bars()).toHaveLength(0);
+    const dots = c.container.querySelectorAll('[data-role="dot"]');
+    expect(dots).toHaveLength(4);
+    expect(parseFloat(dots[1].style.top)).toBeCloseTo(60);
+    expect(
+      screen.getByRole('figure', { name: '팀별 인원' })
+    ).toBeInTheDocument();
+  });
+
+  it('names an untitled dot chart as one', () => {
+    renderChart({ ...chart, type: 'dot', title: null });
+    expect(
+      screen.getByRole('figure', { name: '점 그래프' })
+    ).toBeInTheDocument();
+  });
+
   it('draws a reference line and range with their names and values', () => {
     const c = renderChart({
       ...chart,

@@ -1,5 +1,5 @@
 const SETTING_KEYS = ['title', 'unit', 'min', 'max', 'type', 'limit', 'band'];
-const TYPES = ['line', 'bar'];
+const TYPES = ['line', 'bar', 'dot'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
 const NUMBER = /^-?\d+(\.\d+)?$/;
 const NUMBER_TEXT = '-?\\d+(?:\\.\\d+)?';
@@ -14,6 +14,7 @@ const MAX_SERIES = 6;
 const MIN_ROWS = 2;
 const MAX_ROWS = 200;
 // A single bar still reads as a value, and past 40 groups the bars get too thin to hover.
+// Dot charts share these limits.
 const BAR_MIN_ROWS = 1;
 const BAR_MAX_ROWS = 40;
 const TOO_LARGE = '값이 너무 큽니다';
@@ -220,7 +221,7 @@ function parseTable(lines, offset, settings) {
   });
 
   const body = lines.slice(1);
-  const bar = settings.type === 'bar';
+  const bar = settings.type === 'bar' || settings.type === 'dot';
   const minRows = bar ? BAR_MIN_ROWS : MIN_ROWS;
   const maxRows = bar ? BAR_MAX_ROWS : MAX_ROWS;
   if (body.length < minRows || body.length > maxRows) {
