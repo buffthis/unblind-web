@@ -8,7 +8,8 @@ const DefaultAvatar = styled.span`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
   border-radius: 50%;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border: ${({ $borderWidth }) => $borderWidth}px solid
+    ${({ theme }) => theme.colors.border};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,7 +22,8 @@ const DefaultAvatar = styled.span`
 // 들어간다. 테두리를 이미지에 걸었던 기존 동작(border-box)과 최종 크기가 같다.
 const Circle = styled(FadeInImage)`
   border-radius: 50%;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border: ${({ $borderWidth }) => $borderWidth}px solid
+    ${({ theme }) => theme.colors.border};
   box-sizing: border-box;
   overflow: hidden;
 `;
@@ -31,6 +33,7 @@ export default function Avatar({
   src,
   alt = '',
   size = 30,
+  borderWidth = 1.5,
   style,
   loading,
   fetchPriority,
@@ -38,6 +41,7 @@ export default function Avatar({
   const fallbackIcon = (
     <DefaultAvatar
       $size={size}
+      $borderWidth={borderWidth}
       style={style}
       role={alt ? 'img' : undefined}
       aria-label={alt || undefined}
@@ -51,6 +55,7 @@ export default function Avatar({
 
   return (
     <Circle
+      $borderWidth={borderWidth}
       src={toAvatarUrl(src, size)}
       fallbackSrc={toDirectImageUrl(src)}
       alt={alt}

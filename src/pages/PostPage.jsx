@@ -1,3 +1,4 @@
+import Avatar from '@components/common/Avatar';
 import Footer from '@components/common/Footer';
 import Loading from '@components/common/Loading';
 import { useLoadingHold } from '@components/common/loadingRun';
@@ -11,6 +12,7 @@ import useArticleHeadings, {
   useScrollToHash,
 } from '@hooks/useArticleHeadings';
 import usePost from '@hooks/usePost';
+import useUser from '@hooks/useUser';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
@@ -111,7 +113,7 @@ const Tag = styled.li`
 const Meta = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   margin-top: 24px;
   ${riseIn(3)}
 `;
@@ -125,7 +127,7 @@ const Byline = styled.div`
 const AuthorLink = styled(Link)`
   font-size: 14px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 17.5px;
   color: ${({ theme }) => theme.colors.inkSub};
 `;
 
@@ -134,7 +136,8 @@ const MetaDetails = styled.div`
   flex-wrap: wrap;
   gap: 6px;
   font-size: 14px;
-  line-height: 20px;
+  font-weight: 300;
+  line-height: 17.5px;
   color: ${({ theme }) => theme.colors.inkMuted};
 `;
 
@@ -217,6 +220,10 @@ export default function PostPage() {
   const { post, loading } = usePost(postId);
   const waiting = useLoadingHold(loading);
   const { user } = useAuth();
+  // The post carries only the author's name, so the profile photo comes from the
+  // profile, which the user page shares through the same query cache entry.
+  const authorUsername = post?.author?.name ? post.author.username : undefined;
+  const { user: authorProfile } = useUser(authorUsername);
   const articleRef = useRef(null);
   const content = post?.content || '';
   const headings = useArticleHeadings(articleRef, content);
@@ -281,6 +288,13 @@ export default function PostPage() {
               </TagList>
             )}
             <Meta>
+              {author && (
+                <Avatar
+                  src={authorProfile.profileImage?.url}
+                  size={35}
+                  borderWidth={0.75}
+                />
+              )}
               <Byline>
                 {author && (
                   <AuthorLink to={`/${author.username}`}>

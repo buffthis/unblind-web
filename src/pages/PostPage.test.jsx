@@ -1,7 +1,8 @@
 import { useAuth } from '@contexts/AuthContext';
 import usePost from '@hooks/usePost';
+import useUser from '@hooks/useUser';
 import theme from '@styles/theme/theme';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -13,6 +14,7 @@ import PostPage from './PostPage';
 vi.mock('@components/header/BasicHeader', () => ({ default: () => null }));
 vi.mock('@components/common/Footer', () => ({ default: () => null }));
 vi.mock('@hooks/usePost', () => ({ default: vi.fn() }));
+vi.mock('@hooks/useUser', () => ({ default: vi.fn() }));
 vi.mock('@contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('@/config', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -45,10 +47,57 @@ function renderPage() {
 
 beforeEach(() => {
   usePost.mockReset();
+  useUser.mockReset().mockReturnValue({
+    user: { profileImage: { url: '' } },
+    loading: false,
+    error: false,
+  });
   useAuth.mockReturnValue({ user: null, loading: false });
 });
 
 describe('PostPage', () => {
+  it('puts the author profile photo to the left of the name and date', () => {
+    useUser.mockReturnValue({
+      user: { profileImage: { url: 'https://example.com/me.png' } },
+      loading: false,
+      error: false,
+    });
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    const { container } = renderPage();
+
+    expect(useUser).toHaveBeenCalledWith('hyeongjun');
+    const photo = container.querySelector('header img');
+    expect(photo).toHaveAttribute('src', 'https://example.com/me.png');
+    expect(photo).toHaveAttribute('alt', '');
+    expect(photo).toHaveAttribute('width', '35');
+    const name = within(container.querySelector('header')).getByRole('link', {
+      name: '형준',
+    });
+    expect(
+      photo.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows the default avatar while the author has no profile photo', () => {
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    const { container } = renderPage();
+
+    expect(container.querySelector('header img')).toBeNull();
+    expect(container.querySelector('header svg')).not.toBeNull();
+  });
+
+  it('shows no avatar when the post has no author', () => {
+    usePost.mockReturnValue({
+      post: { ...basePost, author: null },
+      loading: false,
+      error: false,
+    });
+    const { container } = renderPage();
+
+    expect(useUser).toHaveBeenCalledWith(undefined);
+    expect(container.querySelector('header img, header svg')).toBeNull();
+  });
+
   it('draws the thumbnail without #border and with a border when it carries it', () => {
     usePost.mockReturnValue({
       post: {

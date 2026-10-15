@@ -41,6 +41,28 @@ const S3_AVATAR =
   'https://unblind-kr.s3.ap-northeast-2.amazonaws.com/profile-image/shark.png';
 
 describe('Avatar', () => {
+  it('테두리 두께를 정하지 않으면 1.5px이다', () => {
+    const { container } = renderAvatar({ src: S3_AVATAR, alt: '프로필' });
+
+    expect(container.firstChild).toHaveStyle({ borderWidth: '1.5px' });
+  });
+
+  it('borderWidth로 사진 아바타의 테두리 두께를 바꾼다', () => {
+    const { container } = renderAvatar({
+      src: S3_AVATAR,
+      alt: '프로필',
+      borderWidth: 0.75,
+    });
+
+    expect(container.firstChild).toHaveStyle({ borderWidth: '0.75px' });
+  });
+
+  it('borderWidth는 기본 아이콘 아바타에도 적용된다', () => {
+    const { container } = renderAvatar({ borderWidth: 0.75 });
+
+    expect(container.firstChild).toHaveStyle({ borderWidth: '0.75px' });
+  });
+
   it('imgur 아바타는 표시 크기에 맞는 축소본을 요청한다', () => {
     renderAvatar({
       src: 'https://imgur.com/lnOB0k7.png',
