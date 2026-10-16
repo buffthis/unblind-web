@@ -255,6 +255,46 @@ describe('PostArticle', () => {
     );
   });
 
+  it('sizes an image by a percent or pixel width in the alt text', () => {
+    const { container } = renderArticle(
+      '![절반 | 50%](https://a/b.png)\n\n![고정 | border | 300px | center](https://a/c.png)\n\n![원래](https://a/d.png)'
+    );
+    const [half, fixed, plain] = container.querySelectorAll('img');
+
+    expect(half).toHaveAttribute('alt', '절반');
+    expect(half.style.width).toBe('50%');
+    expect(fixed).toHaveAttribute('alt', '고정');
+    expect(fixed.style.width).toBe('300px');
+    expect(fixed).toHaveAttribute('data-border');
+    expect(fixed).toHaveAttribute('data-center');
+    expect(plain.style.width).toBe('');
+  });
+
+  it('leaves out-of-range or malformed widths in the alt text', () => {
+    const { container } = renderArticle(
+      '![넓게 | 150%](https://a/b.png)\n\n![영 | 0px](https://a/c.png)\n\n![소수 | 12.5%](https://a/d.png)\n\n![단위 | 50em](https://a/e.png)'
+    );
+    const images = [...container.querySelectorAll('img')];
+
+    expect(images.map((image) => image.getAttribute('alt'))).toEqual([
+      '넓게 | 150%',
+      '영 | 0px',
+      '소수 | 12.5%',
+      '단위 | 50em',
+    ]);
+    for (const image of images) expect(image.style.width).toBe('');
+  });
+
+  it('sizes a captioned image through its figure so the caption follows', () => {
+    const { container } = renderArticle(
+      '![차트 | 60%](https://a/b.png "그림 1")'
+    );
+    const figure = container.querySelector('[data-figure]');
+
+    expect(figure.style.width).toBe('60%');
+    expect(figure.querySelector('img').style.width).toBe('100%');
+  });
+
   it('draws a caption under an image with a markdown title', () => {
     const { container } = renderArticle(
       '![차트 | center](https://a/b.png "그림 1. 월별 방문자")'

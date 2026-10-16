@@ -378,16 +378,35 @@ function makeHeading(Tag) {
   };
 }
 
-// Markdown has no image options, so flags go after the alt text: "설명 | border | center".
+// Markdown has no image options, so flags go after the alt text: "설명 | border | center | 50%".
 const IMAGE_FLAGS = ['border', 'center'];
+
+// A width is a whole percent of the column (1 to 100) or a whole number of pixels. The
+// pattern is also what makes the value safe to put in a style attribute.
+function widthOf(part) {
+  const match = /^(\d{1,4})(%|px)$/.exec(part);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (amount < 1 || (match[2] === '%' && amount > 100)) return null;
+  return part;
+}
 
 function parseImageAlt(alt) {
   const parts = (alt || '').split('|').map((part) => part.trim());
   const flags = new Set();
-  while (parts.length > 1 && IMAGE_FLAGS.includes(parts[parts.length - 1])) {
-    flags.add(parts.pop());
+  let width = null;
+  while (parts.length > 1) {
+    const last = parts[parts.length - 1];
+    if (IMAGE_FLAGS.includes(last)) {
+      flags.add(last);
+    } else if (width === null && widthOf(last)) {
+      width = last;
+    } else {
+      break;
+    }
+    parts.pop();
   }
-  return { text: parts.join(' | '), flags };
+  return { text: parts.join(' | '), flags, width };
 }
 
 // A quote starting with [!NOTE] and friends becomes an alert; any other quote stays a quote.
@@ -400,19 +419,25 @@ function Quote({ node: _node, children }) {
 // The markdown title ("![alt](url "caption")") becomes a caption centered under the image.
 // Spans keep the markup valid, since an image sits inside a paragraph.
 function LazyImage({ node: _node, alt, title, ...rest }) {
-  const { text, flags } = parseImageAlt(alt);
+  const { text, flags, width } = parseImageAlt(alt);
   const image = (
     <img
       loading="lazy"
       alt={text}
       data-border={flags.has('border') ? '' : undefined}
       data-center={flags.has('center') ? '' : undefined}
+      // With a caption the figure takes the width and the image fills it.
+      style={width ? { width: title ? '100%' : width } : undefined}
       {...rest}
     />
   );
   if (!title) return image;
   return (
-    <span data-figure="" data-center={flags.has('center') ? '' : undefined}>
+    <span
+      data-figure=""
+      data-center={flags.has('center') ? '' : undefined}
+      style={width ? { width } : undefined}
+    >
       {image}
       <span data-caption="">{title}</span>
     </span>
