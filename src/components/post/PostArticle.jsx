@@ -419,7 +419,16 @@ function LazyImage({ node: _node, alt, title, ...rest }) {
   );
 }
 
-function PreBlock({ node: _node, children }) {
+// The words after the language on the opening fence, so "```mermaid border" gives
+// the set {"border"}. They are flags in the same spirit as an image alt's |border.
+function fenceFlags(node) {
+  const meta = node?.children?.[0]?.data?.meta;
+  return new Set(
+    typeof meta === 'string' ? meta.split(/\s+/).filter(Boolean) : []
+  );
+}
+
+function PreBlock({ node, children }) {
   const language = getLanguage(children);
   if (language === 'chart') {
     return <ChartBlock source={codeText(children)}>{children}</ChartBlock>;
@@ -428,7 +437,14 @@ function PreBlock({ node: _node, children }) {
     return <TreeBlock source={codeText(children)}>{children}</TreeBlock>;
   }
   if (language === 'mermaid') {
-    return <MermaidBlock source={codeText(children)}>{children}</MermaidBlock>;
+    return (
+      <MermaidBlock
+        source={codeText(children)}
+        bordered={fenceFlags(node).has('border')}
+      >
+        {children}
+      </MermaidBlock>
+    );
   }
   return <CodeBlock>{children}</CodeBlock>;
 }

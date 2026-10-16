@@ -18,6 +18,13 @@ const Figure = styled.div`
     height: auto;
     margin: 0 auto;
   }
+
+  /* Same hairline as a bordered image. */
+  &[data-border] {
+    padding: 16px;
+    border: 1px solid #ececec;
+    border-radius: ${({ theme }) => theme.radius.md};
+  }
 `;
 
 function draw(render, source, theme) {
@@ -38,7 +45,7 @@ function draw(render, source, theme) {
 
 // The renderer escapes every label and attribute it writes, so the SVG it returns
 // holds no markup from the post and is safe to insert as HTML.
-export default function MermaidBlock({ source, children }) {
+export default function MermaidBlock({ source, bordered = false, children }) {
   const theme = useTheme();
   const [render, setRender] = useState(() => loadedPlugin('mermaid'));
 
@@ -72,6 +79,10 @@ export default function MermaidBlock({ source, children }) {
     );
   }
   return (
-    <Figure data-diagram="" dangerouslySetInnerHTML={{ __html: result.svg }} />
+    <Figure
+      data-diagram=""
+      data-border={bordered ? '' : undefined}
+      dangerouslySetInnerHTML={{ __html: result.svg }}
+    />
   );
 }

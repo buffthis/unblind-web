@@ -30,6 +30,33 @@ describe('MermaidBlock', () => {
     expect(svg).toHaveTextContent('글쓰기');
   });
 
+  it('frames the diagram when the fence says border', async () => {
+    const { container } = renderArticle(
+      '```mermaid border\nflowchart LR\n  A --> B\n```'
+    );
+
+    const figure = await waitFor(() => {
+      const found = container.querySelector('[data-diagram]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    expect(figure).toHaveAttribute('data-border');
+    expect(figure).toHaveStyle({ border: '1px solid #ececec' });
+  });
+
+  it('leaves the diagram unframed without border, and ignores other words', async () => {
+    const { container } = renderArticle(
+      `${fence('flowchart LR\n  A --> B')}\n\n\`\`\`mermaid bordered\nflowchart LR\n  C --> D\n\`\`\``
+    );
+
+    await waitFor(() =>
+      expect(container.querySelectorAll('[data-diagram]')).toHaveLength(2)
+    );
+    for (const figure of container.querySelectorAll('[data-diagram]')) {
+      expect(figure).not.toHaveAttribute('data-border');
+    }
+  });
+
   it('draws sequence diagrams too', async () => {
     const { container } = renderArticle(
       fence('sequenceDiagram\n  브라우저->>API: POST /posts')
