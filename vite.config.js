@@ -1,11 +1,19 @@
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+
+import googleAnalytics from './vite-plugins/googleAnalytics';
 
 const src = (path) => fileURLToPath(new URL(`./src/${path}`, import.meta.url));
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    // Only deploy.yml sets this, so the tag ships in the production build alone.
+    googleAnalytics(
+      loadEnv(mode, process.cwd(), 'VITE_').VITE_GA_MEASUREMENT_ID
+    ),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -32,4 +40,4 @@ export default defineConfig({
     setupFiles: './src/setupTests.js',
     globals: true,
   },
-});
+}));

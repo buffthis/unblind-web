@@ -43,6 +43,7 @@ jobs:
         env:
           VITE_API_BASE_URL: https://api.unblind.kr
           VITE_POST_EDITOR_ENABLED: 'true'
+          VITE_GA_MEASUREMENT_ID: G-MR8ZZZV7BP
 
       # 기존 사이트를 지우기 전에 새 빌드를 스테이징 디렉토리에 먼저 올리고,
       # 마지막에 디렉토리 교체로 반영한다 (다운타임 최소화, 업로드 실패 시 기존 사이트 유지).
