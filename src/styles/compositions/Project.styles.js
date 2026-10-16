@@ -34,19 +34,22 @@ export const ProjectCard = styled.div`
   }
 `;
 
+// The corners of a card thumbnail round off over this many pixels from its edge.
+export const PROJECT_IMAGE_RADIUS = 16;
+
 export const ProjectImageContainer = styled.div`
   width: 100%;
   aspect-ratio: ${({ $ratio }) => $ratio || '4 / 3'};
   overflow: hidden;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
+  box-shadow: ${({ $shadow }) => $shadow || '0 4px 20px rgba(0, 0, 0, 0.1)'};
+  border-radius: ${PROJECT_IMAGE_RADIUS}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-sizing: border-box;
 `;
 
 export const ProjectContent = styled.div`
-  padding: 0;
+  padding: ${({ $inset }) => ($inset ? `0 ${$inset}px` : 0)};
   text-align: left;
 `;
 
@@ -54,7 +57,7 @@ export const ProjectTitle = styled.h3`
   font-size: ${({ $fontSize }) => $fontSize || '1.6rem'};
   font-weight: ${({ $fontWeight }) => $fontWeight || '700'};
   color: ${({ theme }) => theme.colors.primary};
-  margin-top: 12px;
+  margin-top: ${({ $marginTop }) => $marginTop || '12px'};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     font-size: ${({ $fontSize }) =>
@@ -67,7 +70,7 @@ export const ProjectDescription = styled.p`
   font-size: ${({ $fontSize }) => $fontSize || '1.0rem'};
   font-weight: ${({ $fontWeight }) => $fontWeight || '200'};
   color: ${({ theme }) => theme.colors.secondary};
-  margin-top: 4px;
+  margin-top: ${({ $marginTop }) => $marginTop || '4px'};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     font-size: ${({ $fontSize }) =>
@@ -79,9 +82,10 @@ export const ProjectDescription = styled.p`
 export const Period = styled.span`
   font-size: ${({ $fontSize }) => $fontSize || '1.0rem'};
   font-weight: ${({ $fontWeight }) => $fontWeight || '200'};
+  letter-spacing: ${({ $letterSpacing }) => $letterSpacing || 'normal'};
   color: ${({ theme }) => theme.colors.secondary};
   display: block;
-  margin-top: 6px;
+  margin-top: ${({ $marginTop }) => $marginTop || '6px'};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     font-size: 0.6rem;

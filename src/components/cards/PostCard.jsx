@@ -2,6 +2,7 @@ import HoverImage from '@components/common/HoverImage';
 import useHoverPrefetch, { usePrefetchPost } from '@hooks/usePrefetch';
 import {
   Period,
+  PROJECT_IMAGE_RADIUS,
   ProjectCard,
   ProjectContent,
   ProjectDescription,
@@ -30,7 +31,7 @@ export default function PostCard({ post }) {
 
   const body = (
     <>
-      <ProjectImageContainer $ratio="16 / 9">
+      <ProjectImageContainer $ratio="16 / 9" $shadow="none">
         <HoverImage
           baseImage={thumbnail.src}
           alt={post.title}
@@ -38,12 +39,20 @@ export default function PostCard({ post }) {
           bordered={thumbnail.border}
         />
       </ProjectImageContainer>
-      <ProjectContent>
-        <ProjectTitle $fontSize="1.0rem">{post.title}</ProjectTitle>
-        <ProjectDescription $fontSize="0.8rem">
+      {/* The text starts where the corner of the thumbnail stops curving. */}
+      <ProjectContent $inset={PROJECT_IMAGE_RADIUS}>
+        <ProjectTitle $fontSize="0.9rem" $marginTop="8.5px">
+          {post.title}
+        </ProjectTitle>
+        <ProjectDescription $fontSize="0.8rem" $marginTop="0.75px">
           {post.subtitle}
         </ProjectDescription>
-        <Period $fontSize="0.8rem" $fontWeight="100">
+        <Period
+          $fontSize="0.7rem"
+          $fontWeight="100"
+          $letterSpacing="0.08em"
+          $marginTop="3px"
+        >
           {formatDate(post.createdAt)}
         </Period>
       </ProjectContent>
