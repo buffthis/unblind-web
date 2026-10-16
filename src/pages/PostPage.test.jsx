@@ -190,6 +190,22 @@ describe('PostPage', () => {
     expect(screen.getByAltText('썸네일')).toHaveStyle({ display: 'block' });
   });
 
+  it('gives the thumbnail 4.5px below it, as an image in the article has, and 20px above the article', () => {
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    // The thumbnail has no empty space of its own below it, so it carries the 4.5px a
+    // line of text keeps inside its box, and the article adds the usual 20px gap. The
+    // page is a column, so the two add up and the first title is 29px away.
+    const thumbnail = screen.getByAltText('썸네일');
+    expect(thumbnail).toHaveStyle({ marginBottom: '4.5px' });
+    expect(thumbnail.nextElementSibling).toHaveStyle({ marginTop: '20px' });
+    expect(thumbnail.parentElement).toHaveStyle({
+      display: 'flex',
+      flexDirection: 'column',
+    });
+  });
+
   it('shows the title before the thumbnail', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();

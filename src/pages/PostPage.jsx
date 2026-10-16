@@ -13,6 +13,7 @@ import useArticleHeadings, {
 } from '@hooks/useArticleHeadings';
 import usePost from '@hooks/usePost';
 import useUser from '@hooks/useUser';
+import { BLOCK_GAP, TEXT_SPACE } from '@components/post/spacing';
 import { LAYOUT } from '@styles/constants';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
@@ -54,6 +55,11 @@ const Layout = styled.div`
 
 const Main = styled.main`
   grid-column: 2;
+  /* A column like the article body, so the margins of neighbouring blocks add up
+     instead of merging into the larger one. The 4.5px below the thumbnail would be
+     swallowed by the gap above the article otherwise. */
+  display: flex;
+  flex-direction: column;
 `;
 
 const Aside = styled.aside`
@@ -194,6 +200,9 @@ const Thumbnail = styled.img`
   display: block;
   width: 100%;
   margin-top: ${BYLINE_GAP}px;
+  /* An image has no empty space of its own below it, so it carries the same TEXT_SPACE
+     a line of text keeps inside its box, as an image in the article does. */
+  margin-bottom: ${TEXT_SPACE}px;
   border-radius: ${({ theme }) => theme.radius.md};
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -205,7 +214,7 @@ const Thumbnail = styled.img`
 `;
 
 const ArticleArea = styled.div`
-  margin-top: 40px;
+  margin-top: ${BLOCK_GAP}px;
 
   /* With no thumbnail the body follows the byline directly. */
   header + & {

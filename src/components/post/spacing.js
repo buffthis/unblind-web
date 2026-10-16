@@ -21,4 +21,5 @@ export const BLOCK_MARGIN = `${BLOCK_GAP}px 0 0`;
 // and so on). It has no empty space of its own inside, so it gets TEXT_SPACE outside,
 // above on top of the gap and below. The text next to it then sits BLOCK_GAP + 2 *
 // TEXT_SPACE away on either side, like any other pair of blocks.
-export const BOX_MARGIN = `${BLOCK_GAP + TEXT_SPACE}px 0 ${TEXT_SPACE}px`;
+export const BOX_GAP = BLOCK_GAP + TEXT_SPACE;
+export const BOX_MARGIN = `${BOX_GAP}px 0 ${TEXT_SPACE}px`;

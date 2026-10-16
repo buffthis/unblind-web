@@ -417,6 +417,16 @@ describe('PostArticle', () => {
     expect(declaredValue(anchor, 'top')).toBe('var(--gap-extra, 0px)');
   });
 
+  it('keeps the first block of the article 4.5px from the top when it is not text', () => {
+    const { container } = renderArticle('- 목록\n\n본문');
+    const [list, paragraph] = container.firstElementChild.children;
+
+    // The page spaces the article from what is above it. A text block brings its own
+    // 4.5px of empty space into that gap, so a block that has none carries it as margin.
+    expect(list).toHaveStyle({ marginTop: '4.5px' });
+    expect(paragraph).not.toHaveStyle({ marginTop: '4.5px' });
+  });
+
   it('draws a border only when the alt text ends with |border', () => {
     const { container } = renderArticle(
       '![설명 | border](https://a/b.png)\n\n![그냥](https://a/c.png)'

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BLOCK_GAP,
   BLOCK_MARGIN,
+  BOX_GAP,
   BOX_MARGIN,
   lineHeightFor,
   TEXT_SPACE,
@@ -26,5 +27,9 @@ describe('spacing', () => {
 
   it('gives a block that is not text the empty space text keeps inside its own box', () => {
     expect(BOX_MARGIN).toBe(`${BLOCK_GAP + TEXT_SPACE}px 0 ${TEXT_SPACE}px`);
+  });
+
+  it('puts the gap and the empty space of a text box above a block that is not text', () => {
+    expect(BOX_GAP).toBe(BLOCK_GAP + TEXT_SPACE);
   });
 });

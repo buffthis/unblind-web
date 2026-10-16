@@ -104,11 +104,6 @@ const Body = styled.div`
     background: ${({ theme }) => theme.colors.inkSurface};
   }
 
-  /* The page already spaces the article from what is above it. */
-  & > :first-child {
-    margin-top: 0;
-  }
-
   h3 {
     margin-top: ${BLOCK_GAP}px;
   }
@@ -160,6 +155,16 @@ const Body = styled.div`
   li > blockquote,
   blockquote > blockquote {
     margin: ${BLOCK_MARGIN};
+  }
+
+  /* The page already spaces the article from what is above it. A text block brings its own
+     TEXT_SPACE into that gap, so a block that is not text carries it as margin. */
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :first-child:not(p):not(h2):not(h3) {
+    margin-top: ${TEXT_SPACE}px;
   }
 
   ul,
