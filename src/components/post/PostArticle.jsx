@@ -31,6 +31,7 @@ import {
 import useScrollReveal from './useScrollReveal';
 
 const BODY_FONT_SIZE = 15;
+const H1_FONT_SIZE = 30;
 const H2_FONT_SIZE = 22;
 
 // Sits in the left gutter so the rule after an h2 starts right at the text.
@@ -80,6 +81,12 @@ const Body = styled.div`
     font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
+  }
+
+  h1 {
+    margin-top: ${BLOCK_GAP}px;
+    font-size: ${H1_FONT_SIZE}px;
+    line-height: ${lineHeightFor(H1_FONT_SIZE)}px;
   }
 
   h3 {
@@ -163,7 +170,7 @@ const Body = styled.div`
     margin-top: 0;
   }
 
-  & > :first-child:not(p):not(h2):not(h3) {
+  & > :first-child:not(p):not(h1):not(h2):not(h3) {
     margin-top: ${TEXT_SPACE}px;
   }
 

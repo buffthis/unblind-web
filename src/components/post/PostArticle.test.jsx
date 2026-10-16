@@ -337,8 +337,9 @@ describe('PostArticle', () => {
 
   it('uses one 20px margin above paragraphs and titles and none below', () => {
     const { container } = renderArticle(
-      '앞\n\n## 섹션\n\n본문\n\n### 소제목\n\n본문'
+      '앞\n\n# 대제목\n\n## 섹션\n\n본문\n\n### 소제목\n\n본문'
     );
+    const h1 = container.querySelector('h1');
     const h2 = container.querySelector('h2');
     const h3 = container.querySelector('h3');
 
@@ -348,8 +349,10 @@ describe('PostArticle', () => {
     expect(declaredValue(container.querySelector('p'), 'margin')).toBe(
       '20px 0px 0px'
     );
+    expect(declaredValue(h1, 'margin-top')).toBe('20px');
     expect(declaredValue(h2, 'margin-top')).toBe('20px');
     expect(declaredValue(h3, 'margin-top')).toBe('20px');
+    expect(declaredValue(h1, 'margin-bottom')).toBeNull();
     expect(declaredValue(h2, 'margin-bottom')).toBeNull();
     expect(declaredValue(h3, 'margin-bottom')).toBeNull();
   });
@@ -372,10 +375,13 @@ describe('PostArticle', () => {
       return (line - size) / 2;
     };
 
-    it('leaves 4.5px above and below the body text, h2 and h3', () => {
-      const { container } = renderArticle('## 제목\n\n본문\n\n### 소제목');
+    it('leaves 4.5px above and below the body text, h1, h2 and h3', () => {
+      const { container } = renderArticle(
+        '# 대제목\n\n## 제목\n\n본문\n\n### 소제목'
+      );
 
       expect(space(container.firstElementChild)).toBe(4.5);
+      expect(space(container.querySelector('h1'))).toBe(4.5);
       expect(space(container.querySelector('h2'))).toBe(4.5);
       expect(space(container.querySelector('h3'))).toBe(4.5);
     });
@@ -463,6 +469,14 @@ describe('PostArticle', () => {
     // 4.5px of empty space into that gap, so a block that has none carries it as margin.
     expect(list).toHaveStyle({ marginTop: '4.5px' });
     expect(paragraph).not.toHaveStyle({ marginTop: '4.5px' });
+  });
+
+  it('does not add the box margin to a first block that is an h1', () => {
+    const { container } = renderArticle('# 대제목\n\n본문');
+
+    expect(container.querySelector('h1')).not.toHaveStyle({
+      marginTop: '4.5px',
+    });
   });
 
   it('draws a border only when the alt text ends with |border', () => {
