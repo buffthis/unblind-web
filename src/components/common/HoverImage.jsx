@@ -11,10 +11,6 @@ const ImageContainer = styled.div`
   &:focus-within img {
     transform: scale(1.08);
   }
-
-  &[data-border] {
-    border: 1px solid #ececec;
-  }
 `;
 
 const BaseImage = styled.img`
@@ -90,7 +86,6 @@ const HoverImage = ({
   onButtonClick,
   showOverlay = false,
   showButton = true,
-  bordered = false,
 }) => {
   const [isActive, setIsActive] = useState(false);
   const safeLink = toSafeHttpUrl(link);
@@ -108,7 +103,6 @@ const HoverImage = ({
 
   return (
     <ImageContainer
-      data-border={bordered ? '' : undefined}
       onMouseEnter={() => setIsActive(true)}
       onMouseLeave={() => setIsActive(false)}
       onFocus={() => setIsActive(true)}

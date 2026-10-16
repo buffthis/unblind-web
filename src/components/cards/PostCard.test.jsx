@@ -41,12 +41,13 @@ function declaredValue(element, property) {
 }
 
 describe('PostCard', () => {
-  it('draws a bordered thumbnail without #border in its address', () => {
+  it('keeps #border out of the address and adds no second line inside the card frame', () => {
     renderCard('https://i.imgur.com/a.png#border');
 
+    // The thumbnail box already has its own 1px frame, so a second one would read as 2px.
     const image = screen.getByAltText('글 제목');
     expect(image).toHaveAttribute('src', 'https://i.imgur.com/a.png');
-    expect(image.parentElement).toHaveAttribute('data-border');
+    expect(image.parentElement).not.toHaveAttribute('data-border');
   });
 
   it('draws the thumbnail box at 16 to 9', () => {

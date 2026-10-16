@@ -37,7 +37,6 @@ export default function PostCard({ post }) {
           baseImage={thumbnail.src}
           alt={post.title}
           showButton={false}
-          bordered={thumbnail.border}
         />
       </ProjectImageContainer>
       {/* The text starts where the corner of the thumbnail stops curving. */}
