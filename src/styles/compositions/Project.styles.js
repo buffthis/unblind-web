@@ -34,8 +34,8 @@ export const ProjectCard = styled.div`
   }
 `;
 
-// The corners of a card thumbnail round off over this many pixels from its edge.
-export const PROJECT_IMAGE_RADIUS = 16;
+// The corners of a project card thumbnail round off over this many pixels from its edge.
+const PROJECT_IMAGE_RADIUS = 16;
 
 export const ProjectImageContainer = styled.div`
   width: 100%;
@@ -43,13 +43,13 @@ export const ProjectImageContainer = styled.div`
   overflow: hidden;
   position: relative;
   box-shadow: ${({ $shadow }) => $shadow || '0 4px 20px rgba(0, 0, 0, 0.1)'};
-  border-radius: ${PROJECT_IMAGE_RADIUS}px;
+  border-radius: ${({ $radius }) => $radius || `${PROJECT_IMAGE_RADIUS}px`};
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-sizing: border-box;
 `;
 
 export const ProjectContent = styled.div`
-  padding: ${({ $inset }) => ($inset ? `0 ${$inset}px` : 0)};
+  padding: ${({ $inset }) => ($inset ? `0 ${$inset}` : 0)};
   text-align: left;
 `;
 

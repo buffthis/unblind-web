@@ -15,9 +15,9 @@ const post = {
   createdAt: '2026-10-01T09:00:00',
 };
 
-function renderCard(thumbnailUrl) {
+function renderCard(thumbnailUrl, cardTheme = theme) {
   return render(
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={cardTheme}>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
           <PostCard post={{ ...post, thumbnail: { url: thumbnailUrl } }} />
@@ -57,6 +57,17 @@ describe('PostCard', () => {
     expect(declaredValue(box, 'aspect-ratio')).toBe('16/9');
   });
 
+  it('rounds the thumbnail with the theme radius and starts the text where it stops curving', () => {
+    // A different radius than the real one, so only reading it from the theme passes.
+    const wider = { ...theme, radius: { ...theme.radius, md: '6px' } };
+    renderCard('https://i.imgur.com/a.png', wider);
+
+    const box = screen.getByAltText('글 제목').parentElement.parentElement;
+    expect(declaredValue(box, 'border-radius')).toBe('6px');
+    const text = screen.getByText('글 제목', { selector: 'h3' }).parentElement;
+    expect(declaredValue(text, 'padding')).toBe('0px 6px');
+  });
+
   it('draws the thumbnail box without a shadow', () => {
     renderCard('https://i.imgur.com/a.png');
 
@@ -77,7 +88,7 @@ describe('PostCard', () => {
     renderCard('https://i.imgur.com/a.png');
 
     const text = screen.getByText('글 제목', { selector: 'h3' }).parentElement;
-    expect(declaredValue(text, 'padding')).toBe('0px 16px');
+    expect(declaredValue(text, 'padding')).toBe('0px 8px');
     expect(text).toContainElement(screen.getByText('부제목'));
   });
 

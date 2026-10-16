@@ -28,6 +28,19 @@ function renderArticle(content) {
   );
 }
 
+// jsdom does not compute border-radius, so read what the stylesheet declares for the element.
+function declaredValue(element, property) {
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (rule.selectorText && element.matches(rule.selectorText)) {
+        const value = rule.style.getPropertyValue(property);
+        if (value) return value;
+      }
+    }
+  }
+  return null;
+}
+
 const chartSource = (value) =>
   `\`\`\`chart\ntitle: 전환 비율\n---\n월, a\n1월, 1\n2월, ${value}\n\`\`\``;
 
@@ -174,6 +187,20 @@ describe('PostArticle', () => {
     const { container } = renderArticle('```java\nint a = 1;\n```');
     await waitFor(() =>
       expect(container.querySelector('code.hljs.language-java')).not.toBeNull()
+    );
+  });
+
+  it('rounds body images with the theme radius', () => {
+    // A different radius than the real one, so only reading it from the theme passes.
+    const wider = { ...theme, radius: { ...theme.radius, md: '6px' } };
+    const { container } = render(
+      <ThemeProvider theme={wider}>
+        <PostArticle content="![설명](https://a/b.png)" />
+      </ThemeProvider>
+    );
+
+    expect(declaredValue(container.querySelector('img'), 'border-radius')).toBe(
+      '6px'
     );
   });
 

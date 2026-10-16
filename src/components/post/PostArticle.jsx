@@ -157,7 +157,7 @@ const Body = styled.div`
 
   img {
     max-width: 100%;
-    border-radius: 8px;
+    border-radius: ${({ theme }) => theme.radius.md};
   }
 
   /* Same hairline as the chart grid lines. */

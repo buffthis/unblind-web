@@ -2,7 +2,6 @@ import HoverImage from '@components/common/HoverImage';
 import useHoverPrefetch, { usePrefetchPost } from '@hooks/usePrefetch';
 import {
   Period,
-  PROJECT_IMAGE_RADIUS,
   ProjectCard,
   ProjectContent,
   ProjectDescription,
@@ -13,7 +12,7 @@ import { formatDate } from '@utils/format';
 import { splitThumbnail } from '@utils/thumbnail';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 
 const cardLinkStyle = css`
   display: block;
@@ -28,10 +27,12 @@ const CardLink = styled(Link)`
 export default function PostCard({ post }) {
   const thumbnail = splitThumbnail(post.thumbnail?.url);
   const prefetchHandlers = useHoverPrefetch(usePrefetchPost(post.id));
+  // The same corner radius as the images in the post body and its top thumbnail.
+  const { md: radius } = useTheme().radius;
 
   const body = (
     <>
-      <ProjectImageContainer $ratio="16 / 9" $shadow="none">
+      <ProjectImageContainer $ratio="16 / 9" $shadow="none" $radius={radius}>
         <HoverImage
           baseImage={thumbnail.src}
           alt={post.title}
@@ -40,7 +41,7 @@ export default function PostCard({ post }) {
         />
       </ProjectImageContainer>
       {/* The text starts where the corner of the thumbnail stops curving. */}
-      <ProjectContent $inset={PROJECT_IMAGE_RADIUS}>
+      <ProjectContent $inset={radius}>
         <ProjectTitle $fontSize="0.9rem" $marginTop="8.5px">
           {post.title}
         </ProjectTitle>
