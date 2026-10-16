@@ -16,6 +16,7 @@ import styled from 'styled-components';
 
 import { ENTRANCE_DURATION } from './entrance';
 import { useRehypePlugins } from './markdownPlugins';
+import remarkBlankLines from './remarkBlankLines';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import remarkHtmlAsText from './remarkHtmlAsText';
@@ -95,6 +96,20 @@ const Body = styled.div`
 
   h2:hover ${AnchorButton}, h3:hover ${AnchorButton} {
     opacity: 1;
+  }
+
+  /* Blank lines beyond the first (see remarkBlankLines) add 20px each. Padding is used
+     because it adds to a block's own margin, where a margin would collapse into it. */
+  [data-gap='1'] {
+    padding-top: 20px;
+  }
+
+  [data-gap='2'] {
+    padding-top: 40px;
+  }
+
+  [data-gap='3'] {
+    padding-top: 60px;
   }
 
   /* Blocks open with 20px and close with 0; adjacent margins collapse to a 20px gap. */
@@ -411,10 +426,14 @@ function parseImageAlt(alt) {
 }
 
 // A quote starting with [!NOTE] and friends becomes an alert; any other quote stays a quote.
-function Quote({ node: _node, children }) {
+function Quote({ node: _node, children, ...rest }) {
   const alert = parseAlert(children);
-  if (!alert) return <blockquote>{children}</blockquote>;
-  return <Alert type={alert.type}>{alert.children}</Alert>;
+  const block = alert ? (
+    <Alert type={alert.type}>{alert.children}</Alert>
+  ) : (
+    <blockquote>{children}</blockquote>
+  );
+  return withGap(rest, block);
 }
 
 // The markdown title ("![alt](url "caption")") becomes a caption centered under the image.
@@ -454,7 +473,28 @@ function fenceFlags(node) {
   );
 }
 
+// A block that draws its own border or background carries the extra blank-line gap on a
+// wrapper, because padding on the block itself would stretch the border upward.
+function withGap(props, block) {
+  const gap = props['data-gap'];
+  return gap ? <div data-gap={gap}>{block}</div> : block;
+}
+
+// remark-rehype puts a code block's hProperties on the inner <code>, so the gap is read
+// there and taken off it, leaving the wrapper as the only element that carries it.
 function PreBlock({ node, children }) {
+  const [code, ...others] = React.Children.toArray(children);
+  const gap = React.isValidElement(code) ? code.props['data-gap'] : undefined;
+  const plain = gap
+    ? [React.cloneElement(code, { 'data-gap': undefined }), ...others]
+    : children;
+  return withGap(
+    { 'data-gap': gap },
+    <PreContent node={node}>{plain}</PreContent>
+  );
+}
+
+function PreContent({ node, children }) {
   const language = getLanguage(children);
   if (language === 'chart') {
     return <ChartBlock source={codeText(children)}>{children}</ChartBlock>;
@@ -480,6 +520,8 @@ function PreBlock({ node, children }) {
 // A single $ is left alone so prices like "$5 and $10" never turn into math; write inline
 // math as $$x^2$$ and display math as a $$ block on its own lines.
 const REMARK_PLUGINS = [
+  // First, while every block still carries the line numbers the parser gave it.
+  remarkBlankLines,
   remarkGfm,
   [remarkMath, { singleDollarTextMath: false }],
   remarkHighlight,

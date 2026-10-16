@@ -238,6 +238,65 @@ describe('PostArticle', () => {
     );
   });
 
+  describe('extra blank lines between blocks', () => {
+    const gapOf = (element) => element.getAttribute('data-gap');
+
+    it('adds 20px of space for each blank line beyond the first', () => {
+      const { container } = renderArticle(
+        '첫 문단\n\n둘째\n\n\n셋째\n\n\n\n넷째'
+      );
+      const [first, second, third, fourth] = container.querySelectorAll('p');
+
+      expect(gapOf(first)).toBeNull();
+      expect(gapOf(second)).toBeNull();
+      expect(gapOf(third)).toBe('1');
+      expect(third).toHaveStyle({ paddingTop: '20px' });
+      expect(gapOf(fourth)).toBe('2');
+      expect(fourth).toHaveStyle({ paddingTop: '40px' });
+    });
+
+    it('stops at 3 extra blank lines, 60px', () => {
+      const { container } = renderArticle('위\n\n\n\n\n\n\n\n\n아래');
+      const [, below] = container.querySelectorAll('p');
+
+      expect(gapOf(below)).toBe('3');
+      expect(below).toHaveStyle({ paddingTop: '60px' });
+    });
+
+    it('opens up the space before an image as well', () => {
+      const { container } = renderArticle(
+        '텍스트\n\n\n![설명](https://a/b.png)'
+      );
+      const imageParagraph = container.querySelector('img').closest('p');
+
+      expect(gapOf(imageParagraph)).toBe('1');
+    });
+
+    it('wraps code, chart and quote blocks so their own margins add up', () => {
+      const { container } = renderArticle(
+        '앞\n\n\n```js\nconst a = 1;\n```\n\n\n> 인용\n\n\n- 목록\n\n\n## 제목'
+      );
+      const marked = [...container.querySelectorAll('[data-gap]')];
+
+      expect(marked.map((element) => element.tagName)).toEqual([
+        'DIV',
+        'DIV',
+        'UL',
+        'H2',
+      ]);
+      expect(marked[0].querySelector('pre')).not.toBeNull();
+      expect(marked[1].querySelector('blockquote')).not.toBeNull();
+    });
+
+    it('leaves blank lines inside a code block alone', () => {
+      const { container } = renderArticle(
+        '```js\nconst a = 1;\n\n\n\nconst b = 2;\n```\n\n끝'
+      );
+
+      expect(container.querySelector('[data-gap]')).toBeNull();
+    });
+  });
+
   it('draws a border only when the alt text ends with |border', () => {
     const { container } = renderArticle(
       '![설명 | border](https://a/b.png)\n\n![그냥](https://a/c.png)'
