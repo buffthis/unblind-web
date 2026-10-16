@@ -1,4 +1,4 @@
-import { BLOCK_MARGIN } from '@components/post/spacing';
+import { BOX_MARGIN } from '@components/post/spacing';
 import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
 import { loadedPlugin, loadPlugin } from '@components/post/markdownPlugins';
@@ -10,7 +10,7 @@ import styled, { useTheme } from 'styled-components';
 const FONT_IMPORT = /@import url\([^)]*\);?/g;
 
 const Figure = styled.div`
-  margin: ${BLOCK_MARGIN};
+  margin: ${BOX_MARGIN};
   overflow-x: auto;
 
   svg {

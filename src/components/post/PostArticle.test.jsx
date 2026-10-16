@@ -297,7 +297,7 @@ describe('PostArticle', () => {
     });
   });
 
-  it('uses one 20px margin between paragraphs, titles and images', () => {
+  it('uses one 20px margin above paragraphs and titles and none below', () => {
     const { container } = renderArticle(
       '앞\n\n## 섹션\n\n본문\n\n### 소제목\n\n본문'
     );
@@ -311,9 +311,17 @@ describe('PostArticle', () => {
       '20px 0px 0px'
     );
     expect(declaredValue(h2, 'margin-top')).toBe('20px');
-    expect(declaredValue(h2, 'margin-bottom')).toBe('20px');
     expect(declaredValue(h3, 'margin-top')).toBe('20px');
-    expect(declaredValue(h3, 'margin-bottom')).toBe('20px');
+    expect(declaredValue(h2, 'margin-bottom')).toBeNull();
+    expect(declaredValue(h3, 'margin-bottom')).toBeNull();
+  });
+
+  it('lays the article out as a column, so neighbouring margins add up instead of merging', () => {
+    const { container } = renderArticle('앞\n\n뒤');
+    const body = container.firstElementChild;
+
+    expect(declaredValue(body, 'display')).toBe('flex');
+    expect(declaredValue(body, 'flex-direction')).toBe('column');
   });
 
   describe('empty space around text', () => {
@@ -364,7 +372,7 @@ describe('PostArticle', () => {
     });
   });
 
-  it('opens every kind of block with the same 20px gap and closes it with none', () => {
+  it('puts 4.5px outside every block that is not a line of text, as text has inside', () => {
     const { container } = renderArticle(
       [
         '문단',
@@ -389,8 +397,11 @@ describe('PostArticle', () => {
       'FIGURE',
       'TABLE',
     ]);
-    for (const block of blocks) {
-      expect(declaredValue(block, 'margin')).toBe('20px 0px 0px');
+    expect(declaredValue(blocks[0], 'margin')).toBe('20px 0px 0px');
+    // 20px of gap plus 4.5px on top, and 4.5px below, so the letters of the text next to
+    // the block are 29px away on either side.
+    for (const block of blocks.slice(1)) {
+      expect(declaredValue(block, 'margin')).toBe('24.5px 0px 4.5px');
     }
   });
 

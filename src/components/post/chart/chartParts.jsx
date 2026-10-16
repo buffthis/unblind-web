@@ -1,4 +1,4 @@
-import { BLOCK_MARGIN } from '@components/post/spacing';
+import { BOX_MARGIN } from '@components/post/spacing';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import styled from 'styled-components';
 
@@ -25,7 +25,7 @@ export const topOf = (value, domain) =>
   `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
 
 export const Figure = styled.figure`
-  margin: ${BLOCK_MARGIN};
+  margin: ${BOX_MARGIN};
 `;
 
 export const Title = styled.figcaption`

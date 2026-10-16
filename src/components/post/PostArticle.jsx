@@ -21,7 +21,13 @@ import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import remarkHtmlAsText from './remarkHtmlAsText';
 import remarkParagraphKinds from './remarkParagraphKinds';
-import { BLOCK_GAP, BLOCK_MARGIN, lineHeightFor, TEXT_SPACE } from './spacing';
+import {
+  BLOCK_GAP,
+  BLOCK_MARGIN,
+  BOX_MARGIN,
+  lineHeightFor,
+  TEXT_SPACE,
+} from './spacing';
 import useScrollReveal from './useScrollReveal';
 
 const BODY_FONT_SIZE = 15;
@@ -46,6 +52,11 @@ const AnchorButton = styled.button`
 `;
 
 const Body = styled.div`
+  /* A column, so the margins of neighbouring blocks add up instead of merging into the
+     larger one. That is what keeps every gap exactly BLOCK_GAP plus the empty space
+     around the text, with the empty space of a box outside it kept too. */
+  display: flex;
+  flex-direction: column;
   width: 100%;
   font-size: ${BODY_FONT_SIZE}px;
   font-weight: 460;
@@ -64,7 +75,6 @@ const Body = styled.div`
   h2,
   h3 {
     position: relative;
-    margin-bottom: ${BLOCK_GAP}px;
     font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
@@ -92,14 +102,13 @@ const Body = styled.div`
     background: ${({ theme }) => theme.colors.inkSurface};
   }
 
-  /* The page already spaces the article from the header above it. */
-  & > h2:first-child {
+  /* The page already spaces the article from what is above it. */
+  & > :first-child {
     margin-top: 0;
   }
 
   h3 {
     margin-top: ${BLOCK_GAP}px;
-    margin-bottom: ${BLOCK_GAP}px;
   }
 
   h2:hover ${AnchorButton}, h3:hover ${AnchorButton} {
@@ -130,10 +139,24 @@ const Body = styled.div`
     display: block;
   }
 
-  /* Blocks open with BLOCK_GAP and close with 0; adjacent margins collapse to one gap. */
-  p,
-  ul,
-  ol {
+  /* A line of text opens with BLOCK_GAP and closes with 0. */
+  p {
+    margin: ${BLOCK_MARGIN};
+  }
+
+  /* A block that is not text carries the empty space text keeps inside its own box. */
+  & > ul,
+  & > ol,
+  & > blockquote,
+  & > table {
+    margin: ${BOX_MARGIN};
+  }
+
+  /* Inside a list item or a quote the blocks sit closer, as before. */
+  li > ul,
+  li > ol,
+  li > blockquote,
+  blockquote > blockquote {
     margin: ${BLOCK_MARGIN};
   }
 
@@ -147,7 +170,6 @@ const Body = styled.div`
   }
 
   blockquote {
-    margin: ${BLOCK_MARGIN};
     padding: 4px 16px;
     border-left: 3px solid ${({ theme }) => theme.colors.border};
     color: ${({ theme }) => theme.colors.inkSub};
@@ -249,7 +271,6 @@ const Body = styled.div`
 
   table {
     border-collapse: collapse;
-    margin: ${BLOCK_MARGIN};
     display: block;
     overflow-x: auto;
   }

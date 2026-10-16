@@ -1,4 +1,4 @@
-import { BLOCK_MARGIN } from '@components/post/spacing';
+import { BOX_MARGIN } from '@components/post/spacing';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -44,7 +44,7 @@ export function parseAlert(children) {
 }
 
 const Box = styled.div`
-  margin: ${BLOCK_MARGIN};
+  margin: ${BOX_MARGIN};
   padding: 4px 0 4px 20px;
   border-left: 4px solid ${({ $color }) => $color};
 

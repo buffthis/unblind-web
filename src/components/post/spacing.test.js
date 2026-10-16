@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { BLOCK_GAP, BLOCK_MARGIN, lineHeightFor, TEXT_SPACE } from './spacing';
+import {
+  BLOCK_GAP,
+  BLOCK_MARGIN,
+  BOX_MARGIN,
+  lineHeightFor,
+  TEXT_SPACE,
+} from './spacing';
 
 describe('spacing', () => {
   it('gives every font size the same empty space above and below its line', () => {
@@ -16,5 +22,9 @@ describe('spacing', () => {
 
   it('opens a block with the gap and closes it with none', () => {
     expect(BLOCK_MARGIN).toBe(`${BLOCK_GAP}px 0 0`);
+  });
+
+  it('gives a block that is not text the empty space text keeps inside its own box', () => {
+    expect(BOX_MARGIN).toBe(`${BLOCK_GAP + TEXT_SPACE}px 0 ${TEXT_SPACE}px`);
   });
 });
