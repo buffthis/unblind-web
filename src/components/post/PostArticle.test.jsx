@@ -297,6 +297,16 @@ describe('PostArticle', () => {
     });
   });
 
+  it('leaves 33px under a section title, so 44px shows between its letters and the body', () => {
+    const { container } = renderArticle('## 섹션\n\n본문');
+
+    // The title and the body line each have about 5px of empty line space on the
+    // facing side, so the 33px margin reads as 44px with the lettering as the edge.
+    expect(declaredValue(container.querySelector('h2'), 'margin-bottom')).toBe(
+      '33px'
+    );
+  });
+
   it('draws a border only when the alt text ends with |border', () => {
     const { container } = renderArticle(
       '![설명 | border](https://a/b.png)\n\n![그냥](https://a/c.png)'

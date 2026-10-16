@@ -53,10 +53,12 @@ const Body = styled.div`
   word-break: keep-all;
   overflow-wrap: anywhere;
 
+  /* The 33px gives 44px between the title letters and the body letters, counting the
+     empty line space of about 5px on each side. h3 sets its own margin below. */
   h2,
   h3 {
     position: relative;
-    margin-bottom: 40px;
+    margin-bottom: 33px;
     font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
