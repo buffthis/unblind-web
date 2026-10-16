@@ -1,3 +1,4 @@
+import { BLOCK_MARGIN } from '@components/post/spacing';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 
@@ -12,7 +13,7 @@ const LINE_ANCHOR_EVENT = 'codelineanchor';
 
 const Wrapper = styled.div`
   position: relative;
-  margin: 24px 0;
+  margin: ${BLOCK_MARGIN};
   border-radius: 8px;
   /* The page is white, so the box sits one step below it to read as its own surface. */
   background: ${SURFACE};

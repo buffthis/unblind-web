@@ -1,3 +1,4 @@
+import { BLOCK_MARGIN } from '@components/post/spacing';
 import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
 import React, { useMemo } from 'react';
@@ -25,7 +26,7 @@ const lineDelay = `calc((var(--depth) * 2 - 1) * ${STEP_MS}ms)`;
 const labelDelay = `calc(var(--depth) * 2 * ${STEP_MS}ms)`;
 
 const Figure = styled.div`
-  margin: 24px 0 8px;
+  margin: ${BLOCK_MARGIN};
   padding: 4px 0;
   overflow-x: auto;
 

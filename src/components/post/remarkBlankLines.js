@@ -3,7 +3,7 @@
 // of them, by tagging that block with data-gap="<count>". Only the blocks directly
 // under the page, a quote or a list item are looked at, so blank lines inside a code
 // block are never counted.
-const MAX_EXTRA = 3;
+export const MAX_EXTRA = 3;
 const BLOCK_PARENTS = new Set(['root', 'blockquote', 'listItem']);
 
 function tagGaps(node) {

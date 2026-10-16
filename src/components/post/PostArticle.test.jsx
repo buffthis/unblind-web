@@ -250,9 +250,9 @@ describe('PostArticle', () => {
       expect(gapOf(first)).toBeNull();
       expect(gapOf(second)).toBeNull();
       expect(gapOf(third)).toBe('1');
-      expect(third).toHaveStyle({ paddingTop: '20px' });
+      expect(declaredValue(third, '--gap-extra')).toBe('20px');
       expect(gapOf(fourth)).toBe('2');
-      expect(fourth).toHaveStyle({ paddingTop: '40px' });
+      expect(declaredValue(fourth, '--gap-extra')).toBe('40px');
     });
 
     it('stops at 3 extra blank lines, 60px', () => {
@@ -260,7 +260,7 @@ describe('PostArticle', () => {
       const [, below] = container.querySelectorAll('p');
 
       expect(gapOf(below)).toBe('3');
-      expect(below).toHaveStyle({ paddingTop: '60px' });
+      expect(declaredValue(below, '--gap-extra')).toBe('60px');
     });
 
     it('opens up the space before an image as well', () => {
@@ -297,14 +297,101 @@ describe('PostArticle', () => {
     });
   });
 
-  it('leaves 33px under a section title, so 44px shows between its letters and the body', () => {
-    const { container } = renderArticle('## 섹션\n\n본문');
-
-    // The title and the body line each have about 5px of empty line space on the
-    // facing side, so the 33px margin reads as 44px with the lettering as the edge.
-    expect(declaredValue(container.querySelector('h2'), 'margin-bottom')).toBe(
-      '33px'
+  it('uses one 20px margin between paragraphs, titles and images', () => {
+    const { container } = renderArticle(
+      '앞\n\n## 섹션\n\n본문\n\n### 소제목\n\n본문'
     );
+    const h2 = container.querySelector('h2');
+    const h3 = container.querySelector('h3');
+
+    // Each of them leaves 4.5px of empty line space above and below its letters, so a
+    // 20px margin comes out as 20 + 4.5 + 4.5 = 29px from letters to letters, with no
+    // line height to work out for each kind of text.
+    expect(declaredValue(container.querySelector('p'), 'margin')).toBe(
+      '20px 0px 0px'
+    );
+    expect(declaredValue(h2, 'margin-top')).toBe('20px');
+    expect(declaredValue(h2, 'margin-bottom')).toBe('20px');
+    expect(declaredValue(h3, 'margin-top')).toBe('20px');
+    expect(declaredValue(h3, 'margin-bottom')).toBe('20px');
+  });
+
+  describe('empty space around text', () => {
+    // The line box is line-height tall and the letters are font-size tall, so the empty
+    // space above and below the letters is (line-height - font-size) / 2. It is 4.5px
+    // for every kind of text in the article.
+    const space = (element) => {
+      const size = parseFloat(declaredValue(element, 'font-size'));
+      const line = parseFloat(declaredValue(element, 'line-height'));
+      return (line - size) / 2;
+    };
+
+    it('leaves 4.5px above and below the body text, h2 and h3', () => {
+      const { container } = renderArticle('## 제목\n\n본문\n\n### 소제목');
+
+      expect(space(container.firstElementChild)).toBe(4.5);
+      expect(space(container.querySelector('h2'))).toBe(4.5);
+      expect(space(container.querySelector('h3'))).toBe(4.5);
+    });
+
+    it('gives a paragraph that holds only an image 4.5px above and below the image', () => {
+      const { container } = renderArticle(
+        '텍스트\n\n![설명](https://a/b.png)\n\n![캡션](https://a/c.png "그림 1")'
+      );
+      const [, plain, captioned] = container.querySelectorAll('p');
+
+      for (const block of [plain, captioned]) {
+        expect(block).toHaveAttribute('data-image');
+        expect(declaredValue(block, 'padding-top')).toBe(
+          'calc(var(--gap-extra, 0px) + 4.5px)'
+        );
+        expect(declaredValue(block, 'padding-bottom')).toBe('4.5px');
+      }
+      expect(plain.querySelector('img')).toHaveStyle({ display: 'block' });
+      expect(
+        declaredValue(captioned.querySelector('[data-figure]'), 'margin')
+      ).toBe('0px');
+    });
+
+    it('leaves a paragraph that mixes text and an image, or holds several images, as it was', () => {
+      const { container } = renderArticle(
+        '앞 글 ![작은](https://a/b.png) 뒤 글\n\n![하나](https://a/c.png)\n![둘](https://a/d.png)'
+      );
+
+      for (const block of container.querySelectorAll('p')) {
+        expect(block).not.toHaveAttribute('data-image');
+      }
+    });
+  });
+
+  it('opens every kind of block with the same 20px gap and closes it with none', () => {
+    const { container } = renderArticle(
+      [
+        '문단',
+        '- 목록',
+        '> 인용',
+        '> [!NOTE]\n> 안내',
+        '```js\nconst a = 1;\n```',
+        '```tree\n루트\n  자식\n```',
+        '```chart\ntitle: 제목\n---\n월, a\n1월, 1\n2월, 2\n```',
+        '| a | b |\n| - | - |\n| 1 | 2 |',
+      ].join('\n\n')
+    );
+    const blocks = [...container.firstElementChild.children];
+
+    expect(blocks.map((block) => block.tagName)).toEqual([
+      'P',
+      'UL',
+      'BLOCKQUOTE',
+      'DIV',
+      'DIV',
+      'DIV',
+      'FIGURE',
+      'TABLE',
+    ]);
+    for (const block of blocks) {
+      expect(declaredValue(block, 'margin')).toBe('20px 0px 0px');
+    }
   });
 
   it('draws a border only when the alt text ends with |border', () => {

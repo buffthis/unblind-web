@@ -16,11 +16,16 @@ import styled from 'styled-components';
 
 import { ENTRANCE_DURATION } from './entrance';
 import { useRehypePlugins } from './markdownPlugins';
-import remarkBlankLines from './remarkBlankLines';
+import remarkBlankLines, { MAX_EXTRA } from './remarkBlankLines';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import remarkHtmlAsText from './remarkHtmlAsText';
+import remarkParagraphKinds from './remarkParagraphKinds';
+import { BLOCK_GAP, BLOCK_MARGIN, lineHeightFor, TEXT_SPACE } from './spacing';
 import useScrollReveal from './useScrollReveal';
+
+const BODY_FONT_SIZE = 15;
+const H2_FONT_SIZE = 22;
 
 // Sits in the left gutter so the rule after an h2 starts right at the text.
 const AnchorButton = styled.button`
@@ -42,9 +47,9 @@ const AnchorButton = styled.button`
 
 const Body = styled.div`
   width: 100%;
-  font-size: 15px;
+  font-size: ${BODY_FONT_SIZE}px;
   font-weight: 460;
-  line-height: 24px;
+  line-height: ${lineHeightFor(BODY_FONT_SIZE)}px;
   letter-spacing: -0.1px;
   color: ${({ theme }) => theme.colors.ink};
   /* macOS renders subpixel text visibly heavier; grayscale keeps weight 400 looking like 400. */
@@ -53,28 +58,29 @@ const Body = styled.div`
   word-break: keep-all;
   overflow-wrap: anywhere;
 
-  /* The 33px gives 44px between the title letters and the body letters, counting the
-     empty line space of about 5px on each side. h3 sets its own margin below. */
+  /* Every gap between blocks is the same BLOCK_GAP margin (see spacing.js). The empty
+     space TEXT_SPACE above and below each line of text comes on top of it, so the
+     letters end up BLOCK_GAP + 2 * TEXT_SPACE apart whatever the font size. */
   h2,
   h3 {
     position: relative;
-    margin-bottom: 33px;
+    margin-bottom: ${BLOCK_GAP}px;
     font-weight: 560;
     color: ${({ theme }) => theme.colors.inkStrong};
     scroll-margin-top: ${LAYOUT.HEADER_HEIGHT + 24}px;
   }
 
   h3 {
-    font-size: 15px;
-    line-height: 24px;
+    font-size: ${BODY_FONT_SIZE}px;
+    line-height: ${lineHeightFor(BODY_FONT_SIZE)}px;
   }
 
   h2 {
     display: flex;
     align-items: flex-start;
-    margin-top: 128px;
-    font-size: 22px;
-    line-height: 30px;
+    margin-top: ${BLOCK_GAP}px;
+    font-size: ${H2_FONT_SIZE}px;
+    line-height: ${lineHeightFor(H2_FONT_SIZE)}px;
   }
 
   /* A hairline runs from the title to the column edge, centered on its first line. */
@@ -92,33 +98,43 @@ const Body = styled.div`
   }
 
   h3 {
-    margin-top: 44px;
-    margin-bottom: 24px;
+    margin-top: ${BLOCK_GAP}px;
+    margin-bottom: ${BLOCK_GAP}px;
   }
 
   h2:hover ${AnchorButton}, h3:hover ${AnchorButton} {
     opacity: 1;
   }
 
-  /* Blank lines beyond the first (see remarkBlankLines) add 20px each. Padding is used
-     because it adds to a block's own margin, where a margin would collapse into it. */
-  [data-gap='1'] {
-    padding-top: 20px;
+  /* Each blank line beyond the first (see remarkBlankLines) adds one BLOCK_GAP, as extra
+     padding above the block. Padding is used because it adds to a block's own margin,
+     where a margin would collapse into it. */
+  [data-gap] {
+    padding-top: var(--gap-extra, 0px);
   }
 
-  [data-gap='2'] {
-    padding-top: 40px;
+  ${Array.from(
+    { length: MAX_EXTRA },
+    (_, index) =>
+      `[data-gap='${index + 1}'] { --gap-extra: ${(index + 1) * BLOCK_GAP}px; }`
+  ).join('\n')}
+
+  /* A paragraph with just one image gets the same TEXT_SPACE above and below the image
+     that a line of text has inside its own box. */
+  & > p[data-image] {
+    padding-top: calc(var(--gap-extra, 0px) + ${TEXT_SPACE}px);
+    padding-bottom: ${TEXT_SPACE}px;
   }
 
-  [data-gap='3'] {
-    padding-top: 60px;
+  & > p[data-image] > img {
+    display: block;
   }
 
-  /* Blocks open with 20px and close with 0; adjacent margins collapse to a 20px gap. */
+  /* Blocks open with BLOCK_GAP and close with 0; adjacent margins collapse to one gap. */
   p,
   ul,
   ol {
-    margin: 20px 0 0;
+    margin: ${BLOCK_MARGIN};
   }
 
   ul,
@@ -131,7 +147,7 @@ const Body = styled.div`
   }
 
   blockquote {
-    margin: 20px 0;
+    margin: ${BLOCK_MARGIN};
     padding: 4px 16px;
     border-left: 3px solid ${({ theme }) => theme.colors.border};
     color: ${({ theme }) => theme.colors.inkSub};
@@ -188,7 +204,7 @@ const Body = styled.div`
     display: block;
     width: fit-content;
     max-width: 100%;
-    margin: 24px 0 8px;
+    margin: 0;
   }
 
   span[data-figure][data-center] {
@@ -233,7 +249,7 @@ const Body = styled.div`
 
   table {
     border-collapse: collapse;
-    margin: 20px 0;
+    margin: ${BLOCK_MARGIN};
     display: block;
     overflow-x: auto;
   }
@@ -524,6 +540,7 @@ function PreContent({ node, children }) {
 const REMARK_PLUGINS = [
   // First, while every block still carries the line numbers the parser gave it.
   remarkBlankLines,
+  remarkParagraphKinds,
   remarkGfm,
   [remarkMath, { singleDollarTextMath: false }],
   remarkHighlight,
