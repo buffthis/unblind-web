@@ -288,6 +288,33 @@ describe('PostArticle', () => {
       expect(marked[1].querySelector('blockquote')).not.toBeNull();
     });
 
+    it('counts the blank lines before the first block, one gap each', () => {
+      const none = renderArticle('첫 문단\n\n둘째');
+      expect(none.container.querySelector('p')).not.toHaveAttribute('data-gap');
+      none.unmount();
+
+      const one = renderArticle('\n첫 문단');
+      expect(gapOf(one.container.querySelector('p'))).toBe('1');
+      one.unmount();
+
+      const three = renderArticle('\n\n\n## 첫 제목\n\n본문');
+      const title = three.container.querySelector('h2');
+      expect(gapOf(title)).toBe('3');
+      expect(declaredValue(title, '--gap-extra')).toBe('60px');
+      three.unmount();
+
+      const many = renderArticle('\n\n\n\n\n\n\n첫 문단');
+      expect(gapOf(many.container.querySelector('p'))).toBe('3');
+    });
+
+    it('does not count blank lines before the first block of a quote or a list item', () => {
+      const { container } = renderArticle('> \n> 인용 첫 줄\n\n-\n\n  항목');
+
+      expect(container.querySelector('blockquote p')).not.toHaveAttribute(
+        'data-gap'
+      );
+    });
+
     it('leaves blank lines inside a code block alone', () => {
       const { container } = renderArticle(
         '```js\nconst a = 1;\n\n\n\nconst b = 2;\n```\n\n끝'
