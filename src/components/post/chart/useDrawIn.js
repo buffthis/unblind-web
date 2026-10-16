@@ -10,15 +10,20 @@ export const DRAW_IN = { duration: 0.8, ease: [0.22, 1, 0.36, 1] };
 // phase so the second run starts the animation again instead of freezing at width 0.
 // `skip` starts the chart already drawn (it was drawn once before a remount), and
 // `onDrawn` reports a finished draw-in, whether it completed or was interrupted.
+// With `replay` the chart is wiped once none of it is on screen, and drawn in again
+// when half of it is back. The two thresholds keep a chart hovering around the half
+// mark from being wiped and redrawn over and over.
 export default function useDrawIn({
   rootRef,
   clipRectRef,
   aheadRef,
   reduced,
   skip = false,
+  replay = false,
   onDrawn,
 }) {
-  const inView = useInView(rootRef, { once: true, amount: 0.5 });
+  const inView = useInView(rootRef, { once: !replay, amount: 0.5 });
+  const anyShown = useInView(rootRef);
   const phase = useRef(reduced || skip ? 'done' : 'waiting');
   const controls = useRef(null);
   // Read through a ref so an unstable callback cannot restart the running animation.
@@ -55,6 +60,15 @@ export default function useDrawIn({
       if (phase.current === 'drawing') phase.current = 'waiting';
     };
   }, [inView, finish, clipRectRef]);
+
+  useEffect(() => {
+    if (!replay || reduced || anyShown) return;
+    controls.current?.stop();
+    controls.current = null;
+    phase.current = 'waiting';
+    clipRectRef.current?.setAttribute('width', '0');
+    if (aheadRef.current) aheadRef.current.style.opacity = '0';
+  }, [replay, reduced, anyShown, clipRectRef, aheadRef]);
 
   const isDone = useCallback(() => phase.current === 'done', []);
   return { isDone, finish };

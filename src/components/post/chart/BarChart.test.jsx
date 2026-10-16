@@ -189,6 +189,53 @@ describe('BarChart draw-in', () => {
   });
 });
 
+describe('BarChart replay', () => {
+  // Half of the chart on screen grows the bars; they fold back only once none of it shows.
+  function viewAs({ half, any }) {
+    useInView.mockImplementation((_ref, options) =>
+      options?.amount === 0.5 ? half : any
+    );
+  }
+
+  it('folds the bars once off screen and grows them again on return', () => {
+    useReducedMotion.mockReturnValue(false);
+    viewAs({ half: true, any: true });
+    const c = renderChart(chart, { replay: true });
+    expect(c.figure()).toHaveAttribute('data-grown', 'true');
+
+    viewAs({ half: false, any: true });
+    c.rerenderChart({ ...chart });
+    expect(c.figure()).toHaveAttribute('data-grown', 'true');
+
+    viewAs({ half: false, any: false });
+    c.rerenderChart({ ...chart });
+    expect(c.figure()).toHaveAttribute('data-grown', 'false');
+
+    viewAs({ half: true, any: true });
+    c.rerenderChart({ ...chart });
+    expect(c.figure()).toHaveAttribute('data-grown', 'true');
+  });
+
+  it('watches only the first time half the chart shows when it does not replay', () => {
+    useReducedMotion.mockReturnValue(false);
+    renderChart(chart);
+
+    // framer-motion latches a `once` observer, so the bars stay grown after it fires.
+    expect(useInView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ once: true, amount: 0.5 })
+    );
+  });
+
+  it('keeps the bars grown with reduced motion even when replaying', () => {
+    viewAs({ half: false, any: false });
+    expect(renderChart(chart, { replay: true }).figure()).toHaveAttribute(
+      'data-grown',
+      'true'
+    );
+  });
+});
+
 describe('BarChart hover with reduced motion', () => {
   it('highlights the row under the pointer and dims the others', () => {
     const c = renderChart();

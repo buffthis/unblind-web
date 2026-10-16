@@ -1,5 +1,6 @@
 import Alert, { parseAlert } from '@components/post/Alert';
 import ChartBlock, { codeText } from '@components/post/chart/ChartBlock';
+import { ChartReplayContext } from '@components/post/chart/replay';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import GitHubLink from '@components/post/GitHubLink';
 import MermaidBlock from '@components/post/mermaid/MermaidBlock';
@@ -508,8 +509,9 @@ const COMPONENTS = {
 
 // `reveal` fades blocks in on scroll; the editor preview leaves it off so blocks
 // do not fade in again while typing. `entrance` staggers the first screen of blocks.
+// `replayCharts` redraws a chart each time it scrolls back into view.
 const PostArticle = forwardRef(function PostArticle(
-  { content, reveal = false, entrance },
+  { content, reveal = false, entrance, replayCharts = false },
   ref
 ) {
   const bodyRef = useRef(null);
@@ -517,16 +519,18 @@ const PostArticle = forwardRef(function PostArticle(
   const revealing = useScrollReveal(bodyRef, reveal, content, entrance);
   const rehypePlugins = useRehypePlugins(content, REHYPE_PLUGINS);
   return (
-    <Body ref={bodyRef} data-reveal={revealing ? '' : undefined}>
-      <Markdown
-        remarkPlugins={REMARK_PLUGINS}
-        rehypePlugins={rehypePlugins}
-        remarkRehypeOptions={REMARK_REHYPE_OPTIONS}
-        components={COMPONENTS}
-      >
-        {content}
-      </Markdown>
-    </Body>
+    <ChartReplayContext.Provider value={replayCharts}>
+      <Body ref={bodyRef} data-reveal={revealing ? '' : undefined}>
+        <Markdown
+          remarkPlugins={REMARK_PLUGINS}
+          rehypePlugins={rehypePlugins}
+          remarkRehypeOptions={REMARK_REHYPE_OPTIONS}
+          components={COMPONENTS}
+        >
+          {content}
+        </Markdown>
+      </Body>
+    </ChartReplayContext.Provider>
   );
 });
 

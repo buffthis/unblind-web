@@ -24,13 +24,21 @@ const chart = {
   series: [{ name: 'a', values: [10, 50, 96] }],
 };
 
-function renderChart(wrap = (node) => node) {
+function renderChart(wrap = (node) => node, props = {}) {
   return render(
     wrap(
       <ThemeProvider theme={theme}>
-        <LineChart chart={chart} />
+        <LineChart chart={chart} {...props} />
       </ThemeProvider>
     )
+  );
+}
+
+// The chart watches two thresholds: half of it on screen starts the draw-in, and any
+// part of it on screen keeps a replaying chart drawn.
+function viewAs({ half, any }) {
+  useInView.mockImplementation((_ref, options) =>
+    options?.amount === 0.5 ? half : any
   );
 }
 
@@ -86,5 +94,75 @@ describe('useDrawIn', () => {
     expect(animate.mock.results[0].value.stop).toHaveBeenCalled();
     act(() => animate.mock.calls[1][2].onComplete());
     expect(clipOf(container)).toHaveAttribute('width', '1040');
+  });
+
+  describe('replay', () => {
+    const replaying = (node) => node;
+    const rerenderWith = (utils, props) =>
+      utils.rerender(
+        <ThemeProvider theme={theme}>
+          <LineChart chart={chart} {...props} />
+        </ThemeProvider>
+      );
+
+    it('resets once the chart is fully off screen and draws again on return', () => {
+      viewAs({ half: true, any: true });
+      const utils = renderChart(replaying, { replay: true });
+      expect(animate).toHaveBeenCalledTimes(1);
+      act(() => animate.mock.calls[0][2].onComplete());
+      expect(clipOf(utils.container)).toHaveAttribute('width', '1040');
+
+      viewAs({ half: false, any: false });
+      rerenderWith(utils, { replay: true });
+      expect(clipOf(utils.container)).toHaveAttribute('width', '0');
+      expect(aheadOf(utils.container).style.opacity).toBe('0');
+
+      viewAs({ half: true, any: true });
+      rerenderWith(utils, { replay: true });
+      expect(animate).toHaveBeenCalledTimes(2);
+    });
+
+    it('stays drawn while any part of the chart is still on screen', () => {
+      viewAs({ half: true, any: true });
+      const utils = renderChart(replaying, { replay: true });
+      act(() => animate.mock.calls[0][2].onComplete());
+
+      viewAs({ half: false, any: true });
+      rerenderWith(utils, { replay: true });
+      expect(clipOf(utils.container)).toHaveAttribute('width', '1040');
+      expect(aheadOf(utils.container).style.opacity).toBe('1');
+    });
+
+    it('stops a draw-in that is still running when the chart leaves', () => {
+      viewAs({ half: true, any: true });
+      const utils = renderChart(replaying, { replay: true });
+      const running = animate.mock.results[0].value;
+
+      viewAs({ half: false, any: false });
+      rerenderWith(utils, { replay: true });
+      expect(running.stop).toHaveBeenCalled();
+      expect(clipOf(utils.container)).toHaveAttribute('width', '0');
+    });
+
+    it('never resets a chart that does not replay', () => {
+      viewAs({ half: true, any: true });
+      const utils = renderChart(replaying);
+      act(() => animate.mock.calls[0][2].onComplete());
+
+      viewAs({ half: false, any: false });
+      rerenderWith(utils, {});
+      expect(clipOf(utils.container)).toHaveAttribute('width', '1040');
+      expect(animate).toHaveBeenCalledTimes(1);
+    });
+
+    it('never resets with reduced motion', () => {
+      useReducedMotion.mockReturnValue(true);
+      viewAs({ half: true, any: true });
+      const utils = renderChart(replaying, { replay: true });
+
+      viewAs({ half: false, any: false });
+      rerenderWith(utils, { replay: true });
+      expect(clipOf(utils.container)).toHaveAttribute('width', '1040');
+    });
   });
 });

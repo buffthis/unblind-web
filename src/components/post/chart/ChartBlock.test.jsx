@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import BarChart from './BarChart';
 import ChartBlock, { codeText } from './ChartBlock';
 import LineChart from './LineChart';
+import { ChartReplayContext } from './replay';
 
 vi.mock('./LineChart', () => ({ default: vi.fn() }));
 vi.mock('./BarChart', () => ({ default: vi.fn() }));
@@ -44,6 +45,24 @@ describe('ChartBlock', () => {
     expect(
       screen.getByRole('figure', { name: '전환 비율' })
     ).toBeInTheDocument();
+  });
+
+  it('hands the replay setting down to the chart, off unless a post turns it on', () => {
+    LineChart.mockImplementation(() => <figure />);
+    renderBlock(VALID);
+    expect(LineChart.mock.calls[0][0].replay).toBe(false);
+
+    LineChart.mockClear();
+    render(
+      <ThemeProvider theme={theme}>
+        <ChartReplayContext.Provider value={true}>
+          <ChartBlock source={VALID}>
+            <code className="language-chart">{VALID}</code>
+          </ChartBlock>
+        </ChartReplayContext.Provider>
+      </ThemeProvider>
+    );
+    expect(LineChart.mock.calls[0][0].replay).toBe(true);
   });
 
   it('renders a bar chart for type: bar', () => {

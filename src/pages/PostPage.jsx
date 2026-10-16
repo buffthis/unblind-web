@@ -379,6 +379,7 @@ export default function PostPage() {
                 ref={articleRef}
                 content={content}
                 reveal
+                replayCharts
                 entrance={entrance ? BODY_ENTRANCE : undefined}
               />
             </ArticleArea>

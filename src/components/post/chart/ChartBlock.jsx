@@ -1,10 +1,11 @@
 import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 
 import BarChart from './BarChart';
 import LineChart from './LineChart';
 import { formatChartError, parseChart } from './parseChart';
+import { ChartReplayContext } from './replay';
 
 export function codeText(children) {
   const [code] = React.Children.toArray(children);
@@ -48,6 +49,7 @@ export default function ChartBlock({ source, children }) {
   const result = useMemo(() => parseChart(source), [source]);
   const [drawn, setDrawn] = useState(false);
   const markDrawn = useCallback(() => setDrawn(true), []);
+  const replay = useContext(ChartReplayContext);
   if (!result.ok) {
     return (
       <>
@@ -62,7 +64,12 @@ export default function ChartBlock({ source, children }) {
       source={source}
       fallback={<CodeBlock>{children}</CodeBlock>}
     >
-      <Chart chart={result.chart} skipDrawIn={drawn} onDrawn={markDrawn} />
+      <Chart
+        chart={result.chart}
+        skipDrawIn={drawn}
+        onDrawn={markDrawn}
+        replay={replay}
+      />
     </ChartErrorBoundary>
   );
 }

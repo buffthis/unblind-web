@@ -121,13 +121,19 @@ function barLeft(index, k, count, seriesCount) {
   return `calc(${center}% - ${group} / 2 + ${k} * (var(--bar-width) + ${BAR_GAP}px))`;
 }
 
-// Bars grow once, the first time half the chart is on screen. skipDrawIn is read on
-// mount only, like LineChart, so a chart remounted after a syntax error is not
-// grown again.
-function useGrowIn(rootRef, reduced, skipDrawIn, onDrawn) {
-  const inView = useInView(rootRef, { once: true, amount: 0.5 });
-  const [startGrown] = useState(skipDrawIn);
-  const grown = reduced || startGrown || inView;
+// Bars grow the first time half the chart is on screen. With `replay` they fold back
+// once none of the chart shows and grow again on return; the two thresholds keep a
+// chart that hovers around the half mark from flickering. skipDrawIn is read on mount
+// only, like LineChart, so a chart remounted after a syntax error is not grown again.
+function useGrowIn(rootRef, reduced, skipDrawIn, onDrawn, replay) {
+  const half = useInView(rootRef, { once: !replay, amount: 0.5 });
+  const any = useInView(rootRef);
+  const [shown, setShown] = useState(skipDrawIn);
+  useEffect(() => {
+    if (half) setShown(true);
+    else if (replay && !any) setShown(false);
+  }, [half, any, replay]);
+  const grown = reduced || shown || half;
   const onDrawnRef = useRef(onDrawn);
   useEffect(() => {
     onDrawnRef.current = onDrawn;
@@ -140,7 +146,12 @@ function useGrowIn(rootRef, reduced, skipDrawIn, onDrawn) {
 
 // Also draws dot charts (type: dot): the same rows, hover and layout, with a dot at
 // each value in place of a bar.
-export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
+export default function BarChart({
+  chart,
+  skipDrawIn = false,
+  onDrawn,
+  replay = false,
+}) {
   const { title, unit, labels, series } = chart;
   const dot = chart.type === 'dot';
   const count = labels.length;
@@ -167,7 +178,7 @@ export default function BarChart({ chart, skipDrawIn = false, onDrawn }) {
   const valueRefs = useRef([]);
 
   const reduced = useReducedMotion() === true;
-  const grown = useGrowIn(rootRef, reduced, skipDrawIn, onDrawn);
+  const grown = useGrowIn(rootRef, reduced, skipDrawIn, onDrawn, replay);
   const scrub = useBarScrub({
     chart,
     reduced,

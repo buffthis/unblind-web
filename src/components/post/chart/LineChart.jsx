@@ -86,7 +86,12 @@ const Point = styled.span`
 
 // skipDrawIn is read on mount only: it tells a remounted chart that it was already
 // drawn, and later changes must not reset the clip of a chart that is on screen.
-export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
+export default function LineChart({
+  chart,
+  skipDrawIn = false,
+  onDrawn,
+  replay = false,
+}) {
   const { title, unit, labels, series } = chart;
   const count = labels.length;
   const domain = useMemo(
@@ -121,6 +126,7 @@ export default function LineChart({ chart, skipDrawIn = false, onDrawn }) {
     aheadRef,
     reduced,
     skip: startDrawn,
+    replay,
     onDrawn,
   });
   const drawnAtStart = reduced || startDrawn;

@@ -68,6 +68,40 @@ describe('PostArticle', () => {
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(1);
   });
 
+  it('replays a chart when the post page asks for it, and not in the editor preview', () => {
+    const barSource = '```chart\ntype: bar\n---\n월, a\n1월, 1\n2월, 2\n```';
+    const grown = (container) =>
+      container.querySelector('figure').getAttribute('data-grown');
+    const seen = ({ half, any }) =>
+      useInView.mockImplementation((_ref, options) =>
+        options?.amount === 0.5 ? half : any
+      );
+    const article = (props) => (
+      <ThemeProvider theme={theme}>
+        <PostArticle content={barSource} {...props} />
+      </ThemeProvider>
+    );
+
+    seen({ half: true, any: true });
+    const page = render(article({ replayCharts: true }));
+    expect(grown(page.container)).toBe('true');
+    seen({ half: false, any: true });
+    page.rerender(article({ replayCharts: true }));
+    expect(grown(page.container)).toBe('true');
+    seen({ half: false, any: false });
+    page.rerender(article({ replayCharts: true }));
+    expect(grown(page.container)).toBe('false');
+    page.unmount();
+
+    // Without the prop (the editor preview) the chart keeps its watch-once behavior.
+    useInView.mockClear();
+    render(article({}));
+    expect(useInView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ once: true, amount: 0.5 })
+    );
+  });
+
   it('shows the syntax error under the code while a chart is being typed', () => {
     const { rerender } = renderArticle('```chart\n월, a\n1월, x\n```');
     expect(screen.getByText(/^차트 문법 오류 · /)).toBeInTheDocument();
