@@ -405,6 +405,18 @@ describe('PostArticle', () => {
     }
   });
 
+  it('keeps the # link of a title on the title line when blank lines open space above it', () => {
+    const { container } = renderArticle('앞\n\n\n\n\n## 제목\n\n본문');
+    const h2 = container.querySelector('h2');
+    const anchor = h2.querySelector('[data-heading-anchor]');
+
+    // The extra blank lines become padding on top of the title, and the button is
+    // positioned from the padding edge, so it has to start below that padding.
+    expect(h2).toHaveAttribute('data-gap', '3');
+    expect(declaredValue(h2, '--gap-extra')).toBe('60px');
+    expect(declaredValue(anchor, 'top')).toBe('var(--gap-extra, 0px)');
+  });
+
   it('draws a border only when the alt text ends with |border', () => {
     const { container } = renderArticle(
       '![설명 | border](https://a/b.png)\n\n![그냥](https://a/c.png)'

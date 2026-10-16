@@ -36,7 +36,9 @@ const H2_FONT_SIZE = 22;
 // Sits in the left gutter so the rule after an h2 starts right at the text.
 const AnchorButton = styled.button`
   position: absolute;
-  top: 0;
+  /* Blank lines above a title become padding on the title (--gap-extra), and top is
+     measured from the padding edge, so the button starts below that padding. */
+  top: var(--gap-extra, 0px);
   right: 100%;
   padding: 0 6px;
   border: none;
