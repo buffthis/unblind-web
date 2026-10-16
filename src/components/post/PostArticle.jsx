@@ -293,7 +293,6 @@ const Body = styled.div`
   sup {
     display: inline-block;
     height: 0.6em;
-    padding-left: 0.35em;
     font-size: 0.6em;
     line-height: 1;
     vertical-align: super;

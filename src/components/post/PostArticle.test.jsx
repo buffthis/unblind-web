@@ -198,6 +198,17 @@ describe('PostArticle', () => {
     );
   });
 
+  it('sets the footnote number right against the word before it', () => {
+    const { container } = renderArticle('글[^1] 입니다.\n\n[^1]: 설명');
+    const sup = container.querySelector('p sup');
+
+    // Wikipedia, Namuwiki and Obsidian all leave no space between the word and the
+    // superscript number, so there is no padding on its left.
+    expect(sup.previousSibling.textContent).toBe('글');
+    expect(declaredValue(sup, 'padding-left')).toBeNull();
+    expect(declaredValue(sup, 'margin-left')).toBeNull();
+  });
+
   it('links a footnote reference and its note both ways in Korean', () => {
     const { container } = renderArticle('본문[^1]\n\n[^1]: 출처 설명');
 
