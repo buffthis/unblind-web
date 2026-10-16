@@ -191,6 +191,7 @@ const EditLink = styled(Link)`
 `;
 
 const Thumbnail = styled.img`
+  display: block;
   width: 100%;
   margin-top: ${BYLINE_GAP}px;
   border-radius: ${({ theme }) => theme.radius.md};

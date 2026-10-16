@@ -181,6 +181,15 @@ describe('PostPage', () => {
     expect(screen.getByAltText('썸네일')).not.toHaveAttribute('data-border');
   });
 
+  it('draws the thumbnail as a block, so no baseline gap opens under it', () => {
+    usePost.mockReturnValue({ post: basePost, loading: false, error: false });
+    renderPage();
+
+    // An inline image sits on the text baseline and leaves about 8px of descender
+    // space below, which the margin under the thumbnail then comes on top of.
+    expect(screen.getByAltText('썸네일')).toHaveStyle({ display: 'block' });
+  });
+
   it('shows the title before the thumbnail', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();
