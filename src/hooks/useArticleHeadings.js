@@ -41,6 +41,21 @@ export default function useArticleHeadings(rootRef, content) {
   return headings;
 }
 
+// A heading is active while it is in this band: below the header, down to this share of
+// the window height.
+const ACTIVE_BAND = 0.3;
+
+const inActiveBand = (element) => {
+  const { top, bottom } = element.getBoundingClientRect();
+  return (
+    bottom > LAYOUT.HEADER_HEIGHT && top < window.innerHeight * ACTIVE_BAND
+  );
+};
+
+// At the very top of the page nothing is active, even when the first heading already
+// sits inside the band: the reader has not scrolled to any heading yet. Once the page
+// is scrolled, the heading in the band is picked up without waiting for another one to
+// enter it.
 export function useActiveHeading(headings) {
   const [activeId, setActiveId] = useState(null);
   const ids = useMemo(() => headings.map((heading) => heading.id), [headings]);
@@ -48,8 +63,12 @@ export function useActiveHeading(headings) {
   useEffect(() => {
     if (ids.length === 0) return undefined;
 
+    const elements = () =>
+      ids.map((id) => document.getElementById(id)).filter(Boolean);
+
     const observer = new IntersectionObserver(
       (entries) => {
+        if (window.scrollY <= 0) return;
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -58,11 +77,22 @@ export function useActiveHeading(headings) {
       { rootMargin: `-${LAYOUT.HEADER_HEIGHT}px 0px -70% 0px` }
     );
 
-    ids.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
-    });
-    return () => observer.disconnect();
+    const onScroll = () => {
+      if (window.scrollY <= 0) {
+        setActiveId(null);
+        return;
+      }
+      setActiveId(
+        (current) => current ?? elements().find(inActiveBand)?.id ?? null
+      );
+    };
+
+    elements().forEach((element) => observer.observe(element));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [ids]);
 
   return activeId;
