@@ -5,7 +5,9 @@ import styled from 'styled-components';
 import {
   CLIP_FULL,
   CLIP_PAD,
+  endPoint,
   labelStride,
+  lastValueIndex,
   strokeWidthFor,
   toPoints,
   VIEW,
@@ -45,6 +47,11 @@ const Svg = styled.svg`
   height: 100%;
   overflow: visible;
 `;
+
+// A dot where a series ends before the last row, so the line reads as finished rather
+// than cut. A zero-length line with round caps is the dot, and non-scaling-stroke keeps
+// it round although the plot is stretched.
+const END_DOT = 7;
 
 const Line = styled.polyline`
   fill: none;
@@ -225,6 +232,20 @@ export default function LineChart({
                     vectorEffect="non-scaling-stroke"
                   />
                 ))}
+                {series.map((s, k) => {
+                  if (lastValueIndex(s.values) === count - 1) return null;
+                  const end = endPoint(s.values, domain);
+                  return (
+                    <Line
+                      key={`end-${k}`}
+                      data-role="end"
+                      points={`${end} ${end}`}
+                      stroke={color(PALETTE[k])}
+                      style={{ strokeWidth: END_DOT }}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  );
+                })}
               </g>
             </Svg>
             <LimitGuide chart={chart} domain={domain} />

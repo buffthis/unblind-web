@@ -46,11 +46,27 @@ function visibleIndices(values, buckets) {
   return picked;
 }
 
+// The index of the last row a series has a value in. A series that ended early has
+// blanks (null) after it.
+export function lastValueIndex(values) {
+  let last = values.length - 1;
+  while (last > 0 && values[last] == null) last -= 1;
+  return last;
+}
+
+// The "x y" of a series' last value, where an early-ended line stops.
+export function endPoint(values, domain) {
+  const index = lastValueIndex(values);
+  return `${xAt(index, values.length).toFixed(2)} ${yAt(values[index], domain).toFixed(2)}`;
+}
+
 // `buckets` is how many slices of the plot the line may be thinned to; leave it out
 // to draw every point.
 export function toPoints(values, domain, buckets = Infinity) {
+  // The line stops at the last value, but x positions still follow the whole table.
+  const used = values.slice(0, lastValueIndex(values) + 1);
   const indices =
-    visibleIndices(values, buckets) ?? values.map((_, index) => index);
+    visibleIndices(used, buckets) ?? used.map((_, index) => index);
   return indices
     .map(
       (index) =>
@@ -63,12 +79,14 @@ export function indexFromRatio(ratio, count) {
   return Math.round(Math.min(1, Math.max(0, ratio)) * (count - 1));
 }
 
+// null once the position is past the end of a series that ended early.
 export function valueAt(values, position) {
   const last = values.length - 1;
   if (position >= last) return values[last];
   if (position <= 0) return values[0];
   const index = Math.floor(position);
   const t = position - index;
+  if (values[index + 1] == null) return t === 0 ? values[index] : null;
   return values[index] + (values[index + 1] - values[index]) * t;
 }
 

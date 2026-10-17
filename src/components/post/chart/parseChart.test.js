@@ -230,6 +230,63 @@ describe('parseChart', () => {
     });
   });
 
+  describe('a series that ends early', () => {
+    it('reads blank cells at the end of a series as no value', () => {
+      const result = parseChart('분, A, B\n0, 1, 1\n14, 5, 7\n15, 6,\n27, 9,');
+      expect(result.ok).toBe(true);
+      expect(result.chart.series).toEqual([
+        { name: 'A', values: [1, 5, 6, 9] },
+        { name: 'B', values: [1, 7, null, null] },
+      ]);
+    });
+
+    it('counts a blank cell with spaces in it as blank', () => {
+      const result = parseChart('분, A, B\n0, 1, 1\n1, 2, 2\n2, 3,   ');
+      expect(result.chart.series[1].values).toEqual([1, 2, null]);
+    });
+
+    it.each([
+      [
+        '분, A, B\n0, 1, 1\n1, 2,\n2, 3, 3',
+        3,
+        3,
+        '빈 칸은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)',
+      ],
+      [
+        '분, A, B\n0, 1,\n1, 2, 2\n2, 3, 3',
+        2,
+        3,
+        '빈 칸은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)',
+      ],
+      [
+        '분, A, B\n0, 1, 1\n1, 2,\n2, 3,',
+        1,
+        3,
+        "계열 'B'는 값이 2개 이상 있어야 합니다",
+      ],
+      [
+        '분, A, B\n0, 1,\n1, 2,\n2, 3,',
+        1,
+        3,
+        "계열 'B'는 값이 2개 이상 있어야 합니다",
+      ],
+      [
+        'type: bar\n---\n팀, a\nA, 1\nB,',
+        5,
+        2,
+        '빈 칸은 선 그래프에서만 쓸 수 있습니다',
+      ],
+      [
+        'type: dot\n---\n팀, a\nA, 1\nB,',
+        5,
+        2,
+        '빈 칸은 선 그래프에서만 쓸 수 있습니다',
+      ],
+    ])('rejects %j at line %i column %i', (text, line, column, message) => {
+      expect(errorOf(text)).toEqual({ line, column, message });
+    });
+  });
+
   it('lets a dot chart start its axis above zero, with up to 40 rows', () => {
     const result = parseChart(
       `type: dot\nmin: 900\n---\n주, a\n${Array.from(
@@ -370,7 +427,12 @@ describe('parseChart', () => {
     ['주, a\n1, 1\n2, 1,000', 3, null, '칸이 2개여야 하는데 3개입니다'],
     ['주, a\n, 1\n2, 2', 2, 1, '레이블이 비어 있습니다'],
     ['주, a\n1, 96%\n2, 2', 2, 2, "숫자가 아닙니다: '96%'"],
-    ['주, a\n1, \n2, 2', 2, 2, "숫자가 아닙니다: ''"],
+    [
+      '주, a\n1, \n2, 2',
+      2,
+      2,
+      '빈 칸은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)',
+    ],
     ['주\ta\n1\t1\n2\t2', 1, null, '계열은 1~6개여야 합니다(지금 0개)'],
     [
       'max: 100\n---\n주, a\n1, 120\n2, 2',

@@ -58,6 +58,14 @@ describe('computeDomain', () => {
   });
 });
 
+describe('computeDomain with blanks', () => {
+  it('ignores the blanks of a series that ended early', () => {
+    expect(computeDomain([10, 20, null, null], { type: 'line' })).toEqual(
+      computeDomain([10, 20], { type: 'line' })
+    );
+  });
+});
+
 describe('formatValue', () => {
   it('formats with Korean grouping, up to two decimals, and the unit', () => {
     expect(formatValue(96, '%')).toBe('96%');

@@ -514,7 +514,9 @@ export function ChartTable({ id, name, chart }) {
             <tr key={i}>
               <th scope="row">{label}</th>
               {series.map((s, k) => (
-                <td key={k}>{formatValue(s.values[i], unit)}</td>
+                <td key={k}>
+                  {s.values[i] == null ? '-' : formatValue(s.values[i], unit)}
+                </td>
               ))}
             </tr>
           ))}

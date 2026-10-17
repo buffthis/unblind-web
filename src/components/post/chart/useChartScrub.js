@@ -47,6 +47,9 @@ export default function useChartScrub({
       const point = pointsRef.current[k];
       if (!point) return;
       const value = valueAt(s.values, at);
+      // A series that ended early has no point after its last value.
+      point.style.visibility = value == null ? 'hidden' : '';
+      if (value == null) return;
       point.style.left = `${percent}%`;
       point.style.top = `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
     });
@@ -69,8 +72,11 @@ export default function useChartScrub({
   function writeReadout(index) {
     chart.series.forEach((s, k) => {
       const element = valuesRef.current[k];
-      if (element)
-        element.textContent = formatValue(s.values[index], chart.unit);
+      if (element) {
+        const value = s.values[index];
+        element.textContent =
+          value == null ? '-' : formatValue(value, chart.unit);
+      }
     });
     if (labelRef.current) labelRef.current.textContent = chart.labels[index];
   }

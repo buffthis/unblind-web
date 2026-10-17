@@ -305,6 +305,8 @@ function parseTable(lines, offset, settings) {
 
   const body = lines.slice(1);
   const bar = settings.type === 'bar' || settings.type === 'dot';
+  // Only a line chart can have a series that ends before the last row.
+  const blankAllowed = !bar;
   const minRows = bar ? BAR_MIN_ROWS : MIN_ROWS;
   const maxRows = bar ? BAR_MAX_ROWS : MAX_ROWS;
   if (body.length < minRows || body.length > maxRows) {
@@ -328,6 +330,12 @@ function parseTable(lines, offset, settings) {
     if (cells[0] === '') fail(line, 1, '레이블이 비어 있습니다');
     const values = cells.slice(1).map((cell, k) => {
       const column = k + 2;
+      if (cell === '') {
+        if (!blankAllowed) {
+          fail(line, column, '빈 칸은 선 그래프에서만 쓸 수 있습니다');
+        }
+        return null;
+      }
       if (!NUMBER.test(cell)) fail(line, column, `숫자가 아닙니다: '${cell}'`);
       const value = Number(cell);
       if (!Number.isFinite(value)) fail(line, column, TOO_LARGE);
@@ -340,6 +348,23 @@ function parseTable(lines, offset, settings) {
       return value;
     });
     return { label: cells[0], values };
+  });
+
+  // A blank cell means the series has ended, so blanks may only fill the end of a column.
+  header.slice(1).forEach((name, k) => {
+    const values = parsedRows.map((row) => row.values[k]);
+    const blankAt = values.indexOf(null);
+    if (blankAt === -1) return;
+    if (values.slice(blankAt).some((value) => value !== null)) {
+      fail(
+        headerLine + blankAt + 1,
+        k + 2,
+        '빈 칸은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)'
+      );
+    }
+    if (blankAt < 2) {
+      fail(headerLine, k + 2, `계열 '${name}'는 값이 2개 이상 있어야 합니다`);
+    }
   });
 
   return {

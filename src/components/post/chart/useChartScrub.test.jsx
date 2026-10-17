@@ -195,4 +195,22 @@ describe('useChartScrub with motion', () => {
       timeout: 3000,
     });
   });
+
+  it('shows a dash and hides the point of a series after its end', async () => {
+    const c = renderChart({
+      ...chart,
+      series: [
+        { name: 'a', values: [10, 20, 30, 40, 50] },
+        { name: 'b', values: [50, 40, 30, null, null] },
+      ],
+    });
+    fireEvent.keyDown(c.plot, { key: 'End' });
+    expect(c.readout().textContent).toBe('50%-5월');
+    const [first, second] = c.points();
+    expect(first.style.visibility).toBe('');
+    expect(second.style.visibility).toBe('hidden');
+    fireEvent.keyDown(c.plot, { key: 'Home' });
+    expect(c.readout().textContent).toBe('10%50%1월');
+    await waitFor(() => expect(second.style.visibility).toBe(''));
+  });
 });

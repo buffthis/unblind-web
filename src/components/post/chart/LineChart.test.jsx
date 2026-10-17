@@ -57,6 +57,44 @@ describe('LineChart', () => {
     expect(limit).toHaveTextContent('목표 80%');
   });
 
+  describe('a series that ends early', () => {
+    const ended = {
+      labels: ['1월', '2월', '3월', '4월'],
+      series: [
+        { name: 'a', values: [10, 50, 96, 80] },
+        { name: 'b', values: [90, 50, null, null] },
+      ],
+    };
+
+    it('stops the line at its last value and marks the end with a dot', () => {
+      const { container } = renderChart(ended);
+      const lines = container.querySelectorAll('g[data-layer="past"] polyline');
+      // Two lines, one per series, then one end dot for the series that ended.
+      expect(lines).toHaveLength(3);
+      expect(lines[1].getAttribute('points')).toBe('0.00 100.00 333.33 500.00');
+      const ends = container.querySelectorAll('[data-role="end"]');
+      expect(ends).toHaveLength(1);
+      expect(ends[0].getAttribute('points')).toBe(
+        '333.33 500.00 333.33 500.00'
+      );
+    });
+
+    it('draws no end dot for a series that runs to the last row', () => {
+      const { container } = renderChart();
+      expect(container.querySelectorAll('[data-role="end"]')).toHaveLength(0);
+    });
+
+    it('shows a dash in the table for the rows after the end', () => {
+      renderChart(ended);
+      const row = screen.getByRole('row', { name: /4월/ });
+      expect(
+        within(row)
+          .getAllByRole('cell')
+          .map((cell) => cell.textContent)
+      ).toEqual(['80%', '-']);
+    });
+  });
+
   it('draws a vertical line on the point of its row', () => {
     const { container } = renderChart({
       xlimit: { index: 1, at: '2월', label: '출시' },

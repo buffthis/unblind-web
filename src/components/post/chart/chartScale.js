@@ -39,7 +39,7 @@ export function computeDomain(
   { min = null, max = null, type = 'line', limit = null, band = null } = {}
 ) {
   const values = [
-    ...data,
+    ...data.filter((value) => value != null),
     ...(limit ? [limit.value] : []),
     ...(band ? [band.from, band.to] : []),
   ];

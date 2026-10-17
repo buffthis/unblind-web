@@ -80,6 +80,36 @@ describe('chartGeometry', () => {
     expect(indexFromRatio(2, 5)).toBe(4);
   });
 
+  it('stops a line at its last value and keeps the x positions of the full table', () => {
+    const domain = { min: 0, max: 100 };
+    expect(toPoints([0, 50, null, null, null], domain)).toBe(
+      '0.00 1000.00 250.00 500.00'
+    );
+  });
+
+  it('thins only the part of a line that has values', () => {
+    const domain = { min: 0, max: 100 };
+    const values = [
+      ...Array.from({ length: 1000 }, (_, i) => (i * 7) % 100),
+      ...Array.from({ length: 1000 }, () => null),
+    ];
+    const drawn = toPoints(values, domain, 100)
+      .split(' ')
+      .reduce(
+        (acc, _, i, all) => (i % 2 ? acc : [...acc, [+all[i], +all[i + 1]]]),
+        []
+      );
+    expect(drawn.length).toBeLessThanOrEqual(100 * 2 + 2);
+    expect(drawn[drawn.length - 1][0]).toBeCloseTo(xAt(999, 2000), 1);
+  });
+
+  it('has no value past the end of a line that ended early', () => {
+    expect(valueAt([10, 20, null, null], 1)).toBe(20);
+    expect(valueAt([10, 20, null, null], 1.5)).toBeNull();
+    expect(valueAt([10, 20, null, null], 3)).toBeNull();
+    expect(valueAt([10, 20, 40, null], 1.5)).toBe(30);
+  });
+
   it('interpolates between neighbouring values', () => {
     expect(valueAt([10, 20, 40], 0)).toBe(10);
     expect(valueAt([10, 20, 40], 1.5)).toBe(30);
