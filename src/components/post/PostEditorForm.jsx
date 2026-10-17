@@ -2,6 +2,7 @@ import { savePost, toSaveError, uploadImage } from '@apis/postApi';
 import PostArticle from '@components/post/PostArticle';
 import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
+import { LAYOUT } from '@styles/constants';
 import { useQueryClient } from '@tanstack/react-query';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
@@ -34,10 +35,14 @@ const FORM_MESSAGES = {
   unknown: '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.',
 };
 
+// The save bar is fixed to the bottom edge at this height, and the panes stop above it.
+const FOOTER_HEIGHT = 62;
+const PANES_GAP = 12;
+
 const Page = styled.div`
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 20px 120px;
+  padding: 24px 20px ${FOOTER_HEIGHT + PANES_GAP}px;
 `;
 
 const Field = styled.label`
@@ -115,10 +120,18 @@ const Tabs = styled.div`
   }
 `;
 
+// One box as tall as the space between the site header and the save bar. The editor and
+// the preview each scroll inside it, so reading one side does not scroll the page away
+// from the other. The page ends with just room for the save bar (see Page), so scrolled
+// to the end the box sits right under the header.
 const Panes = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
+  grid-template-rows: minmax(0, 1fr);
+  height: calc(
+    100vh - ${LAYOUT.HEADER_HEIGHT + 2 * PANES_GAP + FOOTER_HEIGHT}px
+  );
   margin-top: 16px;
 
   @media (max-width: calc(${({ theme }) => theme.breakpoints.desktop} - 1px)) {
@@ -128,10 +141,34 @@ const Panes = styled.div`
 
 const Pane = styled.section`
   min-width: 0;
+  min-height: 0;
 
   @media (max-width: calc(${({ theme }) => theme.breakpoints.desktop} - 1px)) {
     display: ${({ $active }) => ($active ? 'block' : 'none')};
   }
+`;
+
+// Pane switches between block and none below the desktop width, so the flex display is
+// repeated in that query to keep a hidden editor hidden.
+const EditorPane = styled(Pane)`
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: calc(${({ theme }) => theme.breakpoints.desktop} - 1px)) {
+    display: ${({ $active }) => ($active ? 'flex' : 'none')};
+  }
+`;
+
+// The body field takes the height the toolbar leaves, so the textarea can fill it.
+const BodyField = styled(Field)`
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 0;
+`;
+
+const PreviewPane = styled(Pane)`
+  overflow-y: auto;
 `;
 
 const Toolbar = styled.div`
@@ -151,15 +188,16 @@ const ToolButton = styled.button`
 `;
 
 const BodyInput = styled.textarea`
+  flex: 1 1 0%;
   width: 100%;
-  min-height: 60vh;
+  min-height: 0;
   padding: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 15px;
   line-height: 1.7;
-  resize: vertical;
+  resize: none;
 `;
 
 const Footer = styled.div`
@@ -170,6 +208,8 @@ const Footer = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  box-sizing: border-box;
+  height: ${FOOTER_HEIGHT}px;
   padding: 12px 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   background: rgba(255, 255, 255, 0.95);
@@ -537,7 +577,7 @@ export default function PostEditorForm({
       </Tabs>
 
       <Panes>
-        <Pane $active={tab === 'write'}>
+        <EditorPane $active={tab === 'write'}>
           <Toolbar>
             {TOOLBAR.map((tool) => (
               <ToolButton
@@ -566,7 +606,7 @@ export default function PostEditorForm({
               onChange={handleFilePick}
             />
           </Toolbar>
-          <Field as="div">
+          <BodyField as="div">
             <label htmlFor="post-body">
               <span>본문</span>
             </label>
@@ -582,11 +622,11 @@ export default function PostEditorForm({
             {fieldErrors.content && (
               <FieldError>{fieldErrors.content}</FieldError>
             )}
-          </Field>
-        </Pane>
-        <Pane $active={tab === 'preview'} aria-label="미리보기">
+          </BodyField>
+        </EditorPane>
+        <PreviewPane $active={tab === 'preview'} aria-label="미리보기">
           <PostArticle content={previewContent} />
-        </Pane>
+        </PreviewPane>
       </Panes>
 
       <Footer>

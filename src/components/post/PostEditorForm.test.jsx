@@ -68,6 +68,19 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+// jsdom does not lay anything out, so read what the stylesheet declares for the element.
+function declaredValue(element, property) {
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (rule.selectorText && element.matches(rule.selectorText)) {
+        const value = rule.style.getPropertyValue(property);
+        if (value) return value;
+      }
+    }
+  }
+  return null;
+}
+
 describe('PostEditorForm', () => {
   it('blocks publishing without a title or body', () => {
     renderForm();
@@ -88,6 +101,29 @@ describe('PostEditorForm', () => {
     expect(getComputedStyle(container.querySelector('input')).fontWeight).toBe(
       '700'
     );
+  });
+
+  it('fits the editor and the preview in one screen-high box that each scroll inside', () => {
+    renderForm();
+    const body = screen.getByLabelText('본문');
+    const editorPane = body.closest('section');
+    const previewPane = screen.getByRole('region', { name: '미리보기' });
+    const panes = previewPane.parentElement;
+
+    // The box is as tall as the space between the site header and the save bar, and the
+    // page ends with just room for the save bar, so scrolled to the end the box fills
+    // that space and neither side needs the page to scroll to read the other.
+    expect(declaredValue(panes, 'height')).toContain('100vh');
+    expect(declaredValue(panes.parentElement, 'padding')).toBe(
+      '24px 20px 74px'
+    );
+    expect(declaredValue(previewPane, 'overflow-y')).toBe('auto');
+    expect(declaredValue(editorPane, 'display')).toBe('flex');
+    expect(declaredValue(editorPane, 'flex-direction')).toBe('column');
+    // The textarea takes what the toolbar leaves and scrolls its own text.
+    expect(declaredValue(body, 'flex')).toBe('1 1 0%');
+    expect(declaredValue(body, 'min-height')).toBe('0px');
+    expect(declaredValue(body, 'resize')).toBe('none');
   });
 
   it('rejects a non-http thumbnail url', () => {
