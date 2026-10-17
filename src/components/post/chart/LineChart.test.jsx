@@ -57,6 +57,71 @@ describe('LineChart', () => {
     expect(limit).toHaveTextContent('목표 80%');
   });
 
+  describe('notes', () => {
+    const note = (overrides) => ({
+      index: 1,
+      seriesIndex: 0,
+      at: '2월',
+      series: 'a',
+      text: '절반 · {value}',
+      ...overrides,
+    });
+
+    it('writes a note beside its point, with the value filled in', () => {
+      const { container } = renderChart({ notes: [note()] });
+      const text = container.querySelector('[data-role="note"]');
+      expect(text).toHaveTextContent('절반 · 50%');
+      expect(text).toHaveAttribute('data-flip', 'false');
+      expect(text.style.top).toBe('50%');
+      const ring = container.querySelector('[data-role="note-ring"]');
+      expect(ring.style.left).toBe('50%');
+      expect(ring.style.top).toBe('50%');
+    });
+
+    it('turns a note left of its point near the right edge', () => {
+      const { container } = renderChart({
+        notes: [note({ index: 2, seriesIndex: 1, at: '3월', series: 'b' })],
+      });
+      expect(container.querySelector('[data-role="note"]')).toHaveAttribute(
+        'data-flip',
+        'true'
+      );
+    });
+
+    it('stacks notes that would sit on one another and joins each to its point', () => {
+      const { container } = renderChart({
+        notes: [note(), note({ seriesIndex: 1, series: 'b', text: '같은 값' })],
+      });
+      const [first, second] = container.querySelectorAll('[data-role="note"]');
+      expect(first.style.top).toBe('50%');
+      expect(second.style.top).toBe('59%');
+      expect(
+        container.querySelectorAll('[data-role="note-leader"]')
+      ).toHaveLength(1);
+    });
+
+    it('draws no leader for a note that sits level with its point', () => {
+      const { container } = renderChart({ notes: [note()] });
+      expect(container.querySelector('[data-role="note-leader"]')).toBeNull();
+    });
+
+    it('fades the notes in together with the lines that are drawn in', () => {
+      const { container } = renderChart({ notes: [note()] });
+      const notes = container.querySelector('[data-role="notes"]');
+      const ahead = container.querySelector('g[data-layer="ahead"]');
+      expect(notes.style.opacity).toBe(ahead.style.opacity);
+    });
+
+    it('lists the notes in the table caption', () => {
+      renderChart({ notes: [note()] });
+      expect(
+        screen
+          .getByRole('table', { name: '전환 비율' })
+          .querySelector('caption')
+      ).toHaveTextContent('a 2월: 절반 · 50%');
+    });
+  });
+
   describe('a series that ends early', () => {
     const ended = {
       labels: ['1월', '2월', '3월', '4월'],

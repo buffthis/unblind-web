@@ -8,6 +8,7 @@ const SETTING_KEYS = [
   'band',
   'xlimit',
   'xband',
+  'note',
 ];
 const TYPES = ['line', 'bar', 'dot'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
@@ -24,6 +25,9 @@ const XBAND_VALUE = new RegExp(
   `^${ROW_LABEL}\\s*~\\s*${ROW_LABEL}(?:\\s+(.+))?$`
 );
 const MAX_GUIDE_LABEL = 20;
+// Notes stay on the plot all the time, so a few short ones is as many as it can hold.
+const MAX_NOTES = 3;
+const MAX_NOTE_TEXT = 24;
 const SEPARATOR = '---';
 const MIN_SERIES = 1;
 const MAX_SERIES = 6;
@@ -42,6 +46,8 @@ const BAND_FORMAT =
   'band는 "시작~끝 이름" 형식이어야 합니다(예: band: 200~256 권장 구간)';
 const XLIMIT_FORMAT =
   'xlimit은 "레이블 이름" 형식이어야 합니다(예: xlimit: 3월 출시)';
+const NOTE_FORMAT =
+  'note는 "행 레이블, 계열 이름, 문구" 형식이어야 합니다(예: note: 14분, 로봇 B, B 도착 · {value})';
 const XBAND_FORMAT =
   'xband는 "시작~끝 이름" 형식이어야 합니다(예: xband: 2월~4월 장애 구간)';
 
@@ -164,7 +170,9 @@ function parseSettings(lines) {
         `알 수 없는 설정 '${key}'입니다. ${SETTING_KEYS.join(', ')}만 쓸 수 있습니다`
       );
     }
-    if (key in settings) fail(line, null, `'${key}' 설정이 이미 있습니다`);
+    if (key !== 'note' && key in settings) {
+      fail(line, null, `'${key}' 설정이 이미 있습니다`);
+    }
     const value = rawValue.trim();
     if (value === '') fail(line, null, `'${key}' 값이 비어 있습니다`);
     if (key === 'min' || key === 'max') {
@@ -205,6 +213,24 @@ function parseSettings(lines) {
         to: match[3] ?? match[4],
         label: guideLabel(match[5], '기준 구간', line),
       };
+    } else if (key === 'note') {
+      const cells = splitCells(value, line);
+      if (cells.length !== 3 || cells.some((cell) => cell === '')) {
+        fail(line, null, NOTE_FORMAT);
+      }
+      if (cells[2].length > MAX_NOTE_TEXT) {
+        fail(line, null, `문구는 ${MAX_NOTE_TEXT}자까지 쓸 수 있습니다`);
+      }
+      settings.notes ??= [];
+      if (settings.notes.length >= MAX_NOTES) {
+        fail(line, null, `note는 ${MAX_NOTES}개까지 쓸 수 있습니다`);
+      }
+      settings.notes.push({
+        at: cells[0],
+        series: cells[1],
+        text: cells[2],
+        line,
+      });
     } else if (key === 'type' && !TYPES.includes(value)) {
       fail(
         line,
@@ -232,8 +258,28 @@ function parseSettings(lines) {
   ) {
     fail(Math.max(lineOf.min, lineOf.max), null, 'max는 min보다 커야 합니다');
   }
+  if (settings.notes && settings.type && settings.type !== 'line') {
+    fail(settings.notes[0].line, null, 'note는 선 그래프에서만 쓸 수 있습니다');
+  }
   checkGuidesInRange(settings, lineOf);
   return { settings, lineOf };
+}
+
+// A note names its row and series by what the table calls them, and the cell it points
+// at must hold a value.
+function resolveNotes(settings, table) {
+  return (settings.notes ?? []).map(({ at, series, text, line }) => {
+    const index = table.labels.indexOf(at);
+    if (index === -1) fail(line, null, `note의 레이블 '${at}'이 표에 없습니다`);
+    const seriesIndex = table.series.findIndex((s) => s.name === series);
+    if (seriesIndex === -1) {
+      fail(line, null, `note의 계열 '${series}'가 표에 없습니다`);
+    }
+    if (table.series[seriesIndex].values[index] == null) {
+      fail(line, null, 'note가 가리키는 칸에 값이 없습니다');
+    }
+    return { index, seriesIndex, at, series, text };
+  });
 }
 
 // The rows are only known after the table is read, so a vertical guide names its rows
@@ -413,6 +459,7 @@ function parse(rawText) {
     table = parseTable(lines.slice(separator + 1), separator + 1, settings);
   }
   const vertical = resolveVerticalGuides(settings, lineOf, table.labels);
+  const notes = resolveNotes(settings, table);
 
   return {
     title: settings.title ?? null,
@@ -423,6 +470,7 @@ function parse(rawText) {
     limit: settings.limit ?? null,
     band: settings.band ?? null,
     ...vertical,
+    notes,
     ...table,
   };
 }

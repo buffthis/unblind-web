@@ -14,6 +14,7 @@ import {
 } from './chartGeometry';
 import {
   ChartLegend,
+  ChartNotes,
   ChartReadout,
   ChartTable,
   color,
@@ -121,6 +122,7 @@ export default function LineChart({
   const innerRef = useRef(null);
   const clipRectRef = useRef(null);
   const aheadRef = useRef(null);
+  const notesRef = useRef(null);
   const crosshairRef = useRef(null);
   const readoutRef = useRef(null);
   const labelRef = useRef(null);
@@ -133,6 +135,7 @@ export default function LineChart({
     rootRef,
     clipRectRef,
     aheadRef,
+    notesRef,
     reduced,
     skip: startDrawn,
     replay,
@@ -250,6 +253,12 @@ export default function LineChart({
             </Svg>
             <LimitGuide chart={chart} domain={domain} />
             <XLimitGuide chart={chart} layout="point" />
+            <ChartNotes
+              chart={chart}
+              domain={domain}
+              layerRef={notesRef}
+              visible={drawnAtStart}
+            />
             <Crosshair ref={crosshairRef} data-role="crosshair" />
             {series.map((s, k) => (
               <Point

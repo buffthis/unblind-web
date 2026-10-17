@@ -2,6 +2,7 @@ import { BOX_MARGIN } from '@components/post/spacing';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import styled from 'styled-components';
 
+import { noteText, placeNotes } from './chartNotes';
 import { formatValue } from './chartScale';
 
 export const PALETTE = [
@@ -490,9 +491,124 @@ export function XRangeGuide({ chart, layout }) {
   );
 }
 
+const NoteLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-out;
+`;
+
+const NOTE_RING = 9;
+const NOTE_OFFSET = 12;
+
+const NoteRing = styled.span`
+  position: absolute;
+  box-sizing: border-box;
+  width: ${NOTE_RING}px;
+  height: ${NOTE_RING}px;
+  margin: -${NOTE_RING / 2}px 0 0 -${NOTE_RING / 2}px;
+  border: 2px solid;
+  border-radius: 50%;
+  background: #fff;
+`;
+
+// Joins a ring to a label that was moved off its row.
+const NoteLeader = styled.span`
+  position: absolute;
+  width: 0;
+  border-left: 1px solid;
+  opacity: 0.6;
+`;
+
+// The halo keeps the words readable where a line runs behind them.
+const NoteLabel = styled.span`
+  position: absolute;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: ${({ theme }) => theme.colors.ink};
+  text-shadow:
+    0 0 3px #fff,
+    0 0 3px #fff,
+    0 0 3px #fff;
+
+  &[data-flip='true'] {
+    transform: translate(-100%, -50%);
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: max-content;
+    max-width: 7.5em;
+    white-space: normal;
+  }
+`;
+
+// Notes that stay on the plot whether or not it is hovered. Each marks its point with a
+// ring in the series colour and writes its text beside it.
+export function ChartNotes({ chart, domain, layerRef, visible }) {
+  const notes = chart.notes ?? [];
+  if (notes.length === 0) return null;
+  const count = chart.labels.length;
+  const points = notes.map((note) => ({
+    x: (note.index / (count - 1)) * 100,
+    y: parseFloat(
+      topOf(chart.series[note.seriesIndex].values[note.index], domain)
+    ),
+  }));
+  const placed = placeNotes(points);
+  return (
+    <NoteLayer
+      ref={layerRef}
+      data-role="notes"
+      aria-hidden="true"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      {notes.map((note, i) => {
+        const { x, y, labelY, flip } = placed[i];
+        const tint = color(PALETTE[note.seriesIndex]);
+        return (
+          <React.Fragment key={i}>
+            {Math.abs(labelY - y) > 0.5 && (
+              <NoteLeader
+                data-role="note-leader"
+                style={{
+                  left: `${x}%`,
+                  top: `${Math.min(y, labelY)}%`,
+                  height: `${Math.abs(labelY - y)}%`,
+                  borderColor: tint,
+                }}
+              />
+            )}
+            <NoteRing
+              data-role="note-ring"
+              style={{ left: `${x}%`, top: `${y}%`, borderColor: tint }}
+            />
+            <NoteLabel
+              data-role="note"
+              data-flip={String(flip)}
+              style={{
+                left: `calc(${x}% ${flip ? '-' : '+'} ${NOTE_OFFSET}px)`,
+                top: `${labelY}%`,
+              }}
+            >
+              {noteText(note, chart)}
+            </NoteLabel>
+          </React.Fragment>
+        );
+      })}
+    </NoteLayer>
+  );
+}
+
 export function ChartTable({ id, name, chart }) {
   const { xLabel, labels, series, unit } = chart;
-  const guides = Object.values(guideTexts(chart)).filter(Boolean);
+  const guides = [
+    ...Object.values(guideTexts(chart)).filter(Boolean),
+    ...(chart.notes ?? []).map(
+      (note) => `${note.series} ${note.at}: ${noteText(note, chart)}`
+    ),
+  ];
   return (
     <HiddenBox>
       <HiddenTable id={id} aria-label={name}>

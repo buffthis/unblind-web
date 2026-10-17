@@ -8,6 +8,7 @@ export const DRAW_IN = { duration: 0.8, ease: [0.22, 1, 0.36, 1] };
 // The faint "ahead" lines stay hidden while drawing so the upcoming shape is not
 // given away. StrictMode runs effects twice in development; the cleanup resets the
 // phase so the second run starts the animation again instead of freezing at width 0.
+// The notes layer fades in with the faint lines, once the drawing is done.
 // `skip` starts the chart already drawn (it was drawn once before a remount), and
 // `onDrawn` reports a finished draw-in, whether it completed or was interrupted.
 // With `replay` the chart is wiped once none of it is on screen, and drawn in again
@@ -17,6 +18,7 @@ export default function useDrawIn({
   rootRef,
   clipRectRef,
   aheadRef,
+  notesRef,
   reduced,
   skip = false,
   replay = false,
@@ -38,8 +40,9 @@ export default function useDrawIn({
     phase.current = 'done';
     clipRectRef.current?.setAttribute('width', String(CLIP_FULL));
     if (aheadRef.current) aheadRef.current.style.opacity = '1';
+    if (notesRef?.current) notesRef.current.style.opacity = '1';
     onDrawnRef.current?.();
-  }, [clipRectRef, aheadRef]);
+  }, [clipRectRef, aheadRef, notesRef]);
 
   useEffect(() => {
     if (reduced) finish();
@@ -68,7 +71,8 @@ export default function useDrawIn({
     phase.current = 'waiting';
     clipRectRef.current?.setAttribute('width', '0');
     if (aheadRef.current) aheadRef.current.style.opacity = '0';
-  }, [replay, reduced, anyShown, clipRectRef, aheadRef]);
+    if (notesRef?.current) notesRef.current.style.opacity = '0';
+  }, [replay, reduced, anyShown, clipRectRef, aheadRef, notesRef]);
 
   const isDone = useCallback(() => phase.current === 'done', []);
   return { isDone, finish };

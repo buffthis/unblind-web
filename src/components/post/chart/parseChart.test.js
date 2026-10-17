@@ -27,6 +27,7 @@ describe('parseChart', () => {
         band: null,
         xlimit: null,
         xband: null,
+        notes: [],
         xLabel: '주',
         labels: ['3/8', '3/15'],
         series: [
@@ -230,6 +231,88 @@ describe('parseChart', () => {
     });
   });
 
+  describe('notes', () => {
+    const table = '---\n분, 로봇 A, 로봇 B\n0, 0, 0\n14, 840, 835\n27, 1620,';
+
+    it('reads a note as row label, series name and text, in the order written', () => {
+      const result = parseChart(
+        `note: 14, 로봇 B, B 도착 · {value}\nnote: 14, 로봇 A, 아직 375m\n${table}`
+      );
+      expect(result.ok).toBe(true);
+      expect(result.chart.notes).toEqual([
+        {
+          index: 1,
+          seriesIndex: 1,
+          at: '14',
+          series: '로봇 B',
+          text: 'B 도착 · {value}',
+        },
+        {
+          index: 1,
+          seriesIndex: 0,
+          at: '14',
+          series: '로봇 A',
+          text: '아직 375m',
+        },
+      ]);
+    });
+
+    it('takes a text with commas in double quotes', () => {
+      const result = parseChart(`note: 14, 로봇 B, "도착, {value}"\n${table}`);
+      expect(result.chart.notes[0].text).toBe('도착, {value}');
+    });
+
+    it('allows up to three notes', () => {
+      const result = parseChart(
+        `note: 0, 로봇 A, 출발\nnote: 14, 로봇 A, 중간\nnote: 27, 로봇 A, 끝\n${table}`
+      );
+      expect(result.ok).toBe(true);
+      expect(result.chart.notes).toHaveLength(3);
+    });
+
+    it.each([
+      [
+        'note: 14, 로봇 B\n',
+        1,
+        'note는 "행 레이블, 계열 이름, 문구" 형식이어야 합니다(예: note: 14분, 로봇 B, B 도착 · {value})',
+      ],
+      [
+        'note: 14, 로봇 B, a, b\n',
+        1,
+        'note는 "행 레이블, 계열 이름, 문구" 형식이어야 합니다(예: note: 14분, 로봇 B, B 도착 · {value})',
+      ],
+      [
+        'note: 14, , 문구\n',
+        1,
+        'note는 "행 레이블, 계열 이름, 문구" 형식이어야 합니다(예: note: 14분, 로봇 B, B 도착 · {value})',
+      ],
+      [
+        `note: 14, 로봇 B, ${'가'.repeat(25)}\n`,
+        1,
+        '문구는 24자까지 쓸 수 있습니다',
+      ],
+      ['note: 99, 로봇 B, 문구\n', 1, "note의 레이블 '99'이 표에 없습니다"],
+      ['note: 14, 로봇 C, 문구\n', 1, "note의 계열 '로봇 C'가 표에 없습니다"],
+      ['note: 27, 로봇 B, 문구\n', 1, 'note가 가리키는 칸에 값이 없습니다'],
+      [
+        'note: 0, 로봇 A, 가\nnote: 14, 로봇 A, 나\nnote: 27, 로봇 A, 다\nnote: 0, 로봇 B, 라\n',
+        4,
+        'note는 3개까지 쓸 수 있습니다',
+      ],
+      [
+        'type: bar\nnote: 14, 로봇 B, 문구\n',
+        2,
+        'note는 선 그래프에서만 쓸 수 있습니다',
+      ],
+    ])('rejects %j at line %i with %s', (settings, line, message) => {
+      expect(errorOf(`${settings}${table}`)).toEqual({
+        line,
+        column: null,
+        message,
+      });
+    });
+  });
+
   describe('a series that ends early', () => {
     it('reads blank cells at the end of a series as no value', () => {
       const result = parseChart('분, A, B\n0, 1, 1\n14, 5, 7\n15, 6,\n27, 9,');
@@ -385,13 +468,13 @@ describe('parseChart', () => {
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',
