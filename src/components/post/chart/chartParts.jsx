@@ -303,13 +303,16 @@ export function ChartLegend({ series }) {
   );
 }
 
-// The text each guide shows, e.g. "한도 256MB" and "권장 구간 200~256MB".
-export function guideTexts({ limit, band, unit }) {
+// The text each guide shows, e.g. "한도 256MB" and "권장 구간 200~256MB", and for the
+// vertical ones "출시 3월" and "장애 구간 2월~4월".
+export function guideTexts({ limit, band, xlimit, xband, unit }) {
   return {
     limit: limit && `${limit.label} ${formatValue(limit.value, unit)}`,
     band:
       band &&
       `${band.label} ${formatValue(band.from, '')}~${formatValue(band.to, unit)}`,
+    xlimit: xlimit && `${xlimit.label} ${xlimit.at}`,
+    xband: xband && `${xband.label} ${xband.from}~${xband.to}`,
   };
 }
 
@@ -397,6 +400,93 @@ export function RangeGuide({ chart, domain }) {
         </GuideLabel>
       </RangeEdge>
     </RangeShade>
+  );
+}
+
+// Where a row sits across the plot, as a percentage of its width. A line chart puts its
+// points on the edges (the first row at 0%, the last at 100%). A bar or dot chart gives
+// every row a slot of the same width and centres its group in it.
+const pointX = (index, count) => (index / (count - 1)) * 100;
+const slotX = (index, count) => (index / count) * 100;
+
+// Past this share of the plot a name turns around to sit on the plot side of its guide.
+const FLIP_AFTER = 70;
+
+const XGuideLabel = styled.span`
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: ${({ theme }) => theme.colors.inkSoft};
+
+  &[data-flip='true'] {
+    left: auto;
+    right: 5px;
+  }
+`;
+
+const XLimitLine = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed ${({ theme }) => theme.colors.inkSoft};
+  pointer-events: none;
+`;
+
+const XRangeShade = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(107, 118, 132, 0.09);
+  pointer-events: none;
+`;
+
+// layout is 'point' for a line chart and 'slot' for a bar or dot chart. Drawn over the
+// data, like the horizontal line.
+export function XLimitGuide({ chart, layout }) {
+  if (!chart.xlimit) return null;
+  const count = chart.labels.length;
+  const { index } = chart.xlimit;
+  const left =
+    layout === 'point' ? pointX(index, count) : slotX(index + 0.5, count);
+  return (
+    <XLimitLine
+      data-role="xlimit"
+      data-flip={String(left > FLIP_AFTER)}
+      aria-hidden="true"
+      style={{ left: `${left}%` }}
+    >
+      <XGuideLabel data-flip={String(left > FLIP_AFTER)}>
+        {guideTexts(chart).xlimit}
+      </XGuideLabel>
+    </XLimitLine>
+  );
+}
+
+// Drawn under the data, as a backdrop. A bar or dot chart covers the whole slots of its
+// first and last row, so the groups inside it sit entirely within the shade.
+export function XRangeGuide({ chart, layout }) {
+  if (!chart.xband) return null;
+  const count = chart.labels.length;
+  const { fromIndex, toIndex } = chart.xband;
+  const [left, right] =
+    layout === 'point'
+      ? [pointX(fromIndex, count), pointX(toIndex, count)]
+      : [slotX(fromIndex, count), slotX(toIndex + 1, count)];
+  const flip = (left + right) / 2 > FLIP_AFTER;
+  return (
+    <XRangeShade
+      data-role="xrange"
+      aria-hidden="true"
+      style={{ left: `${left}%`, width: `${right - left}%` }}
+    >
+      <XGuideLabel data-flip={String(flip)}>
+        {guideTexts(chart).xband}
+      </XGuideLabel>
+    </XRangeShade>
   );
 }
 

@@ -154,6 +154,35 @@ describe('BarChart', () => {
     ).toHaveTextContent('정원 40명, 적정 인원 10~20명');
   });
 
+  it('draws a vertical line through the middle of its group and a range over whole groups', () => {
+    const c = renderChart({
+      ...chart,
+      xlimit: { index: 1, at: 'B', label: '개편' },
+      xband: { fromIndex: 1, toIndex: 2, from: 'B', to: 'C', label: '신규' },
+    });
+    const line = c.container.querySelector('[data-role="xlimit"]');
+    expect(line.style.left).toBe('37.5%');
+    expect(line).toHaveTextContent('개편 B');
+    const range = c.container.querySelector('[data-role="xrange"]');
+    expect(range.style.left).toBe('25%');
+    expect(range.style.width).toBe('50%');
+    expect(range).toHaveTextContent('신규 B~C');
+    expect(
+      screen.getByRole('table', { name: '팀별 인원' }).querySelector('caption')
+    ).toHaveTextContent('개편 B, 신규 B~C');
+  });
+
+  it('draws the vertical guides of a dot chart the same way', () => {
+    const c = renderChart({
+      ...chart,
+      type: 'dot',
+      xlimit: { index: 3, at: 'D', label: '끝' },
+    });
+    expect(c.container.querySelector('[data-role="xlimit"]').style.left).toBe(
+      '87.5%'
+    );
+  });
+
   it('falls back to a generic name without a title', () => {
     renderChart({ ...chart, title: null });
     expect(

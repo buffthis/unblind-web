@@ -1,4 +1,14 @@
-const SETTING_KEYS = ['title', 'unit', 'min', 'max', 'type', 'limit', 'band'];
+const SETTING_KEYS = [
+  'title',
+  'unit',
+  'min',
+  'max',
+  'type',
+  'limit',
+  'band',
+  'xlimit',
+  'xband',
+];
 const TYPES = ['line', 'bar', 'dot'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
 const NUMBER = /^-?\d+(\.\d+)?$/;
@@ -6,6 +16,12 @@ const NUMBER_TEXT = '-?\\d+(?:\\.\\d+)?';
 const LIMIT_VALUE = new RegExp(`^(${NUMBER_TEXT})(?:\\s+(.+))?$`);
 const BAND_VALUE = new RegExp(
   `^(${NUMBER_TEXT})\\s*~\\s*(${NUMBER_TEXT})(?:\\s+(.+))?$`
+);
+// A row label in a vertical guide is bare (no spaces, no tilde) or in double quotes.
+const ROW_LABEL = '(?:"([^"]*)"|([^\\s~"]+))';
+const XLIMIT_VALUE = new RegExp(`^${ROW_LABEL}(?:\\s+(.+))?$`);
+const XBAND_VALUE = new RegExp(
+  `^${ROW_LABEL}\\s*~\\s*${ROW_LABEL}(?:\\s+(.+))?$`
 );
 const MAX_GUIDE_LABEL = 20;
 const SEPARATOR = '---';
@@ -24,6 +40,10 @@ const LIMIT_FORMAT =
   'limit은 "숫자 이름" 형식이어야 합니다(예: limit: 256 한도)';
 const BAND_FORMAT =
   'band는 "시작~끝 이름" 형식이어야 합니다(예: band: 200~256 권장 구간)';
+const XLIMIT_FORMAT =
+  'xlimit은 "레이블 이름" 형식이어야 합니다(예: xlimit: 3월 출시)';
+const XBAND_FORMAT =
+  'xband는 "시작~끝 이름" 형식이어야 합니다(예: xband: 2월~4월 장애 구간)';
 
 class ChartSyntaxError extends Error {
   constructor(line, column, message) {
@@ -170,6 +190,21 @@ function parseSettings(lines) {
         to,
         label: guideLabel(match[3], '기준 구간', line),
       };
+    } else if (key === 'xlimit') {
+      const match = value.match(XLIMIT_VALUE);
+      if (!match) fail(line, null, XLIMIT_FORMAT);
+      settings.xlimit = {
+        at: match[1] ?? match[2],
+        label: guideLabel(match[3], '기준', line),
+      };
+    } else if (key === 'xband') {
+      const match = value.match(XBAND_VALUE);
+      if (!match) fail(line, null, XBAND_FORMAT);
+      settings.xband = {
+        from: match[1] ?? match[2],
+        to: match[3] ?? match[4],
+        label: guideLabel(match[5], '기준 구간', line),
+      };
     } else if (key === 'type' && !TYPES.includes(value)) {
       fail(
         line,
@@ -198,7 +233,53 @@ function parseSettings(lines) {
     fail(Math.max(lineOf.min, lineOf.max), null, 'max는 min보다 커야 합니다');
   }
   checkGuidesInRange(settings, lineOf);
-  return settings;
+  return { settings, lineOf };
+}
+
+// The rows are only known after the table is read, so a vertical guide names its rows
+// by label and is turned into row indexes here.
+function resolveVerticalGuides(settings, lineOf, labels) {
+  const rowOf = (label, line, message) => {
+    const index = labels.indexOf(label);
+    if (index === -1) fail(line, null, message(label));
+    return index;
+  };
+  let xlimit = null;
+  let xband = null;
+  if (settings.xlimit) {
+    const { at, label } = settings.xlimit;
+    xlimit = {
+      index: rowOf(
+        at,
+        lineOf.xlimit,
+        (name) => `xlimit의 레이블 '${name}'이 표에 없습니다`
+      ),
+      at,
+      label,
+    };
+  }
+  if (settings.xband) {
+    const { from, to, label } = settings.xband;
+    const fromIndex = rowOf(
+      from,
+      lineOf.xband,
+      (name) => `xband의 시작 레이블 '${name}'이 표에 없습니다`
+    );
+    const toIndex = rowOf(
+      to,
+      lineOf.xband,
+      (name) => `xband의 끝 레이블 '${name}'이 표에 없습니다`
+    );
+    if (toIndex <= fromIndex) {
+      fail(
+        lineOf.xband,
+        null,
+        'xband의 끝 레이블은 시작 레이블보다 뒤에 있어야 합니다'
+      );
+    }
+    xband = { fromIndex, toIndex, from, to, label };
+  }
+  return { xlimit, xband };
 }
 
 function parseTable(lines, offset, settings) {
@@ -295,6 +376,7 @@ function parse(rawText) {
   }
 
   let settings = {};
+  let lineOf = {};
   let table;
   if (separators.length === 0) {
     table = parseTable(lines, 0, settings);
@@ -302,9 +384,10 @@ function parse(rawText) {
     const separator = separators[0];
     const settingLines = lines.slice(0, separator);
     rejectBlankLines(settingLines, 0);
-    settings = parseSettings(settingLines);
+    ({ settings, lineOf } = parseSettings(settingLines));
     table = parseTable(lines.slice(separator + 1), separator + 1, settings);
   }
+  const vertical = resolveVerticalGuides(settings, lineOf, table.labels);
 
   return {
     title: settings.title ?? null,
@@ -314,6 +397,7 @@ function parse(rawText) {
     type: settings.type ?? 'line',
     limit: settings.limit ?? null,
     band: settings.band ?? null,
+    ...vertical,
     ...table,
   };
 }

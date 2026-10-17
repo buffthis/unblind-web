@@ -27,6 +27,8 @@ import {
   useElementWidth,
   useYLabelWidth,
   XAxis,
+  XLimitGuide,
+  XRangeGuide,
   XTick,
   YGrid,
 } from './chartParts';
@@ -181,6 +183,7 @@ export default function LineChart({
           <YGrid domain={domain} labels={tickLabels} />
           <Inner ref={innerRef} data-role="plot-inner">
             <RangeGuide chart={chart} domain={domain} />
+            <XRangeGuide chart={chart} layout="point" />
             <Svg
               viewBox={`0 0 ${VIEW} ${VIEW}`}
               preserveAspectRatio="none"
@@ -225,6 +228,7 @@ export default function LineChart({
               </g>
             </Svg>
             <LimitGuide chart={chart} domain={domain} />
+            <XLimitGuide chart={chart} layout="point" />
             <Crosshair ref={crosshairRef} data-role="crosshair" />
             {series.map((s, k) => (
               <Point

@@ -25,6 +25,8 @@ describe('parseChart', () => {
         type: 'line',
         limit: null,
         band: null,
+        xlimit: null,
+        xband: null,
         xLabel: '주',
         labels: ['3/8', '3/15'],
         series: [
@@ -130,6 +132,104 @@ describe('parseChart', () => {
     });
   });
 
+  describe('vertical guides', () => {
+    const table = '---\n월, a\n1월, 1\n2월, 2\n3월, 3\n4월, 4';
+
+    it('reads a vertical line at a row label, with its name', () => {
+      const result = parseChart(`xlimit: 3월 출시\n${table}`);
+      expect(result.chart.xlimit).toEqual({
+        index: 2,
+        at: '3월',
+        label: '출시',
+      });
+    });
+
+    it('names a vertical line 기준 when no name is given', () => {
+      const result = parseChart(`xlimit: 1월\n${table}`);
+      expect(result.chart.xlimit).toEqual({
+        index: 0,
+        at: '1월',
+        label: '기준',
+      });
+    });
+
+    it('reads a vertical range between two row labels, with spaces around the tilde', () => {
+      const result = parseChart(`xband: 2월 ~ 4월 장애 구간\n${table}`);
+      expect(result.chart.xband).toEqual({
+        fromIndex: 1,
+        toIndex: 3,
+        from: '2월',
+        to: '4월',
+        label: '장애 구간',
+      });
+    });
+
+    it('names a vertical range 기준 구간 when no name is given', () => {
+      const result = parseChart(`xband: 1월~2월\n${table}`);
+      expect(result.chart.xband).toMatchObject({
+        fromIndex: 0,
+        toIndex: 1,
+        label: '기준 구간',
+      });
+    });
+
+    it('takes a label with spaces or a tilde in double quotes', () => {
+      const result = parseChart(
+        'xlimit: "2026 Q1" 출시\nxband: "a~b"~"2026 Q2" 구간\n---\n분기, a\n2026 Q1, 1\na~b, 2\n2026 Q2, 3'
+      );
+      expect(result.chart.xlimit).toMatchObject({ index: 0, at: '2026 Q1' });
+      expect(result.chart.xband).toMatchObject({
+        fromIndex: 1,
+        toIndex: 2,
+        from: 'a~b',
+        to: '2026 Q2',
+      });
+    });
+
+    it('lets all four guides share one chart', () => {
+      const result = parseChart(
+        `limit: 3\nband: 1~2\nxlimit: 2월\nxband: 3월~4월\n${table}`
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it.each([
+      ['xlimit: 5월\n', 1, "xlimit의 레이블 '5월'이 표에 없습니다"],
+      ['xband: 5월~4월\n', 1, "xband의 시작 레이블 '5월'이 표에 없습니다"],
+      ['xband: 1월~5월\n', 1, "xband의 끝 레이블 '5월'이 표에 없습니다"],
+      [
+        'xband: 3월~2월\n',
+        1,
+        'xband의 끝 레이블은 시작 레이블보다 뒤에 있어야 합니다',
+      ],
+      [
+        'xband: 2월~2월\n',
+        1,
+        'xband의 끝 레이블은 시작 레이블보다 뒤에 있어야 합니다',
+      ],
+      ['min: 0\nxlimit: 5월\n', 2, "xlimit의 레이블 '5월'이 표에 없습니다"],
+      ['xlimit: \n', 1, "'xlimit' 값이 비어 있습니다"],
+      [
+        'xlimit: "3월\n',
+        1,
+        'xlimit은 "레이블 이름" 형식이어야 합니다(예: xlimit: 3월 출시)',
+      ],
+      [
+        'xband: 2월\n',
+        1,
+        'xband는 "시작~끝 이름" 형식이어야 합니다(예: xband: 2월~4월 장애 구간)',
+      ],
+      [`xlimit: 1월 ${'가'.repeat(21)}\n`, 1, '이름은 20자까지 쓸 수 있습니다'],
+      ['xlimit: 1월\nxlimit: 2월\n', 2, "'xlimit' 설정이 이미 있습니다"],
+    ])('rejects %j at line %i with %s', (settings, line, message) => {
+      expect(errorOf(`${settings}${table}`)).toEqual({
+        line,
+        column: null,
+        message,
+      });
+    });
+  });
+
   it('lets a dot chart start its axis above zero, with up to 40 rows', () => {
     const result = parseChart(
       `type: dot\nmin: 900\n---\n주, a\n${Array.from(
@@ -228,13 +328,13 @@ describe('parseChart', () => {
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',

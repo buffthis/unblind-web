@@ -57,6 +57,63 @@ describe('LineChart', () => {
     expect(limit).toHaveTextContent('목표 80%');
   });
 
+  it('draws a vertical line on the point of its row', () => {
+    const { container } = renderChart({
+      xlimit: { index: 1, at: '2월', label: '출시' },
+    });
+    const line = container.querySelector('[data-role="xlimit"]');
+    expect(line.style.left).toBe('50%');
+    expect(line).toHaveTextContent('출시 2월');
+    expect(line).toHaveAttribute('data-flip', 'false');
+  });
+
+  it('turns the name of a vertical line toward the plot when it sits near the right edge', () => {
+    const { container } = renderChart({
+      xlimit: { index: 2, at: '3월', label: '출시' },
+    });
+    expect(container.querySelector('[data-role="xlimit"]')).toHaveAttribute(
+      'data-flip',
+      'true'
+    );
+  });
+
+  it('draws a vertical range from one point to another, under the lines', () => {
+    const { container } = renderChart({
+      xband: {
+        fromIndex: 0,
+        toIndex: 1,
+        from: '1월',
+        to: '2월',
+        label: '장애 구간',
+      },
+    });
+    const range = container.querySelector('[data-role="xrange"]');
+    expect(range.style.left).toBe('0%');
+    expect(range.style.width).toBe('50%');
+    expect(range).toHaveTextContent('장애 구간 1월~2월');
+    expect(
+      range.compareDocumentPosition(container.querySelector('svg')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('lists the vertical guides in the table caption', () => {
+    renderChart({
+      limit: { value: 80, label: '목표' },
+      xlimit: { index: 1, at: '2월', label: '출시' },
+      xband: {
+        fromIndex: 1,
+        toIndex: 2,
+        from: '2월',
+        to: '3월',
+        label: '장애 구간',
+      },
+    });
+    expect(
+      screen.getByRole('table', { name: '전환 비율' }).querySelector('caption')
+    ).toHaveTextContent('목표 80%, 출시 2월, 장애 구간 2월~3월');
+  });
+
   it.each([
     [3, '2.5'],
     [60, '2'],

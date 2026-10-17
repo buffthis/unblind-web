@@ -21,6 +21,8 @@ import {
   useElementWidth,
   useYLabelWidth,
   XAxis,
+  XLimitGuide,
+  XRangeGuide,
   XTick,
   YGrid,
 } from './chartParts';
@@ -235,6 +237,7 @@ export default function BarChart({
               style={{ width: `${100 / count}%` }}
             />
             <RangeGuide chart={chart} domain={domain} />
+            <XRangeGuide chart={chart} layout="slot" />
             {labels.map((label, i) => (
               <Column
                 key={i}
@@ -279,6 +282,7 @@ export default function BarChart({
               </Column>
             ))}
             <LimitGuide chart={chart} domain={domain} />
+            <XLimitGuide chart={chart} layout="slot" />
           </Inner>
         </BarPlot>
         <XAxis aria-hidden="true" data-axis="x">
