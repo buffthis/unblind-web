@@ -1,13 +1,13 @@
 import HoverImage from '@components/common/HoverImage';
 import useHoverPrefetch, { usePrefetchPost } from '@hooks/usePrefetch';
 import {
-  Period,
   ProjectCard,
   ProjectContent,
   ProjectDescription,
   ProjectImageContainer,
   ProjectTitle,
 } from '@styles/compositions/Project.styles';
+import subtleText from '@styles/subtleText';
 import { formatDate } from '@utils/format';
 import { splitThumbnail } from '@utils/thumbnail';
 import React from 'react';
@@ -22,6 +22,12 @@ const cardLinkStyle = css`
 
 const CardLink = styled(Link)`
   ${cardLinkStyle}
+`;
+
+const CardDate = styled.time`
+  display: block;
+  margin-top: 3px;
+  ${subtleText}
 `;
 
 export default function PostCard({ post }) {
@@ -47,14 +53,9 @@ export default function PostCard({ post }) {
         <ProjectDescription $fontSize="0.8rem" $marginTop="0.75px">
           {post.subtitle}
         </ProjectDescription>
-        <Period
-          $fontSize="0.7rem"
-          $fontWeight="100"
-          $letterSpacing="0.08em"
-          $marginTop="3px"
-        >
+        <CardDate dateTime={post.createdAt}>
           {formatDate(post.createdAt)}
-        </Period>
+        </CardDate>
       </ProjectContent>
     </>
   );

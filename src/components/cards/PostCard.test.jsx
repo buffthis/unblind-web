@@ -100,12 +100,16 @@ describe('PostCard', () => {
     expect(declaredValue(title, 'font-size')).toBe('0.9rem');
   });
 
-  it('sets the date smaller, with the letters spaced wider', () => {
+  it('sets the date like the date on the post page', () => {
     renderCard('https://i.imgur.com/a.png');
 
     const date = screen.getByText('2026.10.01');
-    expect(declaredValue(date, 'font-size')).toBe('0.7rem');
-    expect(declaredValue(date, 'letter-spacing')).toBe('0.08em');
+    expect(date.tagName).toBe('TIME');
+    expect(declaredValue(date, 'font-size')).toBe('12.6px');
+    expect(declaredValue(date, 'font-weight')).toBe('300');
+    expect(declaredValue(date, 'letter-spacing')).toBe('0.02em');
+    expect(declaredValue(date, 'line-height')).toBe('16px');
+    expect(date).toHaveStyle({ color: theme.colors.inkMuted });
   });
 
   it('sets the subtitle and the date margins', () => {

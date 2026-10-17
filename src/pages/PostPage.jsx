@@ -15,6 +15,7 @@ import usePost from '@hooks/usePost';
 import useUser from '@hooks/useUser';
 import { BLOCK_GAP, TEXT_SPACE } from '@components/post/spacing';
 import { LAYOUT } from '@styles/constants';
+import subtleText from '@styles/subtleText';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
 import { splitThumbnail } from '@utils/thumbnail';
@@ -154,16 +155,6 @@ const AuthorLink = styled(Link)`
   font-weight: 500;
   line-height: 16.5px;
   color: ${({ theme }) => theme.colors.inkSub};
-`;
-
-// The light small text under the name (the job) and at the right end (the date).
-// With the name's 16.5px line, the 16px line keeps the two lines about 5.5px apart.
-const subtleText = css`
-  font-size: 12.6px;
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  line-height: 16px;
-  color: ${({ theme }) => theme.colors.inkMuted};
 `;
 
 const MetaDetails = styled.div`
