@@ -208,6 +208,7 @@ export default function BarChart({
       data-shown="false"
       data-grown={String(grown)}
       aria-label={name}
+      $titled={Boolean(title)}
     >
       {title && <Title>{title}</Title>}
       <Frame ref={frameRef}>

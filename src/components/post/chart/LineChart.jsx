@@ -173,7 +173,12 @@ export default function LineChart({
   useYLabelWidth(frameRef, plotRef, tickLabels.join('|'));
 
   return (
-    <Figure ref={rootRef} data-shown="false" aria-label={title ?? '선 그래프'}>
+    <Figure
+      ref={rootRef}
+      data-shown="false"
+      aria-label={title ?? '선 그래프'}
+      $titled={Boolean(title)}
+    >
       {title && <Title>{title}</Title>}
       <Frame ref={frameRef}>
         <ChartReadout

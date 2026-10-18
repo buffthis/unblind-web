@@ -93,6 +93,20 @@ describe('LineChart', () => {
       renderChart();
       const figure = screen.getByRole('figure', { name: '전환 비율' });
 
+      expect(declaredValue(figure, 'margin')).toBe('20px 0px 0px');
+    });
+
+    it('opens a chart with a title like a line of text: 20px, with the title keeping its own 4.5px', () => {
+      const { container } = renderChart();
+      const title = container.querySelector('figcaption');
+
+      expect(declaredValue(title, 'line-height')).toBe('calc(9px + 0.9rem)');
+    });
+
+    it('opens a chart with no title like a block that is not text, which has 4.5px less inside', () => {
+      renderChart({ title: null });
+      const figure = screen.getByRole('figure', { name: '선 그래프' });
+
       expect(declaredValue(figure, 'margin')).toBe('24.5px 0px 0px');
     });
   });

@@ -502,8 +502,9 @@ describe('PostArticle', () => {
       expect(declaredValue(block, 'margin')).toBe('24.5px 0px 4.5px');
     }
     // A chart ends with its legend, which is text and has the 4.5px inside, so the figure
-    // adds none below (see the legend tests in LineChart).
-    expect(declaredValue(chart, 'margin')).toBe('24.5px 0px 0px');
+    // adds none below. This one has a title, which is text too and has 4.5px of its own,
+    // so it opens with the plain 20px (see the legend and title tests in LineChart).
+    expect(declaredValue(chart, 'margin')).toBe('20px 0px 0px');
   });
 
   it('keeps the # link of a title on the title line when blank lines open space above it', () => {

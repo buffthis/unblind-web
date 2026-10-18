@@ -1,4 +1,4 @@
-import { BOX_GAP, TEXT_SPACE } from '@components/post/spacing';
+import { BLOCK_GAP, BOX_GAP, TEXT_SPACE } from '@components/post/spacing';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import styled from 'styled-components';
 
@@ -25,16 +25,19 @@ export const color = (rgb, alpha) =>
 export const topOf = (value, domain) =>
   `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
 
-// Like a block that is not text, it opens with BOX_GAP (the gap plus the line space the
-// block lacks). It ends with the legend, which is text and brings its own line space, so
-// nothing is added below and the next block is the usual 20px + 4.5px + 4.5px away.
+// A chart with a title opens with the title, which is text and brings 4.5px of line space
+// of its own, so it opens with the plain gap. One without opens with the plot, which is
+// not text, so it takes BOX_GAP, the gap plus the 4.5px a block lacks inside. It ends with
+// the legend, which is text too, so nothing is added below and the next block is the
+// usual 20px + 4.5px + 4.5px away.
 export const Figure = styled.figure`
-  margin: ${BOX_GAP}px 0 0;
+  margin: ${({ $titled }) => ($titled ? BLOCK_GAP : BOX_GAP)}px 0 0;
 `;
 
 export const Title = styled.figcaption`
   margin-bottom: 12px;
   font-size: 0.9rem;
+  line-height: calc(0.9rem + ${2 * TEXT_SPACE}px);
   color: ${({ theme }) => theme.colors.secondary};
 `;
 
