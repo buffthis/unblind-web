@@ -117,9 +117,52 @@ describe('chartGeometry', () => {
     expect(valueAt([10, 20, 40], 5)).toBe(40);
   });
 
-  it('thins x labels so they fit the width', () => {
-    expect(labelStride(23, 700)).toBe(3);
-    expect(labelStride(5, 700)).toBe(1);
-    expect(labelStride(23, 200)).toBe(8);
+  describe('which rows get an x label', () => {
+    it('labels every row while they fit', () => {
+      expect(labelStride(5, 700)).toBe(1);
+      expect(labelStride(10, 700)).toBe(1);
+    });
+
+    it('steps by a round number of rows, so the labels land on round places', () => {
+      // 23 rows in 700px fit about 10 labels: every third row.
+      expect(labelStride(23, 700)).toBe(3);
+      expect(labelStride(28, 700)).toBe(3);
+      expect(labelStride(100, 700)).toBe(10);
+      expect(labelStride(23, 200)).toBe(10);
+    });
+
+    it('steps by minutes of seconds for a second-by-second series, not by 183 rows', () => {
+      // 1,621 rows is 27 minutes at a row a second. 180 rows is 3 minutes: 0, 3, 6, ...
+      expect(labelStride(1621, 700)).toBe(180);
+      // On a narrow screen it steps by 10 minutes, not by 500 rows, which would be 8:20.
+      expect(labelStride(1621, 330)).toBe(600);
+    });
+
+    it('never labels more rows than fit, whatever the count and width', () => {
+      for (const count of [2, 7, 28, 41, 100, 365, 1621, 5000, 100000]) {
+        for (const width of [200, 330, 700, 1000, 1400]) {
+          const fit = Math.max(2, Math.floor(width / 64));
+          const stride = labelStride(count, width);
+          expect(Math.ceil(count / stride)).toBeLessThanOrEqual(fit);
+        }
+      }
+    });
+
+    it('only ever picks a step from the round ones', () => {
+      const round = new Set([
+        1, 2, 3, 5, 6, 10, 12, 15, 20, 30, 60, 90, 120, 180, 240, 300, 600, 900,
+        1800, 3600, 7200, 10800, 21600, 43200, 86400,
+      ]);
+      for (const count of [2, 7, 28, 41, 100, 365, 1621, 5000, 100000]) {
+        for (const width of [200, 330, 700, 1000, 1400]) {
+          expect(round.has(labelStride(count, width))).toBe(true);
+        }
+      }
+    });
+
+    it('steps by the least round number that fits, so the labels are no sparser than needed', () => {
+      // 365 rows in 700px fit 10 labels, which needs a step of 37 rows or more: 60.
+      expect(labelStride(365, 700)).toBe(60);
+    });
   });
 });

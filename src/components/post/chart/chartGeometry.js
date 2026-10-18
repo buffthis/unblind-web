@@ -90,7 +90,20 @@ export function valueAt(values, position) {
   return values[index] + (values[index + 1] - values[index]) * t;
 }
 
+// The steps a label may be spaced by, in rows. Up to 30 they are the usual round counts.
+// From 60 up they are the round numbers of a clock (1, 1.5, 2, 3, 4, 5, 10, 15, 30
+// minutes, then 1, 2, 3, 6, 12 and 24 hours at a row a second), so a series with a row a
+// second gets a label every 3 or 10 minutes rather than every 183 or 500 rows, which
+// would put them at 3:01 and 8:20.
+const ROUND_STEPS = [
+  1, 2, 3, 5, 6, 10, 12, 15, 20, 30, 60, 90, 120, 180, 240, 300, 600, 900, 1800,
+  3600, 7200, 10800, 21600, 43200, 86400,
+];
+
+// How many rows apart the x labels go: the least round step that still fits the labels
+// in the width, so they sit on rows 0, step, 2 * step, ...
 export function labelStride(count, widthPx, minGapPx = 64) {
   const fit = Math.max(2, Math.floor(widthPx / minGapPx));
-  return Math.max(1, Math.ceil(count / fit));
+  const needed = Math.max(1, Math.ceil(count / fit));
+  return ROUND_STEPS.find((step) => step >= needed) ?? needed;
 }
