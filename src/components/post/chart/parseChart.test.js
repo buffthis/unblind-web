@@ -28,6 +28,7 @@ describe('parseChart', () => {
         xlimit: null,
         xband: null,
         notes: [],
+        showValues: false,
         xLabel: '주',
         labels: ['3/8', '3/15'],
         series: [
@@ -434,6 +435,46 @@ describe('parseChart', () => {
     });
   });
 
+  describe('values', () => {
+    const table = '월, a\n1월, 3\n2월, 5';
+
+    it('is off unless asked for', () => {
+      expect(parseChart(`type: bar\n---\n${table}`).chart.showValues).toBe(
+        false
+      );
+    });
+
+    it.each(['bar', 'dot'])('turns on for a %s chart', (type) => {
+      const result = parseChart(`type: ${type}\nvalues: show\n---\n${table}`);
+      expect(result.chart.showValues).toBe(true);
+    });
+
+    it.each([
+      [
+        'type: bar\nvalues: hide\n',
+        2,
+        "values는 show만 쓸 수 있습니다(지금 'hide')",
+      ],
+      ['values: show\n', 1, 'values는 막대·점 그래프에서만 쓸 수 있습니다'],
+      [
+        'type: line\nvalues: show\n',
+        2,
+        'values는 막대·점 그래프에서만 쓸 수 있습니다',
+      ],
+      [
+        'type: bar\nvalues: show\nvalues: show\n',
+        3,
+        "'values' 설정이 이미 있습니다",
+      ],
+    ])('rejects %j at line %i with %s', (settings, line, message) => {
+      expect(errorOf(`${settings}---\n${table}`)).toEqual({
+        line,
+        column: null,
+        message,
+      });
+    });
+  });
+
   describe('a series that ends early', () => {
     it('reads blank cells at the end of a series as no value', () => {
       const result = parseChart('분, A, B\n0, 1, 1\n14, 5, 7\n15, 6,\n27, 9,');
@@ -589,13 +630,13 @@ describe('parseChart', () => {
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, data만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, values, data만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, data만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, values, data만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',

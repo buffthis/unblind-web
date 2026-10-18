@@ -9,6 +9,7 @@ const SETTING_KEYS = [
   'xlimit',
   'xband',
   'note',
+  'values',
   'data',
 ];
 const TYPES = ['line', 'bar', 'dot'];
@@ -329,6 +330,11 @@ function parseSettings(lines) {
         text: cells[2],
         line,
       });
+    } else if (key === 'values') {
+      if (value !== 'show') {
+        fail(line, null, `values는 show만 쓸 수 있습니다(지금 '${value}')`);
+      }
+      settings.values = true;
     } else if (key === 'data') {
       if (!DATA_URL.test(value)) fail(line, null, DATA_FORMAT);
       settings.data = value;
@@ -361,6 +367,9 @@ function parseSettings(lines) {
   }
   if (settings.notes && settings.type && settings.type !== 'line') {
     fail(settings.notes[0].line, null, 'note는 선 그래프에서만 쓸 수 있습니다');
+  }
+  if (settings.values && (settings.type ?? 'line') === 'line') {
+    fail(lineOf.values, null, 'values는 막대·점 그래프에서만 쓸 수 있습니다');
   }
   checkGuidesInRange(settings, lineOf);
   return { settings, lineOf };
@@ -595,6 +604,7 @@ function assemble(settings, lineOf, table) {
     band: settings.band ?? null,
     ...vertical,
     notes,
+    showValues: settings.values === true,
     ...table,
   };
 }

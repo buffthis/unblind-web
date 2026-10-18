@@ -27,6 +27,7 @@ import {
   YGrid,
 } from './chartParts';
 import { computeDomain, formatValue } from './chartScale';
+import { valuesFit } from './chartValues';
 import useBarScrub from './useBarScrub';
 
 // A group of bars fills this share of its row; the rest is the gap between groups.
@@ -109,12 +110,51 @@ const DotMark = styled.div`
   }
 `;
 
+// A value sits just clear of the end of its mark: above a mark that rises, below one that
+// falls. The white halo keeps it readable over guides and neighbouring marks.
+const ValueLabel = styled.span`
+  position: absolute;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: ${({ theme }) => theme.colors.ink};
+  text-shadow:
+    0 0 2px #fff,
+    0 0 2px #fff,
+    0 0 3px #fff;
+  transition: opacity ${GROW};
+
+  &[data-sign='up'] {
+    transform: translate(-50%, calc(-100% - var(--value-gap)));
+  }
+
+  &[data-sign='down'] {
+    transform: translate(-50%, var(--value-gap));
+  }
+
+  [data-grown='false'] & {
+    opacity: 0;
+  }
+`;
+
 // Every bar shares one width: the group's share of the row split across the series,
 // capped so a chart with few rows does not turn into slabs.
 function barWidth(count, seriesCount) {
   const gaps = (seriesCount - 1) * BAR_GAP;
   const share = (100 / count) * GROUP;
   return `min(${MAX_BAR}px, max(1px, calc((${share}% - ${gaps}px) / ${seriesCount})))`;
+}
+
+// The distance between neighbouring marks along the axis: the next bar of the group when
+// there are several series, otherwise the next row.
+function markSpacing(count, seriesCount, width) {
+  const pitch = width / count;
+  if (seriesCount === 1) return pitch;
+  const bar = Math.min(
+    MAX_BAR,
+    Math.max(1, (pitch * GROUP - (seriesCount - 1) * BAR_GAP) / seriesCount)
+  );
+  return bar + BAR_GAP;
 }
 
 function barLeft(index, k, count, seriesCount) {
@@ -200,6 +240,12 @@ export default function BarChart({
   const tickLabels = domain.ticks.map((tick) => formatValue(tick, unit));
   useYLabelWidth(frameRef, plotRef, tickLabels.join('|'));
   const span = domain.max - domain.min;
+  const valueTexts = series.flatMap((s) =>
+    s.values.map((value) => formatValue(value, unit))
+  );
+  const showValues =
+    chart.showValues === true &&
+    valuesFit(valueTexts, markSpacing(count, series.length, width));
   const step = Math.min(STAGGER_STEP, STAGGER_TOTAL / count);
 
   return (
@@ -251,33 +297,52 @@ export default function BarChart({
                 {series.map((s, k) => {
                   const value = s.values[i];
                   const delay = `${Math.round(i * step)}ms`;
+                  const markLeft = `calc(${barLeft(i, k, count, series.length)} + var(--bar-width) / 2)`;
+                  const valueLabel = showValues && (
+                    <ValueLabel
+                      data-role="value"
+                      data-sign={value < 0 ? 'down' : 'up'}
+                      style={{
+                        left: markLeft,
+                        top: topOf(value, domain),
+                        '--value-gap': `${dot ? DOT / 2 + 3 : 3}px`,
+                        transitionDelay: delay,
+                      }}
+                    >
+                      {formatValue(value, unit)}
+                    </ValueLabel>
+                  );
                   if (dot) {
                     return (
-                      <DotMark
-                        key={k}
-                        data-role="dot"
+                      <React.Fragment key={k}>
+                        <DotMark
+                          data-role="dot"
+                          style={{
+                            left: markLeft,
+                            top: topOf(value, domain),
+                            background: color(PALETTE[k]),
+                            transitionDelay: delay,
+                          }}
+                        />
+                        {valueLabel}
+                      </React.Fragment>
+                    );
+                  }
+                  return (
+                    <React.Fragment key={k}>
+                      <Bar
+                        data-role="bar"
+                        data-sign={value < 0 ? 'down' : 'up'}
                         style={{
-                          left: `calc(${barLeft(i, k, count, series.length)} + var(--bar-width) / 2)`,
-                          top: topOf(value, domain),
+                          left: barLeft(i, k, count, series.length),
+                          top: topOf(Math.max(value, 0), domain),
+                          height: `${(Math.abs(value) / span) * 100}%`,
                           background: color(PALETTE[k]),
                           transitionDelay: delay,
                         }}
                       />
-                    );
-                  }
-                  return (
-                    <Bar
-                      key={k}
-                      data-role="bar"
-                      data-sign={value < 0 ? 'down' : 'up'}
-                      style={{
-                        left: barLeft(i, k, count, series.length),
-                        top: topOf(Math.max(value, 0), domain),
-                        height: `${(Math.abs(value) / span) * 100}%`,
-                        background: color(PALETTE[k]),
-                        transitionDelay: delay,
-                      }}
-                    />
+                      {valueLabel}
+                    </React.Fragment>
                   );
                 })}
               </Column>

@@ -340,4 +340,60 @@ describe('BarChart hover with motion', () => {
       timeout: 3000,
     });
   });
+
+  describe('values on the marks', () => {
+    const labelsOf = (c) =>
+      Array.from(c.container.querySelectorAll('[data-role="value"]')).map(
+        (el) => el.textContent
+      );
+
+    it('shows nothing unless values are on', () => {
+      const c = renderChart();
+      expect(labelsOf(c)).toEqual([]);
+    });
+
+    it('writes each value with its unit, in the order of the bars', () => {
+      const c = renderChart({ ...chart, showValues: true });
+      expect(labelsOf(c)).toEqual([
+        '10명',
+        '5명',
+        '20명',
+        '5명',
+        '-10명',
+        '5명',
+        '40명',
+        '5명',
+      ]);
+    });
+
+    it('puts a value above a bar that rises and below one that falls', () => {
+      const c = renderChart({ ...chart, showValues: true });
+      const [up, , , , down] = c.container.querySelectorAll(
+        '[data-role="value"]'
+      );
+      expect(up).toHaveAttribute('data-sign', 'up');
+      expect(down).toHaveAttribute('data-sign', 'down');
+      expect(up.style.top).toBe('40%');
+      expect(down.style.top).toBe('60%');
+    });
+
+    it('labels the dots of a dot chart too', () => {
+      const c = renderChart({ ...chart, type: 'dot', showValues: true });
+      expect(labelsOf(c)).toHaveLength(8);
+    });
+
+    it('hides every value when one would run into its neighbour', () => {
+      const rows = Array.from({ length: 40 }, (_, i) => `r${i}`);
+      const c = renderChart({
+        ...chart,
+        labels: rows,
+        series: [
+          { name: 'a', values: rows.map(() => 1234) },
+          { name: 'b', values: rows.map(() => 5) },
+        ],
+        showValues: true,
+      });
+      expect(labelsOf(c)).toEqual([]);
+    });
+  });
 });
