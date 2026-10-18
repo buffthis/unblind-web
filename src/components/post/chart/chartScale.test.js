@@ -58,6 +58,21 @@ describe('computeDomain', () => {
   });
 });
 
+describe('computeDomain with a great many values', () => {
+  it('finds the range of hundreds of thousands of values without spreading them as arguments', () => {
+    const values = Array.from({ length: 300000 }, (_, i) => i);
+    expect(() => computeDomain(values, { type: 'line' })).not.toThrow();
+    const domain = computeDomain(values, { type: 'line' });
+    expect(domain.min).toBe(0);
+    expect(domain.max).toBeGreaterThanOrEqual(299999);
+  });
+
+  it('does the same for a dot chart', () => {
+    const values = Array.from({ length: 300000 }, (_, i) => i + 10);
+    expect(() => computeDomain(values, { type: 'dot' })).not.toThrow();
+  });
+});
+
 describe('computeDomain with blanks', () => {
   it('ignores the blanks of a series that ended early', () => {
     expect(computeDomain([10, 20, null, null], { type: 'line' })).toEqual(

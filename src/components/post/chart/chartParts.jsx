@@ -655,13 +655,36 @@ export function ChartNotes({ chart, domain, layerRef, visible }) {
   );
 }
 
+// The hidden table lists every row up to this many, which is as many as a post's own
+// chart has ever been given. A data file may hold tens of thousands, and a row per row
+// would put hundreds of thousands of elements in the page for a table nobody reads
+// through, so past it the table lists SAMPLE_ROWS rows spread over the data, with the
+// first and the last among them.
+const LIST_ALL_UP_TO = 5000;
+const SAMPLE_ROWS = 200;
+
+function tableRows(count) {
+  if (count <= LIST_ALL_UP_TO) {
+    return Array.from({ length: count }, (_, i) => i);
+  }
+  return Array.from({ length: SAMPLE_ROWS }, (_, k) =>
+    Math.round((k * (count - 1)) / (SAMPLE_ROWS - 1))
+  );
+}
+
 export function ChartTable({ id, name, chart }) {
   const { xLabel, labels, series, unit } = chart;
+  const rows = tableRows(labels.length);
+  const sampled =
+    rows.length < labels.length
+      ? `전체 ${labels.length.toLocaleString('ko-KR')}행 중 ${rows.length}행`
+      : null;
   const guides = [
     ...Object.values(guideTexts(chart, { full: true })).filter(Boolean),
     ...(chart.notes ?? []).map(
       (note) => `${note.series} ${note.at}: ${noteText(note, chart)}`
     ),
+    ...(sampled ? [sampled] : []),
   ];
   return (
     <HiddenBox>
@@ -680,9 +703,9 @@ export function ChartTable({ id, name, chart }) {
           </tr>
         </thead>
         <tbody>
-          {labels.map((label, i) => (
+          {rows.map((i) => (
             <tr key={i}>
-              <th scope="row">{label}</th>
+              <th scope="row">{labels[i]}</th>
               {series.map((s, k) => (
                 <td key={k}>
                   {s.values[i] == null ? '-' : formatValue(s.values[i], unit)}

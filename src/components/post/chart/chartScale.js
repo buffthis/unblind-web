@@ -15,9 +15,20 @@ export function niceStep(span) {
 // edge of the plot.
 const DOT_MARGIN = 0.1;
 
+// The lowest and highest of the values. Spreading them into Math.min fails with a stack
+// overflow somewhere past a hundred thousand arguments, which a data file can reach.
+function extent(values) {
+  let low = Infinity;
+  let high = -Infinity;
+  for (const value of values) {
+    if (value < low) low = value;
+    if (value > high) high = value;
+  }
+  return [low, high];
+}
+
 function dotRange(values) {
-  let low = Math.min(...values);
-  let high = Math.max(...values);
+  let [low, high] = extent(values);
   if (high === low) {
     low -= 0.5;
     high += 0.5;
@@ -43,13 +54,11 @@ export function computeDomain(
     ...(limit ? [limit.value] : []),
     ...(band ? [band.from, band.to] : []),
   ];
+  const [low0, high0] = extent(values);
   const [dataLow, dataHigh] =
     type === 'dot'
       ? dotRange(values)
-      : [
-          Math.min(0, ...values),
-          Math.max(type === 'bar' ? 0 : -Infinity, ...values),
-        ];
+      : [Math.min(0, low0), Math.max(type === 'bar' ? 0 : -Infinity, high0)];
   let low = min ?? dataLow;
   let high = max ?? dataHigh;
   if (high <= low) {

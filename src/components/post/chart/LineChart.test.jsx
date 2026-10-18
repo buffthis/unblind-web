@@ -122,6 +122,43 @@ describe('LineChart', () => {
     });
   });
 
+  describe('a chart with a great many rows', () => {
+    const rows = 20000;
+    const many = {
+      labels: Array.from({ length: rows }, (_, i) => `${i}초`),
+      series: [
+        { name: 'a', values: Array.from({ length: rows }, (_, i) => i % 100) },
+      ],
+    };
+
+    it('gives the screen reader a table of 200 rows spread over the data once it passes 5000, with the ends in it', () => {
+      renderChart(many);
+      const table = screen.getByRole('table', { name: '전환 비율' });
+      const body = within(table).getAllByRole('row').slice(1);
+      expect(body).toHaveLength(200);
+      expect(within(body[0]).getByRole('rowheader')).toHaveTextContent('0초');
+      expect(within(body[199]).getByRole('rowheader')).toHaveTextContent(
+        '19999초'
+      );
+    });
+
+    it('says in the caption that the table holds only some of the rows', () => {
+      renderChart(many);
+      expect(
+        screen
+          .getByRole('table', { name: '전환 비율' })
+          .querySelector('caption')
+      ).toHaveTextContent('전체 20,000행 중 200행');
+    });
+
+    it('keeps the whole table of a chart with few rows', () => {
+      renderChart();
+      const table = screen.getByRole('table', { name: '전환 비율' });
+      expect(within(table).getAllByRole('row')).toHaveLength(1 + 3);
+      expect(table.querySelector('caption').textContent).not.toContain('전체');
+    });
+  });
+
   describe('a series that ends early', () => {
     const ended = {
       labels: ['1월', '2월', '3월', '4월'],
