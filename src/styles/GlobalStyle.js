@@ -9,9 +9,9 @@ const GlobalStyle = createGlobalStyle`
 
   html {
     scroll-behavior: smooth;
-    /* Keeps the room for the scrollbar, so the page does not jump sideways when a
-       scrollbar appears, or when the search palette hides it. */
-    scrollbar-gutter: stable;
+    /* The scrollbar is always there, so a page that fits the window is as wide as one
+       that scrolls and nothing jumps sideways between them. */
+    overflow-y: scroll;
   }
 
   body {

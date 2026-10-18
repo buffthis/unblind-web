@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@hooks/useSearchIndex', () => ({
   default: () => ({
@@ -79,6 +79,60 @@ describe('SearchPalette', () => {
 
     fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  describe('스크롤 잠금', () => {
+    const root = document.documentElement;
+
+    // jsdom은 레이아웃을 계산하지 않으므로 창과 문서의 폭을 직접 준다.
+    function setWidths({ window: windowWidth, document: documentWidth }) {
+      window.innerWidth = windowWidth;
+      Object.defineProperty(root, 'clientWidth', {
+        configurable: true,
+        value: documentWidth,
+      });
+    }
+
+    afterEach(() => {
+      delete root.clientWidth;
+    });
+
+    it('열려 있는 동안 html의 스크롤을 잠그고 사라진 스크롤바 폭만큼 오른쪽을 채운 뒤, 닫으면 되돌린다', () => {
+      setWidths({ window: 1280, document: 1265 });
+      renderPalette();
+      expect(root.style.overflow).toBe('');
+
+      openPalette();
+      // html에 overflow가 있으면 body의 overflow는 화면 스크롤로 전달되지 않으므로 잠금은 html에 건다.
+      expect(root.style.overflow).toBe('hidden');
+      expect(document.body.style.overflow).toBe('');
+      // 스크롤바가 사라진 만큼 폭이 늘지 않도록 같은 폭을 오른쪽에서 채운다.
+      expect(root.style.paddingRight).toBe('15px');
+
+      fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+      expect(root.style.overflow).toBe('');
+      expect(root.style.paddingRight).toBe('');
+    });
+
+    it('스크롤바가 자리를 차지하지 않으면 오른쪽을 채우지 않는다', () => {
+      setWidths({ window: 1280, document: 1280 });
+      renderPalette();
+
+      openPalette();
+      expect(root.style.overflow).toBe('hidden');
+      expect(root.style.paddingRight).toBe('');
+    });
+
+    it('원래 있던 오른쪽 안쪽 여백은 닫을 때 그대로 돌려준다', () => {
+      setWidths({ window: 1280, document: 1265 });
+      root.style.paddingRight = '4px';
+      renderPalette();
+
+      openPalette();
+      fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+      expect(root.style.paddingRight).toBe('4px');
+      root.style.paddingRight = '';
+    });
   });
 
   it('초성 질의로 결과를 필터링하고 나머지는 숨긴다', async () => {

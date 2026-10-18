@@ -254,12 +254,22 @@ export default function SearchPalette({ onClose }) {
     return () => document.removeEventListener('keydown', onDocKeyDown);
   }, [onClose]);
 
-  // 팔레트가 열려 있는 동안 배경 스크롤을 잠근다.
+  // 팔레트가 열려 있는 동안 배경 스크롤을 잠근다. html에 overflow가 있으면 body의
+  // overflow는 화면 스크롤로 전달되지 않으므로 잠금은 html에 건다. 스크롤바가 사라지면
+  // 폭이 그만큼 늘어 화면이 옆으로 움직이므로, 재 둔 스크롤바 폭을 오른쪽에서 채운다.
+  // 스크롤바가 있던 자리는 배경이 덮어 어둡게 보인다.
   useEffect(() => {
-    const original = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const root = document.documentElement;
+    const original = {
+      overflow: root.style.overflow,
+      paddingRight: root.style.paddingRight,
+    };
+    const scrollbar = window.innerWidth - root.clientWidth;
+    root.style.overflow = 'hidden';
+    if (scrollbar > 0) root.style.paddingRight = `${scrollbar}px`;
     return () => {
-      document.body.style.overflow = original;
+      root.style.overflow = original.overflow;
+      root.style.paddingRight = original.paddingRight;
     };
   }, []);
 
