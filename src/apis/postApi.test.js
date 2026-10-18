@@ -204,9 +204,10 @@ describe('uploadImage', () => {
       id: 3,
       url: 'https://img/a.png',
     });
-    const [path, body] = client.post.mock.calls[0];
+    const [path, body, config] = client.post.mock.calls[0];
     expect(path).toBe('/images/uploads');
     expect(body.get('file')).toBe(file);
+    expect(config).toEqual({ timeout: 60000 });
   });
 });
 
@@ -220,9 +221,11 @@ describe('uploadDataFile', () => {
     expect(await uploadDataFile(file)).toEqual({
       url: 'https://bucket.test/data/2026/10/a.json',
     });
-    const [path, body] = client.post.mock.calls[0];
+    const [path, body, config] = client.post.mock.calls[0];
     expect(path).toBe('/data-files');
     expect(body.get('file')).toBe(file);
+    // A file takes longer to send than a request, so the default 10 seconds is too few.
+    expect(config).toEqual({ timeout: 60000 });
   });
 });
 

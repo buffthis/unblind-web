@@ -272,12 +272,19 @@ function toFieldErrors(serverErrors) {
   return { ...rest, thumbnailUrl: rest.thumbnailUrl ?? url };
 }
 
-// POST /images/uploads names the problem under errors.file (size, format, empty file).
+// Why an upload failed, in words the writer can act on. The server says so itself for a
+// file it refuses (errors.file); the rest is read from the status. A 413 comes from the
+// server in front of the API, as an HTML page with no reason in it.
 function uploadErrorReason(error) {
   const message = error?.response?.data?.errors?.file;
-  return typeof message === 'string' && message
-    ? message
-    : '잠시 후 다시 시도해 주세요.';
+  if (typeof message === 'string' && message) return message;
+  const status = error?.response?.status;
+  if (status === 413) return '서버가 받을 수 있는 크기를 넘었습니다.';
+  if (status) return `서버 오류(HTTP ${status}). 잠시 후 다시 시도해 주세요.`;
+  if (error?.code === 'ECONNABORTED') {
+    return '시간이 초과되었습니다. 파일이 크면 오래 걸릴 수 있습니다.';
+  }
+  return '서버에 연결하지 못했습니다.';
 }
 
 // Takes a marker out of the text, along with the newlines that were added around it so the

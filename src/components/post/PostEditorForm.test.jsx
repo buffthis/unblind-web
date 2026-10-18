@@ -544,6 +544,17 @@ describe('PostEditorForm', () => {
       );
     });
 
+    it('says when the image is larger than the server takes', async () => {
+      uploadImage.mockRejectedValue(httpError(413, '<html>413</html>'));
+      renderForm();
+
+      fireEvent.paste(body(), { clipboardData: { files: [png] } });
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        '이미지를 올리지 못했습니다: shot.png. 서버가 받을 수 있는 크기를 넘었습니다.'
+      );
+    });
+
     it('refuses to save while an upload is running', () => {
       uploadImage.mockReturnValue(new Promise(() => {}));
       renderForm();
@@ -646,6 +657,40 @@ describe('PostEditorForm', () => {
         '데이터 파일을 올리지 못했습니다: run.json. JSON 형식이 올바르지 않습니다'
       );
       await waitFor(() => expect(body()).toHaveValue('글'));
+    });
+
+    it.each([
+      [
+        'a request the server front refused as too large',
+        httpError(413, '<html>413 Request Entity Too Large</html>'),
+        '서버가 받을 수 있는 크기를 넘었습니다.',
+      ],
+      [
+        'a request that ran out of time',
+        Object.assign(new Error('timeout of 60000ms exceeded'), {
+          code: 'ECONNABORTED',
+        }),
+        '시간이 초과되었습니다. 파일이 크면 오래 걸릴 수 있습니다.',
+      ],
+      [
+        'a request that never reached the server',
+        Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' }),
+        '서버에 연결하지 못했습니다.',
+      ],
+      [
+        'a server error with no reason given',
+        httpError(500, {}),
+        '서버 오류(HTTP 500). 잠시 후 다시 시도해 주세요.',
+      ],
+    ])('says what went wrong for %s', async (_name, error, reason) => {
+      uploadDataFile.mockRejectedValue(error);
+      renderForm();
+
+      pick(json);
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        `데이터 파일을 올리지 못했습니다: run.json. ${reason}`
+      );
     });
 
     it('refuses to save while a file is going up', () => {

@@ -59,11 +59,19 @@ async function registerThumbnail(values, initialThumbnailUrl) {
   return response.data.id;
 }
 
+// A file takes longer to send than an ordinary request, so an upload gets a minute where
+// the client's default is ten seconds.
+const UPLOAD_CONFIG = { timeout: 60000 };
+
 // Sends the file itself; the response has the same shape as a registered image URL.
 export async function uploadImage(file) {
   const body = new FormData();
   body.append('file', file);
-  const response = await client.post(ENDPOINTS.IMAGE_UPLOAD, body);
+  const response = await client.post(
+    ENDPOINTS.IMAGE_UPLOAD,
+    body,
+    UPLOAD_CONFIG
+  );
   return response.data;
 }
 
@@ -71,7 +79,7 @@ export async function uploadImage(file) {
 export async function uploadDataFile(file) {
   const body = new FormData();
   body.append('file', file);
-  const response = await client.post(ENDPOINTS.DATA_FILES, body);
+  const response = await client.post(ENDPOINTS.DATA_FILES, body, UPLOAD_CONFIG);
   return response.data;
 }
 
