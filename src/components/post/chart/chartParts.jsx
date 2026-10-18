@@ -1,4 +1,4 @@
-import { BOX_MARGIN } from '@components/post/spacing';
+import { BOX_GAP, TEXT_SPACE } from '@components/post/spacing';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import styled from 'styled-components';
 
@@ -25,8 +25,11 @@ export const color = (rgb, alpha) =>
 export const topOf = (value, domain) =>
   `${(1 - (value - domain.min) / (domain.max - domain.min)) * 100}%`;
 
+// Like a block that is not text, it opens with BOX_GAP (the gap plus the line space the
+// block lacks). It ends with the legend, which is text and brings its own line space, so
+// nothing is added below and the next block is the usual 20px + 4.5px + 4.5px away.
 export const Figure = styled.figure`
-  margin: ${BOX_MARGIN};
+  margin: ${BOX_GAP}px 0 0;
 `;
 
 export const Title = styled.figcaption`
@@ -36,19 +39,21 @@ export const Title = styled.figcaption`
 `;
 
 // Each labelled side gets the opposite side's whitespace plus its labels. Vertically,
-// the space under the x-axis labels equals the top inset. Horizontally, the left
+// the space above the plot holds the readout, and nothing is kept under the x-axis
+// labels: the legend below them is spaced like any other text (see LegendRow).
+// Horizontally, the left
 // inset is the right inset plus the widest y-axis label (measured after render into
 // --y-label-width) plus LABEL_GAP, so the whitespace outside the labels always
 // matches the right side. Readout shares the horizontal insets because the scrub
 // hook clamps it against the plot's width.
-const INSET = { top: 40, right: 62, bottom: 40, readoutTop: 10 };
-const INSET_MOBILE = { top: 29, right: 26, bottom: 29, readoutTop: 5 };
+const INSET = { top: 40, right: 62, readoutTop: 10 };
+const INSET_MOBILE = { top: 29, right: 26, readoutTop: 5 };
 const LABEL_GAP = 8;
 
 export const Frame = styled.div`
   position: relative;
   /* Experiment: no frame, and the plot spans the article width; y labels hang into the left margin. */
-  padding: ${INSET.top}px 0 ${INSET.bottom}px;
+  padding: ${INSET.top}px 0 0;
   /* Fixed empty space (about 2.5 12px glyphs) before the first and after the last point,
      so an end x label never runs into the y labels whatever the number of points. */
   --plot-inset: 30px;
@@ -61,7 +66,7 @@ export const Frame = styled.div`
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    padding: ${INSET_MOBILE.top}px 0 ${INSET_MOBILE.bottom}px;
+    padding: ${INSET_MOBILE.top}px 0 0;
     --plot-inset: 16px;
   }
 `;
@@ -182,12 +187,16 @@ export const XTick = styled.span`
   white-space: nowrap;
 `;
 
+// The legend is a line of text. Its line height leaves TEXT_SPACE above and below the
+// letters, and its margin is BOX_GAP because the x-axis labels above it keep no line space
+// under them, so the letters of the labels and the legend end up 29px apart.
 const LegendRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  margin-top: 12px;
+  margin-top: ${BOX_GAP}px;
   font-size: 0.8rem;
+  line-height: calc(0.8rem + ${2 * TEXT_SPACE}px);
   color: ${({ theme }) => theme.colors.secondary};
 `;
 
@@ -293,7 +302,7 @@ export function ChartReadout({ series, readoutRef, valueRefs, labelRef }) {
 
 export function ChartLegend({ series }) {
   return (
-    <LegendRow aria-hidden="true">
+    <LegendRow aria-hidden="true" data-role="legend">
       {series.map((s, k) => (
         <span key={k}>
           <Dot style={{ background: color(PALETTE[k]) }} />

@@ -6,6 +6,19 @@ import { describe, expect, it, vi } from 'vitest';
 
 import LineChart from './LineChart';
 
+// jsdom does not lay anything out, so read what the stylesheet declares for the element.
+function declaredValue(element, property) {
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (rule.selectorText && element.matches(rule.selectorText)) {
+        const value = rule.style.getPropertyValue(property);
+        if (value) return value;
+      }
+    }
+  }
+  return null;
+}
+
 const chart = {
   title: '전환 비율',
   unit: '%',
@@ -55,6 +68,33 @@ describe('LineChart', () => {
     const limit = container.querySelector('[data-role="limit"]');
     expect(parseFloat(limit.style.top)).toBeCloseTo(20);
     expect(limit).toHaveTextContent('목표 80%');
+  });
+
+  // Every gap between blocks is 20px, with 4.5px of empty space inside the line box of the
+  // text on either side, so the letters end up 29px apart. The legend is text, and the
+  // x-axis labels above it and the paragraph below it are the neighbours it is measured to.
+  describe('the gaps around the legend', () => {
+    it('keeps the legend 24.5px under the axis, which with its own 4.5px of line space is 29px', () => {
+      const { container } = renderChart();
+      const legend = container.querySelector('[data-role="legend"]');
+
+      expect(declaredValue(legend, 'margin-top')).toBe('24.5px');
+      expect(declaredValue(legend, 'line-height')).toBe('calc(9px + 0.8rem)');
+    });
+
+    it('leaves nothing under the axis labels but that margin', () => {
+      renderChart();
+      const frame = screen.getByRole('group').parentElement;
+
+      expect(declaredValue(frame, 'padding')).toBe('40px 0px 0px');
+    });
+
+    it('ends the figure right at the legend, as text, so the next block is 20 + 4.5 away', () => {
+      renderChart();
+      const figure = screen.getByRole('figure', { name: '전환 비율' });
+
+      expect(declaredValue(figure, 'margin')).toBe('24.5px 0px 0px');
+    });
   });
 
   describe('notes', () => {

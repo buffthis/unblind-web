@@ -24,6 +24,7 @@ import remarkParagraphKinds from './remarkParagraphKinds';
 import {
   BLOCK_GAP,
   BLOCK_MARGIN,
+  BOX_GAP,
   BOX_MARGIN,
   lineHeightFor,
   TEXT_SPACE,
@@ -156,6 +157,17 @@ const Body = styled.div`
     margin: ${BOX_MARGIN};
   }
 
+  /* A rule is a line of its own, not the box a browser draws for an inset border. It is a
+     block that is not text, so it keeps BOX_MARGIN. The blank lines above it (see data-gap)
+     are margin here and not padding, which inside a border would be drawn as part of the
+     box. */
+  & > hr {
+    height: 1px;
+    border: 0;
+    background: ${({ theme }) => theme.colors.border};
+    margin: ${BOX_MARGIN};
+  }
+
   /* Inside a list item or a quote the blocks sit closer, as before. */
   li > ul,
   li > ol,
@@ -172,6 +184,15 @@ const Body = styled.div`
 
   & > :first-child:not(p):not(h1):not(h2):not(h3) {
     margin-top: ${TEXT_SPACE}px;
+  }
+
+  & > hr[data-gap] {
+    padding-top: 0;
+    margin-top: calc(${BOX_GAP}px + var(--gap-extra, 0px));
+  }
+
+  & > hr[data-gap]:first-child {
+    margin-top: calc(${TEXT_SPACE}px + var(--gap-extra, 0px));
   }
 
   ul,

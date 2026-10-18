@@ -1,5 +1,6 @@
 import BlockErrorNote from '@components/post/BlockErrorNote';
 import CodeBlock from '@components/post/CodeBlock';
+import { BOX_MARGIN } from '@components/post/spacing';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import styled from 'styled-components';
 
@@ -46,6 +47,7 @@ class ChartErrorBoundary extends React.Component {
 // A chart whose rows are in a file keeps its place at about the height of a drawn chart,
 // so the post does not jump when the file arrives.
 const Placeholder = styled(Figure)`
+  margin: ${BOX_MARGIN};
   display: flex;
   align-items: center;
   justify-content: center;

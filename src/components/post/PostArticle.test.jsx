@@ -357,6 +357,59 @@ describe('PostArticle', () => {
     expect(declaredValue(h3, 'margin-bottom')).toBeNull();
   });
 
+  describe('horizontal rule', () => {
+    it('is a one pixel line, not the browser box of an inset border', () => {
+      const { container } = renderArticle('앞\n\n---\n\n뒤');
+      const hr = container.querySelector('hr');
+
+      expect(declaredValue(hr, 'height')).toBe('1px');
+      expect(declaredValue(hr, 'border')).toBe('0px');
+      expect(declaredValue(hr, 'background')).not.toBeNull();
+    });
+
+    it('stands 20px + 4.5px + 4.5px from the text on either side, like any block that is not text', () => {
+      const { container } = renderArticle('앞\n\n---\n\n뒤');
+      const hr = container.querySelector('hr');
+
+      expect(declaredValue(hr, 'margin')).toBe('24.5px 0px 4.5px');
+    });
+
+    it('moves down for each blank line past the first as margin, so the line stays a line', () => {
+      const { container } = renderArticle('앞\n\n\n\n---\n\n뒤');
+      const hr = container.querySelector('hr');
+
+      expect(hr).toHaveAttribute('data-gap', '2');
+      // The extra blank lines of other blocks are padding (see data-gap), which inside an
+      // element with a box of its own would be drawn as part of the box.
+      const style = getComputedStyle(hr);
+      expect(style.paddingTop).toBe('0px');
+      expect(style.marginTop).toBe('calc(24.5px + var(--gap-extra, 0px))');
+    });
+
+    it('keeps 4.5px from the top when it opens the article, like any block that is not text', () => {
+      const { container } = renderArticle('---\n\n뒤');
+      expect(container.querySelector('hr')).toHaveStyle({ marginTop: '4.5px' });
+    });
+
+    it('adds the blank lines before it to that 4.5px when it opens the article', () => {
+      const { container } = renderArticle('\n---\n\n뒤');
+      const hr = container.querySelector('hr');
+
+      expect(hr).toHaveAttribute('data-gap', '1');
+      expect(getComputedStyle(hr).marginTop).toBe(
+        'calc(4.5px + var(--gap-extra, 0px))'
+      );
+    });
+
+    it('turns text right above the dashes into a heading, as markdown does', () => {
+      const { container } = renderArticle('글 바로 아래 줄\n---\n\n뒤');
+      expect(container.querySelector('hr')).toBeNull();
+      expect(container.querySelector('h2')).toHaveTextContent(
+        '글 바로 아래 줄'
+      );
+    });
+  });
+
   it('lays the article out as a column, so neighbouring margins add up instead of merging', () => {
     const { container } = renderArticle('앞\n\n뒤');
     const body = container.firstElementChild;
@@ -444,9 +497,13 @@ describe('PostArticle', () => {
     expect(declaredValue(blocks[0], 'margin')).toBe('20px 0px 0px');
     // 20px of gap plus 4.5px on top, and 4.5px below, so the letters of the text next to
     // the block are 29px away on either side.
-    for (const block of blocks.slice(1)) {
+    const chart = blocks[6];
+    for (const block of blocks.slice(1).filter((block) => block !== chart)) {
       expect(declaredValue(block, 'margin')).toBe('24.5px 0px 4.5px');
     }
+    // A chart ends with its legend, which is text and has the 4.5px inside, so the figure
+    // adds none below (see the legend tests in LineChart).
+    expect(declaredValue(chart, 'margin')).toBe('24.5px 0px 0px');
   });
 
   it('keeps the # link of a title on the title line when blank lines open space above it', () => {

@@ -156,6 +156,13 @@ describe('ChartBlock', () => {
       expect(LineChart).not.toHaveBeenCalled();
     });
 
+    it('holds the place with the margin of any block that is not text, since it has no line space of its own', () => {
+      useChartData.mockReturnValue({ status: 'loading' });
+      renderBlock(SOURCE);
+      const placeholder = screen.getByRole('status');
+      expect(getComputedStyle(placeholder).marginBottom).toBe('4.5px');
+    });
+
     it('draws the chart the file and the settings make', () => {
       LineChart.mockImplementation(({ chart }) => (
         <figure aria-label={`${chart.title} ${chart.labels.join(',')}`} />
