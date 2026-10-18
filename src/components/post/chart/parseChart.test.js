@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatChartError, parseChart } from './parseChart';
+import { buildRemoteChart, formatChartError, parseChart } from './parseChart';
 
 const rows = (count) =>
   Array.from({ length: count }, (_, i) => `${i + 1}, ${i}`).join('\n');
@@ -589,13 +589,13 @@ describe('parseChart', () => {
       'units: %\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note만 쓸 수 있습니다",
+      "알 수 없는 설정 'units'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, data만 쓸 수 있습니다",
     ],
     [
       'Title: x\n---\n주, a\n1, 1\n2, 2',
       1,
       null,
-      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note만 쓸 수 있습니다",
+      "알 수 없는 설정 'Title'입니다. title, unit, min, max, type, limit, band, xlimit, xband, note, data만 쓸 수 있습니다",
     ],
     [
       'unit: %\nunit: 원\n---\n주, a\n1, 1\n2, 2',
@@ -662,6 +662,196 @@ describe('parseChart', () => {
     ['title: x\n주, a\n1, 1\n2, 2', 1, null, '설정 다음 줄에 ---가 없습니다'],
   ])('rejects %j at line %i column %s', (text, line, column, message) => {
     expect(errorOf(text)).toEqual({ line, column, message });
+  });
+
+  describe('data from a file', () => {
+    const url = 'https://bucket.test/data/2026/10/a.json';
+    const file = {
+      xLabel: '월',
+      labels: ['1월', '2월', '3월'],
+      series: [
+        { name: 'a', values: [1, 2, 3] },
+        { name: 'b', values: [4, 5, null] },
+      ],
+    };
+    const inline = (settings = '') =>
+      `${settings}${settings ? '---\n' : ''}월, a, b\n1월, 1, 4\n2월, 2, 5\n3월, 3,`;
+    const build = (settings, json = file) => {
+      const parsed = parseChart(`data: ${url}\n${settings}`.trim());
+      expect(parsed.ok).toBe(true);
+      return buildRemoteChart(parsed.remote, json);
+    };
+
+    it('takes a block of settings alone, with the address in data, and says where to read', () => {
+      const result = parseChart(`title: 이동\ndata: ${url}`);
+      expect(result.ok).toBe(true);
+      expect(result.remote.url).toBe(url);
+      expect(result.chart).toBeUndefined();
+    });
+
+    it('builds the very chart the same data would give as a table', () => {
+      const built = build(
+        'title: 이동\nunit: m\nxlimit: 2월 출시\nnote: 3월, a, 끝 {value}'
+      );
+      const same = parseChart(
+        `title: 이동\nunit: m\nxlimit: 2월 출시\nnote: 3월, a, 끝 {value}\n${inline('')}`.replace(
+          /\n(월, a, b)/,
+          '\n---\n$1'
+        )
+      );
+      expect(built.ok).toBe(true);
+      expect(same.ok).toBe(true);
+      expect(built.chart).toEqual(same.chart);
+    });
+
+    it('reads labels given as numbers as their text', () => {
+      const built = build('', { ...file, labels: [1, 2, 3] });
+      expect(built.chart.labels).toEqual(['1', '2', '3']);
+    });
+
+    it('leaves the x axis name empty when the file has none', () => {
+      const without = { ...file };
+      delete without.xLabel;
+      expect(build('', without).chart.xLabel).toBe('');
+    });
+
+    it('takes up to a hundred thousand rows in a line chart', () => {
+      const labels = Array.from({ length: 100000 }, (_, i) => String(i));
+      const values = labels.map((_, i) => i);
+      const built = build('', { labels, series: [{ name: 'a', values }] });
+      expect(built.ok).toBe(true);
+      expect(built.chart.labels).toHaveLength(100000);
+    });
+
+    it('rejects an address that is not http or https', () => {
+      expect(errorOf('data: ftp://a/b.json')).toEqual({
+        line: 1,
+        column: null,
+        message:
+          'data는 http 또는 https 주소여야 합니다(예: data: https://example.com/chart.json)',
+      });
+      expect(errorOf('data: chart.json').message).toContain('data는');
+    });
+
+    it('rejects a table next to a data address', () => {
+      expect(errorOf(`data: ${url}\n---\n월, a\n1월, 1\n2월, 2`)).toEqual({
+        line: 2,
+        column: null,
+        message: 'data를 쓰면 표를 함께 쓸 수 없습니다',
+      });
+    });
+
+    it('still asks for --- when settings other than data have no table', () => {
+      expect(errorOf('title: x')).toEqual({
+        line: 1,
+        column: null,
+        message: '설정 다음 줄에 ---가 없습니다',
+      });
+    });
+
+    it('rejects data given twice', () => {
+      expect(errorOf(`data: ${url}\ndata: ${url}`)).toEqual({
+        line: 2,
+        column: null,
+        message: "'data' 설정이 이미 있습니다",
+      });
+    });
+
+    it.each([
+      [null, '최상위는 { "labels": [...], "series": [...] } 객체여야 합니다'],
+      [[], '최상위는 { "labels": [...], "series": [...] } 객체여야 합니다'],
+      [{ series: [] }, "'labels'는 배열이어야 합니다"],
+      [{ labels: ['a', 'b'] }, "'series'는 배열이어야 합니다"],
+      [{ labels: ['a', 'b'], series: [] }, '계열은 1~6개여야 합니다(지금 0개)'],
+      [
+        { labels: ['a'], series: [{ name: 'a', values: [1] }] },
+        '데이터 행은 2~100000개여야 합니다(지금 1개)',
+      ],
+      [
+        { labels: ['a', ''], series: [{ name: 'a', values: [1, 2] }] },
+        'labels[1]이 비어 있습니다',
+      ],
+      [
+        { labels: ['a', 'b'], series: [{ name: '', values: [1, 2] }] },
+        'series[0]의 name이 비어 있습니다',
+      ],
+      [
+        {
+          labels: ['a', 'b'],
+          series: [
+            { name: 'x', values: [1, 2] },
+            { name: 'x', values: [1, 2] },
+          ],
+        },
+        "계열 이름이 중복됩니다: 'x'",
+      ],
+      [
+        { labels: ['a', 'b'], series: [{ name: 'x', values: [1] }] },
+        'series[0].values는 labels와 같은 길이(2)여야 합니다(지금 1)',
+      ],
+      [
+        { labels: ['a', 'b'], series: [{ name: 'x', values: [1, '2'] }] },
+        "series[0].values[1]은 숫자여야 합니다(지금 '2')",
+      ],
+      [
+        {
+          labels: ['a', 'b', 'c'],
+          series: [{ name: 'x', values: [1, null, 3] }],
+        },
+        'series[0]의 빈 값(null)은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)',
+      ],
+      [
+        {
+          labels: ['a', 'b', 'c'],
+          series: [{ name: 'x', values: [1, null, null] }],
+        },
+        "series[0] 'x'는 값이 2개 이상 있어야 합니다",
+      ],
+    ])('rejects the file %j', (json, message) => {
+      const result = build('', json);
+      expect(result).toEqual({
+        ok: false,
+        error: { line: 1, column: null, message: `데이터 파일: ${message}` },
+      });
+    });
+
+    it('holds the values to min and max like a table does', () => {
+      const result = build('max: 2', file);
+      expect(result.ok).toBe(false);
+      expect(result.error.message).toBe(
+        '데이터 파일: series[0].values[2]의 값(3)이 max(2)보다 큽니다'
+      );
+    });
+
+    it('rejects an empty value in a bar or dot chart', () => {
+      const result = build('type: bar', file);
+      expect(result.ok).toBe(false);
+      expect(result.error.message).toBe(
+        '데이터 파일: series[1].values[2]의 빈 값(null)은 선 그래프에서만 쓸 수 있습니다'
+      );
+    });
+
+    it('keeps a bar chart to forty rows', () => {
+      const labels = Array.from({ length: 41 }, (_, i) => String(i));
+      const result = build('type: bar', {
+        labels,
+        series: [{ name: 'a', values: labels.map(() => 1) }],
+      });
+      expect(result.error.message).toBe(
+        '데이터 파일: 데이터 행은 1~40개여야 합니다(지금 41개)'
+      );
+    });
+
+    it('resolves the vertical guides and notes against the labels of the file', () => {
+      const missing = build('xlimit: 9월', file);
+      expect(missing.error).toEqual({
+        line: 2,
+        column: null,
+        message: "xlimit의 레이블 '9월'이 표에 없습니다",
+      });
+      const band = build('xband: 2월~3월 구간', file);
+      expect(band.chart.xband).toMatchObject({ fromIndex: 1, toIndex: 2 });
+    });
   });
 });
 

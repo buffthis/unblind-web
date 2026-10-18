@@ -8,6 +8,7 @@ import {
   isExternalPost,
   savePost,
   toSaveError,
+  uploadDataFile,
   uploadImage,
 } from './postApi';
 
@@ -205,6 +206,22 @@ describe('uploadImage', () => {
     });
     const [path, body] = client.post.mock.calls[0];
     expect(path).toBe('/images/uploads');
+    expect(body.get('file')).toBe(file);
+  });
+});
+
+describe('uploadDataFile', () => {
+  it('posts the file as multipart form data to /data-files and returns its address', async () => {
+    client.post.mockResolvedValue({
+      data: { url: 'https://bucket.test/data/2026/10/a.json' },
+    });
+    const file = new File(['{}'], 'a.json', { type: 'application/json' });
+
+    expect(await uploadDataFile(file)).toEqual({
+      url: 'https://bucket.test/data/2026/10/a.json',
+    });
+    const [path, body] = client.post.mock.calls[0];
+    expect(path).toBe('/data-files');
     expect(body.get('file')).toBe(file);
   });
 });

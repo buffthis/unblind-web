@@ -67,6 +67,14 @@ export async function uploadImage(file) {
   return response.data;
 }
 
+// Sends a JSON file of chart data; the response holds the address the chart reads it from.
+export async function uploadDataFile(file) {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await client.post(ENDPOINTS.DATA_FILES, body);
+  return response.data;
+}
+
 export async function savePost({
   postId,
   values,

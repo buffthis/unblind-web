@@ -3,6 +3,7 @@ export const ENDPOINTS = {
   ME: '/me',
   IMAGES: '/images',
   IMAGE_UPLOAD: '/images/uploads',
+  DATA_FILES: '/data-files',
   USERS: {
     BY_ID: (id) => `/users/${encodeURIComponent(id)}`,
     BY_USERNAME: (username) =>

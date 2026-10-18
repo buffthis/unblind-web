@@ -1,4 +1,4 @@
-import { savePost, uploadImage } from '@apis/postApi';
+import { savePost, uploadDataFile, uploadImage } from '@apis/postApi';
 import theme from '@styles/theme/theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -19,6 +19,7 @@ vi.mock('@apis/postApi', async (importOriginal) => ({
   ...(await importOriginal()),
   savePost: vi.fn(),
   uploadImage: vi.fn(),
+  uploadDataFile: vi.fn(),
 }));
 
 const empty = { title: '', subtitle: '', thumbnailUrl: '', content: '' };
@@ -65,6 +66,7 @@ function type(label, value) {
 beforeEach(() => {
   savePost.mockReset();
   uploadImage.mockReset();
+  uploadDataFile.mockReset();
   localStorage.clear();
 });
 
@@ -553,7 +555,111 @@ describe('PostEditorForm', () => {
 
       expect(savePost).not.toHaveBeenCalled();
       expect(screen.getByRole('status')).toHaveTextContent(
-        '이미지를 올리는 중입니다'
+        '파일을 올리는 중입니다'
+      );
+    });
+  });
+
+  describe('data file uploads', () => {
+    const json = new File(['{}'], 'run.json', { type: 'application/json' });
+    const body = () => screen.getByLabelText('본문');
+    const pick = (...files) =>
+      fireEvent.change(screen.getByTestId('data-file-input'), {
+        target: { files },
+      });
+    const BLOCK = '```chart\ndata: https://bucket.test/data/a.json\n```';
+
+    it('puts a marker in the text while the file goes up, then the chart block that reads it', async () => {
+      let finish;
+      uploadDataFile.mockReturnValue(
+        new Promise((resolve) => (finish = resolve))
+      );
+      renderForm();
+
+      pick(json);
+      expect(body()).toHaveValue('[데이터 파일 업로드 중: run.json #1]');
+      expect(uploadDataFile).toHaveBeenCalledWith(json);
+
+      finish({ url: 'https://bucket.test/data/a.json' });
+      await waitFor(() => expect(body()).toHaveValue(BLOCK));
+    });
+
+    it('opens a button for it next to the one for images', () => {
+      renderForm();
+      expect(
+        screen.getByRole('button', { name: '차트 데이터 파일 올리기' })
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('data-file-input')).toHaveAttribute(
+        'accept',
+        '.json,application/json'
+      );
+    });
+
+    it('puts the block on lines of its own when the caret is inside a line', async () => {
+      uploadDataFile.mockResolvedValue({
+        url: 'https://bucket.test/data/a.json',
+      });
+      renderForm();
+      type('본문', '앞뒤');
+      body().setSelectionRange(1, 1);
+
+      pick(json);
+
+      await waitFor(() => expect(body()).toHaveValue(`앞\n${BLOCK}\n뒤`));
+    });
+
+    it('does not add blank lines when the caret is already on a line of its own', async () => {
+      uploadDataFile.mockResolvedValue({
+        url: 'https://bucket.test/data/a.json',
+      });
+      renderForm();
+      type('본문', '앞\n');
+      body().setSelectionRange(2, 2);
+
+      pick(json);
+
+      await waitFor(() => expect(body()).toHaveValue(`앞\n${BLOCK}`));
+    });
+
+    it('refuses a file that is not JSON without sending it', () => {
+      renderForm();
+      pick(new File(['x'], 'a.txt', { type: 'text/plain' }));
+
+      expect(uploadDataFile).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'JSON 파일만 올릴 수 있습니다: a.txt'
+      );
+      expect(body()).toHaveValue('');
+    });
+
+    it('removes the marker and says why the server refused the file', async () => {
+      uploadDataFile.mockRejectedValue(
+        httpError(400, { errors: { file: 'JSON 형식이 올바르지 않습니다' } })
+      );
+      renderForm();
+      type('본문', '글');
+      body().setSelectionRange(1, 1);
+
+      pick(json);
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        '데이터 파일을 올리지 못했습니다: run.json. JSON 형식이 올바르지 않습니다'
+      );
+      await waitFor(() => expect(body()).toHaveValue('글'));
+    });
+
+    it('refuses to save while a file is going up', () => {
+      uploadDataFile.mockReturnValue(new Promise(() => {}));
+      renderForm();
+      type('제목', '제목');
+      type('본문', '본문');
+
+      pick(json);
+      fireEvent.click(screen.getByRole('button', { name: '발행' }));
+
+      expect(savePost).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '파일을 올리는 중입니다'
       );
     });
   });

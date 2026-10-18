@@ -9,6 +9,7 @@ const SETTING_KEYS = [
   'xlimit',
   'xband',
   'note',
+  'data',
 ];
 const TYPES = ['line', 'bar', 'dot'];
 const SETTING_LINE = /^([A-Za-z]+):[ \t]*(.*)$/;
@@ -24,6 +25,12 @@ const XLIMIT_VALUE = new RegExp(`^${ROW_LABEL}(?:\\s+(.+))?$`);
 const XBAND_VALUE = new RegExp(
   `^${ROW_LABEL}\\s*~\\s*${ROW_LABEL}(?:\\s+(.+))?$`
 );
+// Chart data kept in a file is read from this address instead of a table. A line chart
+// thins what it draws, so the file may hold far more rows than a table; the server
+// keeps a file under 5MB, which is about this many rows for two series.
+const DATA_URL = /^https?:\/\/\S+$/;
+const MAX_REMOTE_ROWS = 100000;
+const FILE = '데이터 파일: ';
 const MAX_GUIDE_LABEL = 20;
 // Notes stay on the plot all the time, so a few short ones is as many as it can hold.
 const MAX_NOTES = 3;
@@ -48,6 +55,8 @@ const XLIMIT_FORMAT =
   'xlimit은 "레이블 이름" 형식이어야 합니다(예: xlimit: 3월 출시)';
 const NOTE_FORMAT =
   'note는 "행 레이블, 계열 이름, 문구" 형식이어야 합니다(예: note: 14분, 로봇 B, B 도착 · {value})';
+const DATA_FORMAT =
+  'data는 http 또는 https 주소여야 합니다(예: data: https://example.com/chart.json)';
 const XBAND_FORMAT =
   'xband는 "시작~끝 이름" 형식이어야 합니다(예: xband: 2월~4월 장애 구간)';
 
@@ -320,6 +329,9 @@ function parseSettings(lines) {
         text: cells[2],
         line,
       });
+    } else if (key === 'data') {
+      if (!DATA_URL.test(value)) fail(line, null, DATA_FORMAT);
+      settings.data = value;
     } else if (key === 'type' && !TYPES.includes(value)) {
       fail(
         line,
@@ -531,10 +543,23 @@ function parse(rawText) {
   if (separators.length > 1)
     fail(separators[1] + 1, null, '---는 한 번만 쓸 수 있습니다');
   if (separators[0] === 0) fail(1, null, '설정이 없으면 ---를 쓰지 않습니다');
-  if (separators.length === 0) {
-    const first = lines[0].match(SETTING_LINE);
-    if (first && SETTING_KEYS.includes(first[1]))
-      fail(1, null, '설정 다음 줄에 ---가 없습니다');
+  const isSetting = (line) => {
+    const found = line.match(SETTING_LINE);
+    return Boolean(found) && SETTING_KEYS.includes(found[1]);
+  };
+  // Settings with a data address and no table: the rows come from the file.
+  const fromFile =
+    separators.length === 0 &&
+    isSetting(lines[0]) &&
+    lines.some((line) => /^data:/.test(line));
+  if (separators.length === 0 && !fromFile) {
+    if (isSetting(lines[0])) fail(1, null, '설정 다음 줄에 ---가 없습니다');
+  }
+
+  if (fromFile) {
+    rejectBlankLines(lines, 0);
+    const { settings, lineOf } = parseSettings(lines);
+    return { remote: { url: settings.data, settings, lineOf } };
   }
 
   let settings = {};
@@ -547,11 +572,19 @@ function parse(rawText) {
     const settingLines = lines.slice(0, separator);
     rejectBlankLines(settingLines, 0);
     ({ settings, lineOf } = parseSettings(settingLines));
+    if (settings.data) {
+      fail(separator + 1, null, 'data를 쓰면 표를 함께 쓸 수 없습니다');
+    }
     table = parseTable(lines.slice(separator + 1), separator + 1, settings);
   }
+  return { chart: assemble(settings, lineOf, table) };
+}
+
+// The chart that settings and a table make, with the guides and notes that name rows
+// turned into row indexes. A table read from a file goes through here too.
+function assemble(settings, lineOf, table) {
   const vertical = resolveVerticalGuides(settings, lineOf, table.labels);
   const notes = resolveNotes(settings, table);
-
   return {
     title: settings.title ?? null,
     unit: settings.unit ?? '',
@@ -566,14 +599,122 @@ function parse(rawText) {
   };
 }
 
+// The table of a data file, held to the rules of a table in the post. Its errors name
+// the place in the file (series[0].values[2]) instead of a line and a column, and are
+// reported on the line of the data setting.
+function tableFromJson(json, settings, line) {
+  const bad = (message) => fail(line, null, `${FILE}${message}`);
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    bad('최상위는 { "labels": [...], "series": [...] } 객체여야 합니다');
+  }
+  const { labels, series, xLabel } = json;
+  if (!Array.isArray(labels)) bad("'labels'는 배열이어야 합니다");
+  if (!Array.isArray(series)) bad("'series'는 배열이어야 합니다");
+  if (series.length < MIN_SERIES || series.length > MAX_SERIES) {
+    bad(
+      `계열은 ${MIN_SERIES}~${MAX_SERIES}개여야 합니다(지금 ${series.length}개)`
+    );
+  }
+  const type = settings.type ?? 'line';
+  const bar = type === 'bar' || type === 'dot';
+  const minRows = bar ? BAR_MIN_ROWS : MIN_ROWS;
+  const maxRows = bar ? BAR_MAX_ROWS : MAX_REMOTE_ROWS;
+  if (labels.length < minRows || labels.length > maxRows) {
+    bad(
+      `데이터 행은 ${minRows}~${maxRows}개여야 합니다(지금 ${labels.length}개)`
+    );
+  }
+  const texts = labels.map((label, index) => {
+    const text =
+      typeof label === 'number' && Number.isFinite(label)
+        ? String(label)
+        : label;
+    if (typeof text !== 'string' || text === '') {
+      bad(`labels[${index}]이 비어 있습니다`);
+    }
+    return text;
+  });
+
+  const names = [];
+  const built = series.map((entry, k) => {
+    const name = entry?.name;
+    if (typeof name !== 'string' || name === '') {
+      bad(`series[${k}]의 name이 비어 있습니다`);
+    }
+    if (names.includes(name)) bad(`계열 이름이 중복됩니다: '${name}'`);
+    names.push(name);
+    const values = entry.values;
+    if (!Array.isArray(values)) bad(`series[${k}].values는 배열이어야 합니다`);
+    if (values.length !== labels.length) {
+      bad(
+        `series[${k}].values는 labels와 같은 길이(${labels.length})여야 합니다(지금 ${values.length})`
+      );
+    }
+    values.forEach((value, i) => {
+      const at = `series[${k}].values[${i}]`;
+      if (value === null) {
+        if (bar) bad(`${at}의 빈 값(null)은 선 그래프에서만 쓸 수 있습니다`);
+        return;
+      }
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        bad(
+          `${at}은 숫자여야 합니다(지금 ${typeof value === 'string' ? `'${value}'` : String(value)})`
+        );
+      }
+      if (settings.min != null && value < settings.min) {
+        bad(`${at}의 값(${value})이 min(${settings.min})보다 작습니다`);
+      }
+      if (settings.max != null && value > settings.max) {
+        bad(`${at}의 값(${value})이 max(${settings.max})보다 큽니다`);
+      }
+    });
+    // A blank means the series ended, so blanks may only fill the end of it.
+    const blankAt = values.indexOf(null);
+    if (blankAt !== -1) {
+      if (values.slice(blankAt).some((value) => value !== null)) {
+        bad(
+          `series[${k}]의 빈 값(null)은 계열의 끝에만 쓸 수 있습니다(뒤에 값이 이어집니다)`
+        );
+      }
+      if (blankAt < 2) {
+        bad(`series[${k}] '${name}'는 값이 2개 이상 있어야 합니다`);
+      }
+    }
+    return { name, values };
+  });
+
+  return {
+    xLabel: typeof xLabel === 'string' ? xLabel : '',
+    labels: texts,
+    series: built,
+  };
+}
+
+function fromSyntaxError(error) {
+  if (!(error instanceof ChartSyntaxError)) throw error;
+  return {
+    ok: false,
+    error: { line: error.line, column: error.column, message: error.message },
+  };
+}
+
+// A block whose rows are in a file comes back as `remote` (the address and what was
+// parsed of the settings) instead of `chart`; buildRemoteChart finishes it once the
+// file is read.
 export function parseChart(text) {
   try {
-    return { ok: true, chart: parse(text) };
+    const { chart, remote } = parse(text);
+    return remote ? { ok: true, remote } : { ok: true, chart };
   } catch (error) {
-    if (!(error instanceof ChartSyntaxError)) throw error;
-    return {
-      ok: false,
-      error: { line: error.line, column: error.column, message: error.message },
-    };
+    return fromSyntaxError(error);
+  }
+}
+
+export function buildRemoteChart({ settings, lineOf }, json) {
+  try {
+    const table = tableFromJson(json, settings, lineOf.data);
+    return { ok: true, chart: assemble(settings, lineOf, table) };
+  } catch (error) {
+    return fromSyntaxError(error);
   }
 }

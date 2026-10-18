@@ -1,9 +1,15 @@
-import { savePost, toSaveError, uploadImage } from '@apis/postApi';
+import {
+  savePost,
+  toSaveError,
+  uploadDataFile,
+  uploadImage,
+} from '@apis/postApi';
 import PostArticle from '@components/post/PostArticle';
 import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { LAYOUT } from '@styles/constants';
 import { useQueryClient } from '@tanstack/react-query';
+import { dataFileBlock, dataFileMarker, isDataFile } from '@utils/dataFiles';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
 import { tagLimitError } from '@utils/tags';
@@ -274,6 +280,15 @@ function uploadErrorReason(error) {
     : '잠시 후 다시 시도해 주세요.';
 }
 
+// Takes a marker out of the text, along with the newlines that were added around it so the
+// chart block could stand on lines of its own, as long as both are still there.
+function removeMarker(content, marker, lead, tail) {
+  const wrapped = lead + marker + tail;
+  return content.includes(wrapped)
+    ? content.replace(wrapped, lead && tail ? '\n' : '')
+    : content.replace(marker, '');
+}
+
 function formatTime(date) {
   return date.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
@@ -291,6 +306,7 @@ export default function PostEditorForm({
   const queryClient = useQueryClient();
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dataFileInputRef = useRef(null);
   const uploadSeq = useRef(0);
   // Uploads still running; saving then would store their placeholder markers.
   const [uploading, setUploading] = useState(0);
@@ -389,6 +405,69 @@ export default function PostEditorForm({
     });
   };
 
+  // A chart's data file goes up the same way, but it comes out as a chart block that reads
+  // the file, which needs lines of its own: a newline goes before the marker when the caret
+  // is inside a line, and one after it when text follows on that line.
+  const uploadDataFiles = (files) => {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? values.content.length;
+    const end = textarea?.selectionEnd ?? start;
+    const items = files.map((file) => {
+      uploadSeq.current += 1;
+      return { file, marker: dataFileMarker(uploadSeq.current, file) };
+    });
+    const before = values.content.slice(0, start);
+    const after = values.content.slice(end);
+    const lead = before === '' || before.endsWith('\n') ? '' : '\n';
+    const tail = after === '' || after.startsWith('\n') ? '' : '\n';
+    const inserted = lead + items.map((item) => item.marker).join('\n') + tail;
+    pendingSelection.current = {
+      start: start + inserted.length,
+      end: start + inserted.length,
+    };
+    setValues((prev) => ({
+      ...prev,
+      content:
+        prev.content.slice(0, start) + inserted + prev.content.slice(end),
+    }));
+    setDirty(true);
+    setFormError(null);
+    setUploading((count) => count + items.length);
+
+    items.forEach(async ({ file, marker }) => {
+      let block = null;
+      try {
+        block = dataFileBlock((await uploadDataFile(file)).url);
+      } catch (error) {
+        setFormError(
+          `데이터 파일을 올리지 못했습니다: ${file.name}. ${uploadErrorReason(error)}`
+        );
+      }
+      setValues((prev) => ({
+        ...prev,
+        // A failed upload takes the lines it opened with it, when they are still there.
+        content:
+          block === null
+            ? removeMarker(prev.content, marker, lead, tail)
+            : prev.content.replace(marker, block),
+      }));
+      setUploading((count) => count - 1);
+    });
+  };
+
+  const handleDataFilePick = (event) => {
+    const picked = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    const files = picked.filter(isDataFile);
+    const refused = picked.filter((file) => !isDataFile(file));
+    if (refused.length > 0) {
+      setFormError(
+        `JSON 파일만 올릴 수 있습니다: ${refused.map((file) => file.name).join(', ')}`
+      );
+    }
+    if (files.length > 0) uploadDataFiles(files);
+  };
+
   const handlePaste = (event) => {
     const files = pickImageFiles(event.clipboardData);
     if (files.length === 0) return;
@@ -424,7 +503,7 @@ export default function PostEditorForm({
 
   const handleSave = async (hidden) => {
     if (uploading > 0) {
-      setFormError('이미지를 올리는 중입니다. 끝난 뒤 저장해 주세요.');
+      setFormError('파일을 올리는 중입니다. 끝난 뒤 저장해 주세요.');
       return;
     }
     const errors = validate(values);
@@ -604,6 +683,22 @@ export default function PostEditorForm({
               hidden
               data-testid="image-file-input"
               onChange={handleFilePick}
+            />
+            <ToolButton
+              type="button"
+              aria-label="차트 데이터 파일 올리기"
+              onClick={() => dataFileInputRef.current?.click()}
+            >
+              데이터 파일
+            </ToolButton>
+            <input
+              ref={dataFileInputRef}
+              type="file"
+              accept=".json,application/json"
+              multiple
+              hidden
+              data-testid="data-file-input"
+              onChange={handleDataFilePick}
             />
           </Toolbar>
           <BodyField as="div">
