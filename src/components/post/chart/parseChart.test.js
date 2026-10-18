@@ -105,12 +105,20 @@ describe('parseChart', () => {
 
   it('reads a reference line with its name', () => {
     const result = parseChart('limit: 256 메모리 한도\n---\n주, a\n1, 1\n2, 2');
-    expect(result.chart.limit).toEqual({ value: 256, label: '메모리 한도' });
+    expect(result.chart.limit).toEqual({
+      value: 256,
+      label: '메모리 한도',
+      align: 'right',
+    });
   });
 
   it('names a reference line 한도 when no name is given', () => {
     const result = parseChart('limit: -1.5\n---\n주, a\n1, 1\n2, 2');
-    expect(result.chart.limit).toEqual({ value: -1.5, label: '한도' });
+    expect(result.chart.limit).toEqual({
+      value: -1.5,
+      label: '한도',
+      align: 'right',
+    });
   });
 
   it('reads a reference range with its name', () => {
@@ -121,6 +129,7 @@ describe('parseChart', () => {
       from: -10,
       to: -5,
       label: '정상 범위',
+      align: 'right',
     });
   });
 
@@ -130,6 +139,112 @@ describe('parseChart', () => {
       from: 200,
       to: 256,
       label: '기준 구간',
+      align: 'right',
+    });
+  });
+
+  describe('options after a guide', () => {
+    const rowsText = '---\n월, a\n1월, 1\n2월, 2\n3월, 3\n4월, 4';
+    const parse = (settings) => parseChart(`${settings}\n${rowsText}`);
+
+    it.each([
+      ['limit: 3 한도 | left', 'limit', 'left'],
+      ['limit: 3 | center', 'limit', 'center'],
+      ['band: 1~2 구간 | right', 'band', 'right'],
+      ['band: 1~2 | left', 'band', 'left'],
+      ['xlimit: 2월 출시 | bottom', 'xlimit', 'bottom'],
+      ['xlimit: 2월 | middle', 'xlimit', 'middle'],
+      ['xband: 2월~3월 장애 | top', 'xband', 'top'],
+      ['xband: 2월~3월 | bottom', 'xband', 'bottom'],
+    ])('reads %j as the text position %s', (setting, key, align) => {
+      const result = parse(setting);
+      expect(result.ok).toBe(true);
+      expect(result.chart[key].align).toBe(align);
+    });
+
+    it('lets a vertical guide show its name without the point', () => {
+      const line = parse('xlimit: 2월 출시 | name-only');
+      expect(line.chart.xlimit).toMatchObject({
+        label: '출시',
+        nameOnly: true,
+      });
+      const band = parse('xband: 2월~3월 장애 구간 | name-only | bottom');
+      expect(band.chart.xband).toMatchObject({
+        label: '장애 구간',
+        nameOnly: true,
+        align: 'bottom',
+      });
+    });
+
+    it('lets a vertical guide with no name hide its point too, which leaves just the line or range', () => {
+      const line = parse('xlimit: 2월 | name-only');
+      expect(line.ok).toBe(true);
+      expect(line.chart.xlimit).toMatchObject({ label: null, nameOnly: true });
+      const band = parse('xband: 2월~3월 | name-only');
+      expect(band.ok).toBe(true);
+      expect(band.chart.xband).toMatchObject({ label: null, nameOnly: true });
+    });
+
+    it('takes options in any order and with spaces around the bars', () => {
+      const result = parse('xlimit: 2월 출시   |   bottom   |name-only');
+      expect(result.chart.xlimit).toMatchObject({
+        align: 'bottom',
+        nameOnly: true,
+      });
+    });
+
+    it('keeps a bar inside a quoted row label out of the options', () => {
+      const result = parseChart(
+        'xlimit: "a|b" 출시 | bottom\n---\n분기, a\na|b, 1\nc, 2'
+      );
+      expect(result.ok).toBe(true);
+      expect(result.chart.xlimit).toMatchObject({
+        at: 'a|b',
+        label: '출시',
+        align: 'bottom',
+      });
+    });
+
+    it.each([
+      [
+        'limit: 3 | top',
+        "limit의 글자 위치는 left, center, right 중 하나여야 합니다(지금 'top')",
+      ],
+      [
+        'band: 1~2 | bottom',
+        "band의 글자 위치는 left, center, right 중 하나여야 합니다(지금 'bottom')",
+      ],
+      [
+        'xlimit: 2월 | left',
+        "xlimit의 글자 위치는 top, middle, bottom 중 하나여야 합니다(지금 'left')",
+      ],
+      [
+        'xband: 2월~3월 | right',
+        "xband의 글자 위치는 top, middle, bottom 중 하나여야 합니다(지금 'right')",
+      ],
+      [
+        'limit: 3 | name-only',
+        "알 수 없는 옵션 'name-only'입니다. limit은 left, center, right만 쓸 수 있습니다",
+      ],
+      [
+        'xlimit: 2월 | fancy',
+        "알 수 없는 옵션 'fancy'입니다. xlimit은 top, middle, bottom, name-only만 쓸 수 있습니다",
+      ],
+      [
+        'xlimit: 2월 출시 | top | bottom',
+        '위치 옵션은 하나만 쓸 수 있습니다(top, bottom)',
+      ],
+      [
+        'xlimit: 2월 출시 | name-only | name-only',
+        "옵션 'name-only'가 두 번 있습니다",
+      ],
+      ['xlimit: 2월 출시 |', '옵션이 비어 있습니다'],
+    ])('rejects %j', (setting, message) => {
+      expect(errorOf(`${setting}\n${rowsText}`)).toEqual({
+        line: 1,
+        column: null,
+        message,
+      });
     });
   });
 
@@ -142,15 +257,19 @@ describe('parseChart', () => {
         index: 2,
         at: '3월',
         label: '출시',
+        align: 'top',
+        nameOnly: false,
       });
     });
 
-    it('names a vertical line 기준 when no name is given', () => {
+    it('gives a vertical line no name of its own when none is written', () => {
       const result = parseChart(`xlimit: 1월\n${table}`);
       expect(result.chart.xlimit).toEqual({
         index: 0,
         at: '1월',
-        label: '기준',
+        label: null,
+        align: 'top',
+        nameOnly: false,
       });
     });
 
@@ -162,15 +281,17 @@ describe('parseChart', () => {
         from: '2월',
         to: '4월',
         label: '장애 구간',
+        align: 'top',
+        nameOnly: false,
       });
     });
 
-    it('names a vertical range 기준 구간 when no name is given', () => {
+    it('gives a vertical range no name of its own when none is written', () => {
       const result = parseChart(`xband: 1월~2월\n${table}`);
       expect(result.chart.xband).toMatchObject({
         fromIndex: 0,
         toIndex: 1,
-        label: '기준 구간',
+        label: null,
       });
     });
 

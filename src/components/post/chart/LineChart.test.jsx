@@ -160,6 +160,120 @@ describe('LineChart', () => {
     });
   });
 
+  describe('where the text of a guide sits', () => {
+    const label = (container, role) =>
+      container.querySelector(`[data-role="${role}"] span`);
+
+    it('puts the text of a horizontal line or range at the right unless told otherwise', () => {
+      const { container } = renderChart({
+        limit: { value: 80, label: '목표' },
+        band: { from: 10, to: 20, label: '구간' },
+      });
+      expect(label(container, 'limit')).toHaveAttribute('data-align', 'right');
+      expect(label(container, 'range')).toHaveAttribute('data-align', 'right');
+    });
+
+    it('moves the text of a horizontal line or range along it', () => {
+      const { container } = renderChart({
+        limit: { value: 80, label: '목표', align: 'left' },
+        band: { from: 10, to: 20, label: '구간', align: 'center' },
+      });
+      expect(label(container, 'limit')).toHaveAttribute('data-align', 'left');
+      expect(label(container, 'range')).toHaveAttribute('data-align', 'center');
+    });
+
+    it('puts the text of a vertical line or range at the top unless told otherwise', () => {
+      const { container } = renderChart({
+        xlimit: { index: 1, at: '2월', label: '출시' },
+        xband: {
+          fromIndex: 0,
+          toIndex: 1,
+          from: '1월',
+          to: '2월',
+          label: '구간',
+        },
+      });
+      expect(label(container, 'xlimit')).toHaveAttribute('data-align', 'top');
+      expect(label(container, 'xrange')).toHaveAttribute('data-align', 'top');
+    });
+
+    it('moves the text of a vertical line or range up and down it', () => {
+      const { container } = renderChart({
+        xlimit: { index: 1, at: '2월', label: '출시', align: 'bottom' },
+        xband: {
+          fromIndex: 0,
+          toIndex: 1,
+          from: '1월',
+          to: '2월',
+          label: '구간',
+          align: 'middle',
+        },
+      });
+      expect(label(container, 'xlimit')).toHaveAttribute(
+        'data-align',
+        'bottom'
+      );
+      expect(label(container, 'xrange')).toHaveAttribute(
+        'data-align',
+        'middle'
+      );
+    });
+
+    it('writes only the point when a vertical guide has no name', () => {
+      const { container } = renderChart({
+        xlimit: { index: 1, at: '14분', label: null },
+        xband: {
+          fromIndex: 0,
+          toIndex: 1,
+          from: '1월',
+          to: '2월',
+          label: null,
+        },
+      });
+      expect(label(container, 'xlimit').textContent).toBe('14분');
+      expect(label(container, 'xrange').textContent).toBe('1월~2월');
+    });
+
+    it('draws no text at all when the point is hidden and there is no name', () => {
+      const { container } = renderChart({
+        xlimit: { index: 1, at: '14분', label: null, nameOnly: true },
+        xband: {
+          fromIndex: 0,
+          toIndex: 1,
+          from: '1월',
+          to: '2월',
+          label: null,
+          nameOnly: true,
+        },
+      });
+      expect(container.querySelector('[data-role="xlimit"]')).not.toBeNull();
+      expect(container.querySelector('[data-role="xrange"]')).not.toBeNull();
+      expect(label(container, 'xlimit')).toBeNull();
+      expect(label(container, 'xrange')).toBeNull();
+    });
+
+    it('writes only the name when the point is hidden, and keeps the point for the table', () => {
+      const { container } = renderChart({
+        xlimit: { index: 1, at: '14분', label: '출시', nameOnly: true },
+        xband: {
+          fromIndex: 0,
+          toIndex: 1,
+          from: '1월',
+          to: '2월',
+          label: '구간',
+          nameOnly: true,
+        },
+      });
+      expect(label(container, 'xlimit').textContent).toBe('출시');
+      expect(label(container, 'xrange').textContent).toBe('구간');
+      expect(
+        screen
+          .getByRole('table', { name: '전환 비율' })
+          .querySelector('caption')
+      ).toHaveTextContent('출시 14분, 구간 1월~2월');
+    });
+  });
+
   it('draws a vertical line on the point of its row', () => {
     const { container } = renderChart({
       xlimit: { index: 1, at: '2월', label: '출시' },

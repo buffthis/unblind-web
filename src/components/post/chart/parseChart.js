@@ -107,6 +107,81 @@ function toNumber(text, line) {
   return number;
 }
 
+// The words that can follow a guide after a bar, such as "xlimit: 14분 출시 | bottom".
+// A horizontal guide moves its text along the line; a vertical one moves it up and down.
+const POSITIONS = {
+  limit: ['left', 'center', 'right'],
+  band: ['left', 'center', 'right'],
+  xlimit: ['top', 'middle', 'bottom'],
+  xband: ['top', 'middle', 'bottom'],
+};
+const DEFAULT_POSITION = {
+  limit: 'right',
+  band: 'right',
+  xlimit: 'top',
+  xband: 'top',
+};
+const NAME_ONLY = 'name-only';
+const ALL_POSITIONS = ['left', 'center', 'right', 'top', 'middle', 'bottom'];
+
+// Splits a guide setting at its bars, leaving alone a bar inside double quotes (a row
+// label may hold one). The first part is the guide itself, the rest are options.
+function splitOptions(value) {
+  const parts = [];
+  let current = '';
+  let quoted = false;
+  for (const char of value) {
+    if (char === '"') quoted = !quoted;
+    if (char === '|' && !quoted) {
+      parts.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  parts.push(current);
+  return parts.map((part) => part.trim());
+}
+
+function parseOptions(key, options, line) {
+  const positions = POSITIONS[key];
+  const vertical = key === 'xlimit' || key === 'xband';
+  const allowed = vertical ? [...positions, NAME_ONLY] : positions;
+  const seen = [];
+  let align = DEFAULT_POSITION[key];
+  let nameOnly = false;
+  const chosen = [];
+  options.forEach((option) => {
+    if (option === '') fail(line, null, '옵션이 비어 있습니다');
+    if (seen.includes(option)) {
+      fail(line, null, `옵션 '${option}'가 두 번 있습니다`);
+    }
+    seen.push(option);
+    if (option === NAME_ONLY && vertical) {
+      nameOnly = true;
+    } else if (positions.includes(option)) {
+      chosen.push(option);
+      align = option;
+    } else if (ALL_POSITIONS.includes(option)) {
+      fail(
+        line,
+        null,
+        `${key}의 글자 위치는 ${positions.join(', ')} 중 하나여야 합니다(지금 '${option}')`
+      );
+    } else {
+      fail(
+        line,
+        null,
+        `알 수 없는 옵션 '${option}'입니다. ${key}은 ${allowed.join(', ')}만 쓸 수 있습니다`
+      );
+    }
+  });
+  if (chosen.length > 1) {
+    fail(line, null, `위치 옵션은 하나만 쓸 수 있습니다(${chosen.join(', ')})`);
+  }
+  return { align, nameOnly };
+}
+
 function guideLabel(text, fallback, line) {
   const label = text?.trim() || fallback;
   if (label.length > MAX_GUIDE_LABEL) {
@@ -181,14 +256,17 @@ function parseSettings(lines) {
       if (!Number.isFinite(number)) fail(line, null, TOO_LARGE);
       settings[key] = number;
     } else if (key === 'limit') {
-      const match = value.match(LIMIT_VALUE);
+      const [main, ...options] = splitOptions(value);
+      const match = main.match(LIMIT_VALUE);
       if (!match) fail(line, null, LIMIT_FORMAT);
       settings.limit = {
         value: toNumber(match[1], line),
         label: guideLabel(match[2], '한도', line),
+        align: parseOptions('limit', options, line).align,
       };
     } else if (key === 'band') {
-      const match = value.match(BAND_VALUE);
+      const [main, ...options] = splitOptions(value);
+      const match = main.match(BAND_VALUE);
       if (!match) fail(line, null, BAND_FORMAT);
       const from = toNumber(match[1], line);
       const to = toNumber(match[2], line);
@@ -197,21 +275,32 @@ function parseSettings(lines) {
         from,
         to,
         label: guideLabel(match[3], '기준 구간', line),
+        align: parseOptions('band', options, line).align,
       };
     } else if (key === 'xlimit') {
-      const match = value.match(XLIMIT_VALUE);
+      const [main, ...options] = splitOptions(value);
+      const match = main.match(XLIMIT_VALUE);
       if (!match) fail(line, null, XLIMIT_FORMAT);
+      const { align, nameOnly } = parseOptions('xlimit', options, line);
+      const label = match[3] ? guideLabel(match[3], null, line) : null;
       settings.xlimit = {
         at: match[1] ?? match[2],
-        label: guideLabel(match[3], '기준', line),
+        label,
+        align,
+        nameOnly,
       };
     } else if (key === 'xband') {
-      const match = value.match(XBAND_VALUE);
+      const [main, ...options] = splitOptions(value);
+      const match = main.match(XBAND_VALUE);
       if (!match) fail(line, null, XBAND_FORMAT);
+      const { align, nameOnly } = parseOptions('xband', options, line);
+      const label = match[5] ? guideLabel(match[5], null, line) : null;
       settings.xband = {
         from: match[1] ?? match[2],
         to: match[3] ?? match[4],
-        label: guideLabel(match[5], '기준 구간', line),
+        label,
+        align,
+        nameOnly,
       };
     } else if (key === 'note') {
       const cells = splitCells(value, line);
@@ -293,7 +382,7 @@ function resolveVerticalGuides(settings, lineOf, labels) {
   let xlimit = null;
   let xband = null;
   if (settings.xlimit) {
-    const { at, label } = settings.xlimit;
+    const { at, label, align, nameOnly } = settings.xlimit;
     xlimit = {
       index: rowOf(
         at,
@@ -302,10 +391,12 @@ function resolveVerticalGuides(settings, lineOf, labels) {
       ),
       at,
       label,
+      align,
+      nameOnly,
     };
   }
   if (settings.xband) {
-    const { from, to, label } = settings.xband;
+    const { from, to, label, align, nameOnly } = settings.xband;
     const fromIndex = rowOf(
       from,
       lineOf.xband,
@@ -323,7 +414,7 @@ function resolveVerticalGuides(settings, lineOf, labels) {
         'xband의 끝 레이블은 시작 레이블보다 뒤에 있어야 합니다'
       );
     }
-    xband = { fromIndex, toIndex, from, to, label };
+    xband = { fromIndex, toIndex, from, to, label, align, nameOnly };
   }
   return { xlimit, xband };
 }

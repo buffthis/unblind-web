@@ -304,16 +304,31 @@ export function ChartLegend({ series }) {
   );
 }
 
+const joinWords = (...words) => words.filter(Boolean).join(' ') || null;
+
 // The text each guide shows, e.g. "한도 256MB" and "권장 구간 200~256MB", and for the
-// vertical ones "출시 3월" and "장애 구간 2월~4월".
-export function guideTexts({ limit, band, xlimit, xband, unit }) {
+// vertical ones "출시 3월" and "장애 구간 2월~4월". A vertical guide may have no name,
+// then it shows just its point, and it may hide the point (name-only), then it shows just
+// its name, or nothing when it has none either. The table caption passes `full` to keep
+// the point whatever is hidden on screen.
+export function guideTexts(
+  { limit, band, xlimit, xband, unit },
+  { full = false } = {}
+) {
   return {
     limit: limit && `${limit.label} ${formatValue(limit.value, unit)}`,
     band:
       band &&
       `${band.label} ${formatValue(band.from, '')}~${formatValue(band.to, unit)}`,
-    xlimit: xlimit && `${xlimit.label} ${xlimit.at}`,
-    xband: xband && `${xband.label} ${xband.from}~${xband.to}`,
+    xlimit:
+      xlimit &&
+      joinWords(xlimit.label, xlimit.nameOnly && !full ? null : xlimit.at),
+    xband:
+      xband &&
+      joinWords(
+        xband.label,
+        xband.nameOnly && !full ? null : `${xband.from}~${xband.to}`
+      ),
   };
 }
 
@@ -333,6 +348,18 @@ const GuideLabel = styled.span`
   &[data-below='true'] {
     top: 3px;
     bottom: auto;
+  }
+
+  /* Along the line: at the right end unless told otherwise. */
+  &[data-align='left'] {
+    right: auto;
+    left: 0;
+  }
+
+  &[data-align='center'] {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
 `;
 
@@ -373,7 +400,10 @@ export function LimitGuide({ chart, domain }) {
       aria-hidden="true"
       style={{ top: topOf(chart.limit.value, domain) }}
     >
-      <GuideLabel data-below={String(labelBelow(chart.limit.value, domain))}>
+      <GuideLabel
+        data-below={String(labelBelow(chart.limit.value, domain))}
+        data-align={chart.limit.align ?? 'right'}
+      >
         {guideTexts(chart).limit}
       </GuideLabel>
     </LimitLine>
@@ -396,7 +426,10 @@ export function RangeGuide({ chart, domain }) {
       }}
     >
       <RangeEdge>
-        <GuideLabel data-below={String(labelBelow(to, domain))}>
+        <GuideLabel
+          data-below={String(labelBelow(to, domain))}
+          data-align={chart.band.align ?? 'right'}
+        >
           {guideTexts(chart).band}
         </GuideLabel>
       </RangeEdge>
@@ -425,6 +458,17 @@ const XGuideLabel = styled.span`
   &[data-flip='true'] {
     left: auto;
     right: 5px;
+  }
+
+  /* Up and down the line: at the top unless told otherwise. */
+  &[data-align='middle'] {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &[data-align='bottom'] {
+    top: auto;
+    bottom: 3px;
   }
 `;
 
@@ -460,9 +504,14 @@ export function XLimitGuide({ chart, layout }) {
       aria-hidden="true"
       style={{ left: `${left}%` }}
     >
-      <XGuideLabel data-flip={String(left > FLIP_AFTER)}>
-        {guideTexts(chart).xlimit}
-      </XGuideLabel>
+      {guideTexts(chart).xlimit && (
+        <XGuideLabel
+          data-flip={String(left > FLIP_AFTER)}
+          data-align={chart.xlimit.align ?? 'top'}
+        >
+          {guideTexts(chart).xlimit}
+        </XGuideLabel>
+      )}
     </XLimitLine>
   );
 }
@@ -484,9 +533,14 @@ export function XRangeGuide({ chart, layout }) {
       aria-hidden="true"
       style={{ left: `${left}%`, width: `${right - left}%` }}
     >
-      <XGuideLabel data-flip={String(flip)}>
-        {guideTexts(chart).xband}
-      </XGuideLabel>
+      {guideTexts(chart).xband && (
+        <XGuideLabel
+          data-flip={String(flip)}
+          data-align={chart.xband.align ?? 'top'}
+        >
+          {guideTexts(chart).xband}
+        </XGuideLabel>
+      )}
     </XRangeShade>
   );
 }
@@ -604,7 +658,7 @@ export function ChartNotes({ chart, domain, layerRef, visible }) {
 export function ChartTable({ id, name, chart }) {
   const { xLabel, labels, series, unit } = chart;
   const guides = [
-    ...Object.values(guideTexts(chart)).filter(Boolean),
+    ...Object.values(guideTexts(chart, { full: true })).filter(Boolean),
     ...(chart.notes ?? []).map(
       (note) => `${note.series} ${note.at}: ${noteText(note, chart)}`
     ),
