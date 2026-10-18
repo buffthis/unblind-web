@@ -20,6 +20,29 @@ function renderToc(props) {
 }
 
 describe('PostToc', () => {
+  it('indents each level relative to the shallowest heading present', () => {
+    renderToc({ headings, activeId: null });
+    const indent = (name) =>
+      getComputedStyle(screen.getByRole('link', { name }).closest('li'))
+        .paddingLeft;
+    expect([indent('소개'), indent('배경')]).toEqual(['12px', '24px']);
+  });
+
+  it('nests h2 and h3 one step deeper when an h1 is present', () => {
+    renderToc({
+      headings: [{ id: '개요', level: 1, text: '개요' }, ...headings],
+      activeId: null,
+    });
+    const indent = (name) =>
+      getComputedStyle(screen.getByRole('link', { name }).closest('li'))
+        .paddingLeft;
+    expect([indent('개요'), indent('소개'), indent('배경')]).toEqual([
+      '12px',
+      '24px',
+      '36px',
+    ]);
+  });
+
   it('renders nothing without headings', () => {
     const { container } = renderToc({ headings: [], activeId: null });
     expect(container).toBeEmptyDOMElement();

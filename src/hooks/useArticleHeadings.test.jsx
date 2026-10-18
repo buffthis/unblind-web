@@ -44,6 +44,22 @@ describe('useArticleHeadings', () => {
     ]);
   });
 
+  it('includes h1 so a body that starts with # still gets a toc', () => {
+    const onHeadings = vi.fn();
+    render(
+      <Probe
+        content={'# 개요\n\n## 소개\n\n### 배경'}
+        onHeadings={onHeadings}
+      />
+    );
+
+    expect(onHeadings).toHaveBeenLastCalledWith([
+      { id: '개요', level: 1, text: '개요' },
+      { id: '소개', level: 2, text: '소개' },
+      { id: '배경', level: 3, text: '배경' },
+    ]);
+  });
+
   it('leaves the footnote label out of the toc', () => {
     const onHeadings = vi.fn();
     render(

@@ -46,7 +46,7 @@ const List = styled.ol`
 `;
 
 const Item = styled.li`
-  padding-left: ${({ $level }) => ($level === 3 ? '24px' : '12px')};
+  padding-left: ${({ $depth }) => 12 + $depth * 12}px;
   margin: 6px 0;
   ${({ $order }) => dropIn(itemDelay($order))}
 `;
@@ -64,6 +64,9 @@ const TocLink = styled.a`
 export default function PostToc({ headings, activeId }) {
   if (headings.length === 0) return null;
 
+  // Depth counts from the shallowest heading present, so a post without h1 keeps its old indent.
+  const top = Math.min(...headings.map((heading) => heading.level));
+
   return (
     <Nav aria-label="목차">
       <Label>목차</Label>
@@ -71,7 +74,7 @@ export default function PostToc({ headings, activeId }) {
         {headings.map((heading, index) => {
           const active = heading.id === activeId;
           return (
-            <Item key={heading.id} $level={heading.level} $order={index}>
+            <Item key={heading.id} $depth={heading.level - top} $order={index}>
               <TocLink
                 href={`#${encodeURIComponent(heading.id)}`}
                 aria-current={active ? 'location' : undefined}
