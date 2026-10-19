@@ -7,8 +7,8 @@ import {
   ProjectImageContainer,
   ProjectTitle,
 } from '@styles/compositions/Project.styles';
-import subtleText from '@styles/subtleText';
-import { formatDate } from '@utils/format';
+import tagChip, { TAG_LINE_HEIGHT } from '@styles/tagChip';
+import { normalizeTags } from '@utils/tags';
 import { splitThumbnail } from '@utils/thumbnail';
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -24,10 +24,22 @@ const CardLink = styled(Link)`
   ${cardLinkStyle}
 `;
 
-const CardDate = styled.time`
-  display: block;
-  margin-top: 3px;
-  ${subtleText}
+const TAG_GAP = 5;
+
+// One row only: a tag that does not fit wraps below the row and is clipped with it,
+// so every card is as tall as the next.
+const CardTags = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  max-height: ${TAG_LINE_HEIGHT}px;
+  margin-top: 8px;
+  overflow: hidden;
+  list-style: none;
+`;
+
+const CardTag = styled.li`
+  margin-right: ${TAG_GAP}px;
+  ${tagChip}
 `;
 
 export default function PostCard({ post }) {
@@ -35,6 +47,8 @@ export default function PostCard({ post }) {
   const prefetchHandlers = useHoverPrefetch(usePrefetchPost(post.id));
   // The same corner radius as the images in the post body and its top thumbnail.
   const { md: radius } = useTheme().radius;
+
+  const tags = normalizeTags(post.tags);
 
   const body = (
     <>
@@ -53,9 +67,13 @@ export default function PostCard({ post }) {
         <ProjectDescription $fontSize="0.8rem" $marginTop="0.75px">
           {post.subtitle}
         </ProjectDescription>
-        <CardDate dateTime={post.createdAt}>
-          {formatDate(post.createdAt)}
-        </CardDate>
+        {tags.length > 0 && (
+          <CardTags aria-label="태그">
+            {tags.map((tag) => (
+              <CardTag key={tag}>{tag}</CardTag>
+            ))}
+          </CardTags>
+        )}
       </ProjectContent>
     </>
   );

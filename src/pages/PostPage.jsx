@@ -16,6 +16,7 @@ import useUser from '@hooks/useUser';
 import { BLOCK_GAP, TEXT_SPACE } from '@components/post/spacing';
 import { LAYOUT } from '@styles/constants';
 import subtleText from '@styles/subtleText';
+import tagChip from '@styles/tagChip';
 import { formatDate } from '@utils/format';
 import { normalizeTags } from '@utils/tags';
 import { splitThumbnail } from '@utils/thumbnail';
@@ -112,13 +113,7 @@ const TagList = styled.ul`
 
 const Tag = styled.li`
   margin: 0 ${TAG_GAP}px ${TAG_GAP}px 0;
-  padding: 0 7px;
-  border-radius: 5px;
-  background: ${({ theme }) => theme.colors.inkSurface};
-  font-size: 11px;
-  font-weight: 460;
-  line-height: 19px;
-  color: ${({ theme }) => theme.colors.inkSoft};
+  ${tagChip}
 `;
 
 // The photo sits 0.75px inside the 34.5px byline row, so a 31.25px margin leaves the
