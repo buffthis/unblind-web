@@ -266,12 +266,20 @@ describe('PostArticle', () => {
       expect(declaredValue(fourth, '--gap-extra')).toBe('40px');
     });
 
-    it('stops at 3 extra blank lines, 60px', () => {
-      const { container } = renderArticle('위\n\n\n\n\n\n\n\n\n아래');
+    it('adds all of 8 extra blank lines, 160px', () => {
+      const { container } = renderArticle(`위${'\n'.repeat(10)}아래`);
       const [, below] = container.querySelectorAll('p');
 
-      expect(gapOf(below)).toBe('3');
-      expect(declaredValue(below, '--gap-extra')).toBe('60px');
+      expect(gapOf(below)).toBe('8');
+      expect(declaredValue(below, '--gap-extra')).toBe('160px');
+    });
+
+    it('stops at 8 extra blank lines', () => {
+      const { container } = renderArticle(`위${'\n'.repeat(16)}아래`);
+      const [, below] = container.querySelectorAll('p');
+
+      expect(gapOf(below)).toBe('8');
+      expect(declaredValue(below, '--gap-extra')).toBe('160px');
     });
 
     it('opens up the space before an image as well', () => {
@@ -314,8 +322,8 @@ describe('PostArticle', () => {
       expect(declaredValue(title, '--gap-extra')).toBe('60px');
       three.unmount();
 
-      const many = renderArticle('\n\n\n\n\n\n\n첫 문단');
-      expect(gapOf(many.container.querySelector('p'))).toBe('3');
+      const many = renderArticle(`${'\n'.repeat(12)}첫 문단`);
+      expect(gapOf(many.container.querySelector('p'))).toBe('8');
     });
 
     it('does not count blank lines before the first block of a quote or a list item', () => {

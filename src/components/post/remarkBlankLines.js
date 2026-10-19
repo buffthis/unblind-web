@@ -4,7 +4,7 @@
 // of the page there is no paragraph break to begin with, so every blank line there
 // counts. Only the blocks directly under the page, a quote or a list item are looked
 // at, so blank lines inside a code block are never counted.
-export const MAX_EXTRA = 3;
+export const MAX_EXTRA = 8;
 const BLOCK_PARENTS = new Set(['root', 'blockquote', 'listItem']);
 
 // The blank lines above a block that follow the paragraph break, or all of them for the
