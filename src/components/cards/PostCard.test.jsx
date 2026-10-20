@@ -134,6 +134,16 @@ describe('PostCard', () => {
     expect(tag).toHaveStyle({ color: theme.colors.inkSoft });
   });
 
+  it('starts the first tag at the left edge of the thumbnail, not at the text', () => {
+    // A different radius than the real one, so the pull back has to follow the theme.
+    const wider = { ...theme, radius: { ...theme.radius, md: '6px' } };
+    renderCard('https://i.imgur.com/a.png', wider, ['GPU']);
+
+    // The text box is padded by the radius; the tags pull back out of that padding.
+    const list = screen.getByRole('list', { name: '태그' });
+    expect(declaredValue(list, 'margin-left')).toBe('-6px');
+  });
+
   it('keeps the tags to one row, so every card is as tall as the next', () => {
     renderCard('https://i.imgur.com/a.png', theme, ['GPU']);
 

@@ -27,12 +27,15 @@ const CardLink = styled(Link)`
 const TAG_GAP = 5;
 
 // One row only: a tag that does not fit wraps below the row and is clipped with it,
-// so every card is as tall as the next.
+// so every card is as tall as the next. The first tag starts at the left edge of the
+// thumbnail: it has a background of its own, so it is lined up by its edge, while the
+// text above it is inset to where the thumbnail corner stops curving.
 const CardTags = styled.ul`
   display: flex;
   flex-wrap: wrap;
   max-height: ${TAG_LINE_HEIGHT}px;
   margin-top: 8px;
+  margin-left: -${({ $inset }) => $inset};
   overflow: hidden;
   list-style: none;
 `;
@@ -68,7 +71,7 @@ export default function PostCard({ post }) {
           {post.subtitle}
         </ProjectDescription>
         {tags.length > 0 && (
-          <CardTags aria-label="태그">
+          <CardTags aria-label="태그" $inset={radius}>
             {tags.map((tag) => (
               <CardTag key={tag}>{tag}</CardTag>
             ))}
