@@ -27,6 +27,8 @@ const TIME_WIDTH = 40;
 const TILE = 28;
 const ROW_GAP = 12;
 const GAP_HEIGHT = 48;
+const DAY_MARGIN = 16;
+const GROUP_MARGIN = 24;
 const DAY_PADDING = 10;
 // The rail is a 1px line down the middle of the tile, drawn only across a gap. It stops
 // short of each tile by this much.
@@ -165,7 +167,7 @@ const Panel = styled.section`
 
 const Group = styled.div`
   & + & {
-    margin-top: 24px;
+    margin-top: ${GROUP_MARGIN}px;
   }
 `;
 
@@ -175,7 +177,7 @@ const DayLabel = styled.div.attrs({ role: 'heading', 'aria-level': 4 })`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 0 16px;
+  margin: 0 0 ${DAY_MARGIN}px;
   font-size: 12px;
   font-weight: ${({ theme }) => theme.fontWeights.semibold};
   line-height: 20px;
@@ -224,13 +226,17 @@ const Row = styled.li`
 `;
 
 // The text of a gap is in the column of the titles, so it lines up with the text above
-// and below it, and is centered between the two tiles. The doubled class is needed
-// here too: Row sets its own align-items with it, and a single class would lose to that.
+// and below it, and is centered between what is above and the tile below. The doubled
+// class is needed here too: Row sets its own align-items with it, and a single class
+// would lose to that. A gap that opens a group has the space of the day heading or of
+// the group break above it, more than the space of a gap between two rows, so it is
+// pulled up by the difference ($pull) to keep the text in the middle.
 const Gap = styled(Row)`
   && {
     position: relative;
     align-items: center;
     height: ${GAP_HEIGHT}px;
+    margin-top: -${({ $pull }) => $pull}px;
     font-size: 14px;
     color: ${({ theme }) => theme.colors.inkMuted};
   }
@@ -381,14 +387,22 @@ const Tag = styled.li`
   }
 `;
 
-function Event({ event, open, onToggle }) {
+// What an event follows decides how far a gap above it is pulled up: nothing when it
+// follows a row, the extra of the day heading's margin after a heading, and the extra
+// of the group break when the heading is hidden.
+const PULL = {
+  day: DAY_MARGIN - ROW_GAP,
+  group: GROUP_MARGIN - ROW_GAP,
+};
+
+function Event({ event, open, onToggle, lead }) {
   const detailId = useId();
   const tone = KINDS[event.kind] ?? KINDS.dot;
   const expandable = hasDetail(event);
   return (
     <>
       {event.gapText && (
-        <Gap>
+        <Gap $pull={PULL[lead] ?? 0}>
           <span>{event.gapText}</span>
         </Gap>
       )}
@@ -494,6 +508,13 @@ export default function Timeline({
     group.events.some((event) => event.timeText)
   );
   const dayed = showDay && prepared.some((group) => group.label);
+  // The first event of a group follows its day heading, or else the break after the
+  // previous group; only the first group has nothing above it.
+  const leadOf = (group, groupIndex, eventIndex) => {
+    if (eventIndex > 0) return null;
+    if (showDay && group.label) return 'day';
+    return groupIndex > 0 ? 'group' : null;
+  };
   const expandableIds = useMemo(
     () =>
       prepared.flatMap((group) =>
@@ -540,10 +561,11 @@ export default function Timeline({
               </DayLabel>
             )}
             <List>
-              {group.events.map((event) => (
+              {group.events.map((event, eventIndex) => (
                 <Event
                   key={event.id}
                   event={event}
+                  lead={leadOf(group, index, eventIndex)}
                   open={openIds.has(event.id)}
                   onToggle={() => toggle(event.id)}
                 />
