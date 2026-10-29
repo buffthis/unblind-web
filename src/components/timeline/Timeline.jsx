@@ -32,6 +32,10 @@ const TILE = 28;
 // neighbors without any correction.
 const ROW_GAP = 12;
 const GAP_HEIGHT = ROW_GAP * 4;
+// The room above the first and below the last element of the panel. It is two units, the
+// same as the space the eye sees between a day rule and the row beside it (half the
+// 24px heading plus one unit), so the top and bottom are not tighter than the inside.
+const PANEL_PADDING_Y = ROW_GAP * 2;
 const DAY_PADDING = 10;
 // The rail is a 1px line down the middle of the tile, drawn only across a gap. It stops
 // short of each tile by this much.
@@ -156,7 +160,7 @@ const Panel = styled.section`
 
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
-  padding: 16px;
+  padding: ${PANEL_PADDING_Y}px 16px;
   background: ${({ theme }) => theme.colors.cardBackground};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
