@@ -55,7 +55,7 @@ describe('Timeline', () => {
   it('lists the days and their events in the order given', () => {
     renderTimeline();
     expect(
-      screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+      screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent)
     ).toEqual(['월요일', '화요일']);
     const times = screen.getAllByText(/^(밤|점심|12:15|13:52)$/);
     expect(times.map((time) => time.textContent)).toEqual([
@@ -74,7 +74,7 @@ describe('Timeline', () => {
   it('shows the title above the panel when one is given', () => {
     renderTimeline({ title: '사건 경위' });
     expect(
-      screen.getByRole('heading', { level: 2, name: '사건 경위' })
+      screen.getByRole('heading', { level: 3, name: '사건 경위' })
     ).toBeInTheDocument();
   });
 
@@ -203,12 +203,12 @@ describe('Timeline with whatever the data and the switches leave in', () => {
     renderTimeline({
       groups: [{ events: [{ id: 'x', time: '09:00', title: '메모' }] }],
     });
-    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 4 })).not.toBeInTheDocument();
   });
 
   it('hides the day headings with showDay={false}', () => {
     renderTimeline({ showDay: false });
-    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 4 })).not.toBeInTheDocument();
     expect(screen.getByText('새 지도 적용')).toBeInTheDocument();
   });
 

@@ -75,6 +75,8 @@ const KINDS = {
   recovery: { Icon: FaCheckCircle, background: '#EAF4EF', color: '#3F8E6C' },
 };
 
+export const KIND_NAMES = Object.keys(KINDS);
+
 const hasDetail = (event) =>
   Boolean(event.body) || (event.tags?.length ?? 0) > 0;
 
@@ -92,7 +94,9 @@ const Header = styled.div`
   min-height: 32px;
 `;
 
-const Heading = styled.h2`
+// The headings are divs with a role. A post body styles its own h2, h3 and p by tag, and
+// those rules would otherwise reach into the timeline when it sits in a post.
+const Heading = styled.div.attrs({ role: 'heading', 'aria-level': 3 })`
   margin: 0;
   font-size: 15px;
   font-weight: ${({ theme }) => theme.fontWeights.semibold};
@@ -167,7 +171,7 @@ const Group = styled.div`
 
 // A day is a section break, not a time, so it is drawn as a pill centered between two
 // hairline rules. A time is plain gray text in the column beside the tiles.
-const DayLabel = styled.h3`
+const DayLabel = styled.div.attrs({ role: 'heading', 'aria-level': 4 })`
   display: flex;
   align-items: center;
   gap: 12px;
@@ -195,21 +199,28 @@ const DayLabel = styled.h3`
 
 // With day headings the rows sit one pill-padding in from the panel edge, so the times
 // and tiles do not run flush against the panel's border under a centered heading.
+// The doubled class (&&) outranks the list rules of a post body, which set a left padding
+// on every ol and a top margin on every li that follows another.
 const List = styled.ol`
-  display: flex;
-  flex-direction: column;
-  gap: ${ROW_GAP}px;
-  margin: 0;
-  padding: 0 0 0 var(--indent);
-  list-style: none;
+  && {
+    display: flex;
+    flex-direction: column;
+    gap: ${ROW_GAP}px;
+    margin: 0;
+    padding: 0 0 0 var(--indent);
+    list-style: none;
+  }
 `;
 
 const Row = styled.li`
-  display: grid;
-  grid-template-columns: var(--cols);
-  grid-template-areas: var(--areas);
-  column-gap: var(--col-gap);
-  align-items: start;
+  && {
+    display: grid;
+    grid-template-columns: var(--cols);
+    grid-template-areas: var(--areas);
+    column-gap: var(--col-gap);
+    align-items: start;
+    margin: 0;
+  }
 `;
 
 const Gap = styled(Row)`
@@ -334,8 +345,7 @@ const CollapseInner = styled.div`
   overflow: hidden;
 `;
 
-const Body = styled.p`
-  margin: 0;
+const Body = styled.div`
   padding-top: 6px;
   font-size: 14px;
   line-height: 22px;
@@ -343,22 +353,27 @@ const Body = styled.p`
 `;
 
 const Tags = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 10px 0 2px;
-  list-style: none;
+  && {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 10px 0 2px;
+    list-style: none;
+  }
 `;
 
 const Tag = styled.li`
-  padding: 3px 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: ${({ theme }) => theme.fontWeights.medium};
-  line-height: 16px;
-  color: ${({ theme }) => theme.colors.ink};
+  && {
+    margin: 0;
+    padding: 3px 8px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: ${({ theme }) => theme.fontWeights.medium};
+    line-height: 16px;
+    color: ${({ theme }) => theme.colors.ink};
+  }
 `;
 
 function Event({ event, open, onToggle }) {

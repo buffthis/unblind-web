@@ -9,7 +9,7 @@ const MATH = /\$\$/;
 // A fence opening with a language, also inside quotes and list items.
 const FENCE = /^[ \t>*+\-\d.)]*(?:`{3,}|~{3,})[ \t]*([^\s`]+)/gm;
 // Blocks drawn from their raw text never reach the highlighter's output.
-export const PLAIN_TEXT = ['chart', 'tree', 'mermaid', 'math'];
+export const PLAIN_TEXT = ['chart', 'tree', 'timeline', 'mermaid', 'math'];
 
 export function neededPlugins(content) {
   const languages = Array.from(content.matchAll(FENCE), (match) => match[1]);

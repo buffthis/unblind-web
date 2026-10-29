@@ -4,6 +4,7 @@ import { ChartReplayContext } from '@components/post/chart/replay';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import GitHubLink from '@components/post/GitHubLink';
 import MermaidBlock from '@components/post/mermaid/MermaidBlock';
+import TimelineBlock from '@components/post/timeline/TimelineBlock';
 import TreeBlock from '@components/post/tree/TreeBlock';
 import { LAYOUT } from '@styles/constants';
 import { copyHeadingLink } from '@utils/headingLink';
@@ -595,6 +596,11 @@ function PreContent({ node, children }) {
   if (language === 'tree') {
     return <TreeBlock source={codeText(children)}>{children}</TreeBlock>;
   }
+  if (language === 'timeline') {
+    return (
+      <TimelineBlock source={codeText(children)}>{children}</TimelineBlock>
+    );
+  }
   if (language === 'mermaid') {
     return (
       <MermaidBlock
@@ -625,7 +631,7 @@ const REMARK_PLUGINS = [
   remarkBreaks,
 ];
 // Math and code highlighting are added by useRehypePlugins once a post needs them.
-// Its plainText keeps chart, tree and mermaid blocks as raw text so the parser sees exactly what was written.
+// Its plainText keeps chart, tree, timeline and mermaid blocks as raw text so the parser sees exactly what was written.
 const REHYPE_PLUGINS = [rehypeSlug];
 // Footnotes are written [^1] in the text and "[^1]: note" anywhere in the post.
 const REMARK_REHYPE_OPTIONS = {
