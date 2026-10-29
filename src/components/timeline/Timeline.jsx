@@ -223,12 +223,17 @@ const Row = styled.li`
   }
 `;
 
+// The text of a gap is in the column of the titles, so it lines up with the text above
+// and below it, and is centered between the two tiles. The doubled class is needed
+// here too: Row sets its own align-items with it, and a single class would lose to that.
 const Gap = styled(Row)`
-  position: relative;
-  align-items: center;
-  height: ${GAP_HEIGHT}px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkMuted};
+  && {
+    position: relative;
+    align-items: center;
+    height: ${GAP_HEIGHT}px;
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.inkMuted};
+  }
 
   &::before {
     content: '';
