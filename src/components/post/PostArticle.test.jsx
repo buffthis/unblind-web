@@ -682,6 +682,27 @@ describe('PostArticle', () => {
     expect(container).toHaveTextContent('a == b == c');
   });
 
+  it('draws keycap emoji as a span and leaves code and plain digits alone', () => {
+    const { container } = renderArticle(
+      '1️⃣ 첫째, #️⃣ 와 *️⃣, `2️⃣`, 숫자 3 과 12'
+    );
+
+    const keycaps = Array.from(container.querySelectorAll('.keycap'));
+    expect(keycaps.map((keycap) => keycap.textContent)).toEqual([
+      '1',
+      '#',
+      '*',
+    ]);
+    expect(keycaps.map((keycap) => keycap.getAttribute('aria-label'))).toEqual([
+      '1️⃣',
+      '#️⃣',
+      '*️⃣',
+    ]);
+    expect(container.querySelector('code')).toHaveTextContent('2️⃣');
+    expect(container.querySelector('code .keycap')).toBeNull();
+    expect(container).toHaveTextContent('숫자 3 과 12');
+  });
+
   it('highlights across bold and other inline marks in either nesting', () => {
     const { container } = renderArticle(
       '==**굵게** 칠한 문장==, **==굵은 형광펜==**, ==`code` 앞==, ==**전부 굵게**=='

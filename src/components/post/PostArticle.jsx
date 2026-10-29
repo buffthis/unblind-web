@@ -20,6 +20,7 @@ import remarkBlankLines, { MAX_EXTRA } from './remarkBlankLines';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
 import remarkHtmlAsText from './remarkHtmlAsText';
+import remarkKeycap from './remarkKeycap';
 import remarkParagraphKinds from './remarkParagraphKinds';
 import {
   BLOCK_GAP,
@@ -225,6 +226,25 @@ const Body = styled.div`
     color: inherit;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
+  }
+
+  /* A keycap emoji drawn as a number in a square. Sized in em so it follows the heading
+     or body text it sits in, and kept under the line height so it never grows a line. */
+  .keycap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 1.25em;
+    height: 1.25em;
+    margin: 0 0.1em;
+    border-radius: 0.3em;
+    background: ${({ theme }) => theme.colors.inkSurface};
+    color: ${({ theme }) => theme.colors.inkSoft};
+    font-size: 0.93em;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: 0.05em;
   }
 
   code {
@@ -601,6 +621,7 @@ const REMARK_PLUGINS = [
   remarkHighlight,
   // Before remarkBreaks, so a multi-line HTML block keeps its line breaks.
   remarkHtmlAsText,
+  remarkKeycap,
   remarkBreaks,
 ];
 // Math and code highlighting are added by useRehypePlugins once a post needs them.
