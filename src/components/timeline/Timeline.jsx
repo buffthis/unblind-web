@@ -25,14 +25,16 @@ import {
 
 const TIME_WIDTH = 40;
 const TILE = 28;
+// One unit sets every vertical space: the gap between two rows, the space under a day
+// heading, the room a gap takes up (four units, with a unit above and below it) and,
+// doubled, the break above a day heading. Because the space on both sides of a gap is
+// always one unit, its text is centered between its neighbors without any correction.
 const ROW_GAP = 12;
-const GAP_HEIGHT = 48;
-const DAY_MARGIN = 16;
-const GROUP_MARGIN = 24;
+const GAP_HEIGHT = ROW_GAP * 4;
 const DAY_PADDING = 10;
 // The rail is a 1px line down the middle of the tile, drawn only across a gap. It stops
 // short of each tile by this much.
-const RAIL_INSET = 6;
+const RAIL_INSET = ROW_GAP / 2;
 // A gap shorter than this is not worth a line of its own.
 const DEFAULT_GAP_MIN = 60;
 
@@ -166,9 +168,7 @@ const Panel = styled.section`
 `;
 
 const Group = styled.div`
-  & + & {
-    margin-top: ${GROUP_MARGIN}px;
-  }
+  margin-top: ${({ $break }) => $break}px;
 `;
 
 // A day is a section break, not a time, so it is drawn as a pill centered between two
@@ -177,7 +177,7 @@ const DayLabel = styled.div.attrs({ role: 'heading', 'aria-level': 4 })`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 0 ${DAY_MARGIN}px;
+  margin: 0 0 ${ROW_GAP}px;
   font-size: 12px;
   font-weight: ${({ theme }) => theme.fontWeights.semibold};
   line-height: 20px;
@@ -228,15 +228,12 @@ const Row = styled.li`
 // The text of a gap is in the column of the titles, so it lines up with the text above
 // and below it, and is centered between what is above and the tile below. The doubled
 // class is needed here too: Row sets its own align-items with it, and a single class
-// would lose to that. A gap that opens a group has the space of the day heading or of
-// the group break above it, more than the space of a gap between two rows, so it is
-// pulled up by the difference ($pull) to keep the text in the middle.
+// would lose to that.
 const Gap = styled(Row)`
   && {
     position: relative;
     align-items: center;
     height: ${GAP_HEIGHT}px;
-    margin-top: -${({ $pull }) => $pull}px;
     font-size: 14px;
     color: ${({ theme }) => theme.colors.inkMuted};
   }
@@ -387,22 +384,14 @@ const Tag = styled.li`
   }
 `;
 
-// What an event follows decides how far a gap above it is pulled up: nothing when it
-// follows a row, the extra of the day heading's margin after a heading, and the extra
-// of the group break when the heading is hidden.
-const PULL = {
-  day: DAY_MARGIN - ROW_GAP,
-  group: GROUP_MARGIN - ROW_GAP,
-};
-
-function Event({ event, open, onToggle, lead }) {
+function Event({ event, open, onToggle }) {
   const detailId = useId();
   const tone = KINDS[event.kind] ?? KINDS.dot;
   const expandable = hasDetail(event);
   return (
     <>
       {event.gapText && (
-        <Gap $pull={PULL[lead] ?? 0}>
+        <Gap>
           <span>{event.gapText}</span>
         </Gap>
       )}
@@ -508,12 +497,11 @@ export default function Timeline({
     group.events.some((event) => event.timeText)
   );
   const dayed = showDay && prepared.some((group) => group.label);
-  // The first event of a group follows its day heading, or else the break after the
-  // previous group; only the first group has nothing above it.
-  const leadOf = (group, groupIndex, eventIndex) => {
-    if (eventIndex > 0) return null;
-    if (showDay && group.label) return 'day';
-    return groupIndex > 0 ? 'group' : null;
+  // A group after the first is set off by two units when it opens with a day heading
+  // and by one, like any other row, when it does not.
+  const breakAbove = (group, groupIndex) => {
+    if (groupIndex === 0) return 0;
+    return showDay && group.label ? ROW_GAP * 2 : ROW_GAP;
   };
   const expandableIds = useMemo(
     () =>
@@ -554,18 +542,17 @@ export default function Timeline({
       )}
       <Panel $timeless={timeless} $dayed={dayed}>
         {prepared.map((group, index) => (
-          <Group key={group.label ?? index}>
+          <Group key={group.label ?? index} $break={breakAbove(group, index)}>
             {showDay && group.label && (
               <DayLabel>
                 <span>{group.label}</span>
               </DayLabel>
             )}
             <List>
-              {group.events.map((event, eventIndex) => (
+              {group.events.map((event) => (
                 <Event
                   key={event.id}
                   event={event}
-                  lead={leadOf(group, index, eventIndex)}
                   open={openIds.has(event.id)}
                   onToggle={() => toggle(event.id)}
                 />
