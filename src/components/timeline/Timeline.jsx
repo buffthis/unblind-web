@@ -25,10 +25,11 @@ import {
 
 const TIME_WIDTH = 40;
 const TILE = 28;
-// One unit sets every vertical space: the gap between two rows, the space under a day
-// heading, the room a gap takes up (four units, with a unit above and below it) and,
-// doubled, the break above a day heading. Because the space on both sides of a gap is
-// always one unit, its text is centered between its neighbors without any correction.
+// One unit sets every vertical space: the gap between two rows, the space above and
+// below a day heading, and the room a gap takes up (four units, with a unit above and
+// below it). A day heading is set off by its pill and rule, not by extra space. Because
+// the space on both sides of a gap is always one unit, its text is centered between its
+// neighbors without any correction.
 const ROW_GAP = 12;
 const GAP_HEIGHT = ROW_GAP * 4;
 const DAY_PADDING = 10;
@@ -168,7 +169,9 @@ const Panel = styled.section`
 `;
 
 const Group = styled.div`
-  margin-top: ${({ $break }) => $break}px;
+  & + & {
+    margin-top: ${ROW_GAP}px;
+  }
 `;
 
 // A day is a section break, not a time, so it is drawn as a pill centered between two
@@ -497,12 +500,6 @@ export default function Timeline({
     group.events.some((event) => event.timeText)
   );
   const dayed = showDay && prepared.some((group) => group.label);
-  // A group after the first is set off by two units when it opens with a day heading
-  // and by one, like any other row, when it does not.
-  const breakAbove = (group, groupIndex) => {
-    if (groupIndex === 0) return 0;
-    return showDay && group.label ? ROW_GAP * 2 : ROW_GAP;
-  };
   const expandableIds = useMemo(
     () =>
       prepared.flatMap((group) =>
@@ -542,7 +539,7 @@ export default function Timeline({
       )}
       <Panel $timeless={timeless} $dayed={dayed}>
         {prepared.map((group, index) => (
-          <Group key={group.label ?? index} $break={breakAbove(group, index)}>
+          <Group key={group.label ?? index}>
             {showDay && group.label && (
               <DayLabel>
                 <span>{group.label}</span>
