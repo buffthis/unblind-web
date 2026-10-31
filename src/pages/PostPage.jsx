@@ -28,13 +28,15 @@ import styled, { css } from 'styled-components';
 import { POST_EDITOR_ENABLED } from '@/config';
 
 const ARTICLE_WIDTH = 550;
-const TOC_WIDTH = 220;
+const TOC_MIN_WIDTH = 220;
+const TOC_MAX_WIDTH = 440;
 const TOC_GAP = 48;
 const SIDE_PADDING = 24;
 // The article stays centered on the page and the toc sits in the right gutter,
-// so both gutters must fit the toc before it can be shown.
+// so both gutters must fit its minimum width before it can be shown.
+// Once visible, the toc grows with the right gutter up to TOC_MAX_WIDTH.
 const TOC_MIN_VIEWPORT =
-  ARTICLE_WIDTH + 2 * (TOC_GAP + TOC_WIDTH) + 2 * SIDE_PADDING;
+  ARTICLE_WIDTH + 2 * (TOC_GAP + TOC_MIN_WIDTH) + 2 * SIDE_PADDING;
 const GUTTER = 'minmax(0, 1fr)';
 
 const Layout = styled.div`
@@ -70,7 +72,7 @@ const Aside = styled.aside`
   @media (min-width: ${TOC_MIN_VIEWPORT}px) {
     display: block;
     grid-column: 3;
-    max-width: ${TOC_WIDTH}px;
+    max-width: ${TOC_MAX_WIDTH}px;
   }
 `;
 
