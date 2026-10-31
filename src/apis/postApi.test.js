@@ -83,6 +83,45 @@ describe('fetchEditablePost', () => {
 });
 
 describe('savePost', () => {
+  it('persists the toc setting and restores clean content on every read path', async () => {
+    const stored = {
+      id: 9,
+      content: '<!-- unblind:toc-max-level=2 -->\n\n## 소개\n\n### 상세',
+    };
+    client.post.mockResolvedValue({ data: stored });
+    const decoded = { id: 9, content: '## 소개\n\n### 상세', tocMaxLevel: 2 };
+    await expect(
+      savePost({
+        postId: null,
+        values: { ...values, content: decoded.content, tocMaxLevel: '2' },
+        hidden: false,
+      })
+    ).resolves.toEqual(decoded);
+    expect(client.post).toHaveBeenCalledWith(
+      '/posts',
+      expect.objectContaining({ content: stored.content })
+    );
+
+    client.get.mockResolvedValue({ data: stored });
+    await expect(fetchPostById(9)).resolves.toEqual(decoded);
+    await expect(fetchEditablePost(9)).resolves.toEqual(decoded);
+    client.get.mockResolvedValue({ data: [stored] });
+    await expect(fetchPosts()).resolves.toEqual([decoded]);
+
+    client.patch.mockResolvedValue({
+      data: { id: 9, content: decoded.content },
+    });
+    await savePost({
+      postId: 9,
+      values: { ...values, content: decoded.content, tocMaxLevel: 3 },
+      hidden: false,
+    });
+    expect(client.patch).toHaveBeenCalledWith(
+      '/posts/9',
+      expect.objectContaining({ content: decoded.content })
+    );
+  });
+
   it('creates a public post without userId', async () => {
     client.post.mockResolvedValue({ data: { id: 9 } });
 

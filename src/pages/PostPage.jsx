@@ -18,6 +18,7 @@ import { LAYOUT } from '@styles/constants';
 import subtleText from '@styles/subtleText';
 import tagChip from '@styles/tagChip';
 import { formatDate } from '@utils/format';
+import { normalizeTocMaxLevel } from '@utils/postToc';
 import { normalizeTags } from '@utils/tags';
 import { splitThumbnail } from '@utils/thumbnail';
 import React, { useLayoutEffect, useRef, useState } from 'react';
@@ -270,7 +271,10 @@ export default function PostPage() {
   const articleRef = useRef(null);
   const content = post?.content || '';
   const headings = useArticleHeadings(articleRef, content);
-  const activeId = useActiveHeading(headings);
+  const tocHeadings = headings.filter(
+    (heading) => heading.level <= normalizeTocMaxLevel(post?.tocMaxLevel)
+  );
+  const activeId = useActiveHeading(tocHeadings);
   useScrollToHash(headings.length > 0);
   // Decided once per post, so following a toc link later does not replay it.
   // It runs after the article is in the DOM but before it is painted, since
@@ -393,7 +397,7 @@ export default function PostPage() {
 
         <Aside>
           <StickyToc>
-            <PostToc headings={headings} activeId={activeId} />
+            <PostToc headings={tocHeadings} activeId={activeId} />
           </StickyToc>
         </Aside>
       </Layout>

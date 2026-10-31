@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { dataFileBlock, dataFileMarker, isDataFile } from '@utils/dataFiles';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
+import { DEFAULT_TOC_MAX_LEVEL } from '@utils/postToc';
 import { tagLimitError } from '@utils/tags';
 import { joinThumbnail, splitThumbnail } from '@utils/thumbnail';
 import React, {
@@ -62,7 +63,8 @@ const Field = styled.label`
     color: ${({ theme }) => theme.colors.secondary};
   }
 
-  input {
+  input,
+  select {
     width: 100%;
     padding: 8px 0;
     border: none;
@@ -324,7 +326,10 @@ export default function PostEditorForm({
   // The thumbnail already registered on the server; savePost skips re-registering a matching url.
   const [thumbnailBaseline, setThumbnailBaseline] =
     useState(initialThumbnailUrl);
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState({
+    tocMaxLevel: DEFAULT_TOC_MAX_LEVEL,
+    ...initialValues,
+  });
   const [pendingDraft, setPendingDraft] = useState(() =>
     readDraft(draftStorageKey)
   );
@@ -498,7 +503,11 @@ export default function PostEditorForm({
   const restoreDraft = () => {
     const draftValues = { ...pendingDraft };
     delete draftValues.savedAt;
-    setValues({ ...initialValues, ...draftValues });
+    setValues({
+      tocMaxLevel: DEFAULT_TOC_MAX_LEVEL,
+      ...initialValues,
+      ...draftValues,
+    });
     setPendingDraft(null);
     setDirty(true);
   };
@@ -640,6 +649,14 @@ export default function PostEditorForm({
         />
         썸네일 테두리
       </CheckField>
+      <Field>
+        <span>목차 표시 계층</span>
+        <select value={values.tocMaxLevel} onChange={update('tocMaxLevel')}>
+          <option value="1">h1까지</option>
+          <option value="2">h2까지</option>
+          <option value="3">h3까지</option>
+        </select>
+      </Field>
 
       <Tabs role="tablist">
         <ActionButton

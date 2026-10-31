@@ -4,9 +4,10 @@ import BasicHeader from '@components/header/BasicHeader';
 import PostEditorForm from '@components/post/PostEditorForm';
 import { useAuth } from '@contexts/AuthContext';
 import { draftKey } from '@hooks/usePostDraft';
+import { useQuery } from '@tanstack/react-query';
+import { DEFAULT_TOC_MAX_LEVEL, normalizeTocMaxLevel } from '@utils/postToc';
 import { formatTags } from '@utils/tags';
 import { splitThumbnail } from '@utils/thumbnail';
-import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
@@ -19,6 +20,7 @@ const EMPTY_VALUES = {
   thumbnailUrl: '',
   thumbnailBorder: false,
   content: '',
+  tocMaxLevel: DEFAULT_TOC_MAX_LEVEL,
 };
 
 const Message = styled.div`
@@ -50,6 +52,7 @@ function toFormValues(post) {
     thumbnailUrl: thumbnail.src,
     thumbnailBorder: thumbnail.border,
     content: post.content || '',
+    tocMaxLevel: normalizeTocMaxLevel(post.tocMaxLevel),
   };
 }
 

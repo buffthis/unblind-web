@@ -273,6 +273,41 @@ describe('PostPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('limits the toc to h2 while keeping deeper headings in the body', async () => {
+    usePost.mockReturnValue({
+      post: {
+        ...basePost,
+        content: '# 개요\n\n## 소개\n\n### 상세',
+        tocMaxLevel: 2,
+      },
+      loading: false,
+    });
+    renderPage();
+    const toc = await screen.findByRole('navigation', {
+      name: '목차',
+      hidden: true,
+    });
+    expect(
+      within(toc)
+        .getAllByRole('link', { hidden: true })
+        .map((link) => link.textContent)
+    ).toEqual(['개요', '소개']);
+    expect(
+      screen.getByRole('heading', { level: 3, name: /^상세/ })
+    ).toBeInTheDocument();
+  });
+
+  it('omits the toc when no heading is within the selected level', () => {
+    usePost.mockReturnValue({
+      post: { ...basePost, content: '### 상세', tocMaxLevel: 2 },
+      loading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByRole('navigation', { name: '목차', hidden: true })
+    ).not.toBeInTheDocument();
+  });
+
   it('shows the error state when the post is missing', () => {
     usePost.mockReturnValue({ post: null, loading: false, error: true });
     renderPage();

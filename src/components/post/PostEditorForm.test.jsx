@@ -22,7 +22,13 @@ vi.mock('@apis/postApi', async (importOriginal) => ({
   uploadDataFile: vi.fn(),
 }));
 
-const empty = { title: '', subtitle: '', thumbnailUrl: '', content: '' };
+const empty = {
+  title: '',
+  subtitle: '',
+  thumbnailUrl: '',
+  content: '',
+  tocMaxLevel: 3,
+};
 
 function httpError(status, data) {
   return Object.assign(new Error(`HTTP ${status}`), {
@@ -84,6 +90,21 @@ function declaredValue(element, property) {
 }
 
 describe('PostEditorForm', () => {
+  it('saves the selected toc level and includes it in the recovery draft', async () => {
+    savePost.mockRejectedValue(httpError(500));
+    renderForm();
+    expect(screen.getByLabelText('목차 표시 계층')).toHaveValue('3');
+    type('제목', '제목');
+    type('본문', '## 소개');
+    type('목차 표시 계층', '2');
+    fireEvent.click(screen.getByRole('button', { name: '발행' }));
+    await waitFor(() => expect(savePost).toHaveBeenCalled());
+    expect(savePost.mock.calls[0][0].values.tocMaxLevel).toBe('2');
+    expect(JSON.parse(localStorage.getItem('post-draft:new')).tocMaxLevel).toBe(
+      '2'
+    );
+  });
+
   it('blocks publishing without a title or body', () => {
     renderForm();
     fireEvent.click(screen.getByRole('button', { name: '발행' }));
@@ -169,6 +190,7 @@ describe('PostEditorForm', () => {
         subtitle: '',
         thumbnailUrl: '',
         content: '## 소개',
+        tocMaxLevel: 3,
       },
       hidden: false,
       initialThumbnailUrl: undefined,
@@ -191,6 +213,7 @@ describe('PostEditorForm', () => {
       subtitle: '',
       thumbnailUrl: 'https://i.imgur.com/a.png#border',
       content: '## 소개',
+      tocMaxLevel: 3,
     });
   });
 
@@ -335,6 +358,7 @@ describe('PostEditorForm', () => {
       JSON.stringify({
         ...empty,
         title: '옛 초안',
+        tocMaxLevel: '2',
         savedAt: '2026-10-11T05:00:00.000Z',
       })
     );
@@ -349,6 +373,7 @@ describe('PostEditorForm', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '불러오기' }));
     expect(screen.getByLabelText('제목')).toHaveValue('옛 초안');
+    expect(screen.getByLabelText('목차 표시 계층')).toHaveValue('2');
   });
 
   it('keeps both save buttons disabled until a stored draft is resolved', () => {

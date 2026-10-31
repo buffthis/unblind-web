@@ -75,6 +75,7 @@ describe('PostEditorPage', () => {
       subtitle: null,
       content: '본문',
       hidden: true,
+      tocMaxLevel: 2,
       tags: ['GPU', 'React'],
       thumbnail: { url: 'https://i.imgur.com/a.png' },
       author: { id: 7, username: 'me', name: '나' },
@@ -83,6 +84,7 @@ describe('PostEditorPage', () => {
 
     expect(await screen.findByDisplayValue('숨긴 글')).toBeInTheDocument();
     expect(screen.getByLabelText('태그')).toHaveValue('GPU, React');
+    expect(screen.getByLabelText('목차 표시 계층')).toHaveValue('2');
     expect(screen.getByLabelText('썸네일 이미지 URL')).toHaveValue(
       'https://i.imgur.com/a.png'
     );

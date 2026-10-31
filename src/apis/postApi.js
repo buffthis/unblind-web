@@ -1,5 +1,6 @@
 import client from '@apis/client';
 import { ENDPOINTS } from '@apis/endpoints';
+import { decodePostToc, encodePostToc } from '@utils/postToc';
 import { parseTags } from '@utils/tags';
 
 // Posts that only linked out to another blog have no body here and are no longer
@@ -25,13 +26,15 @@ export async function fetchPostById(postId) {
     error.code = 'POST_NOT_FOUND';
     throw error;
   }
-  return post;
+  return decodePostToc(post);
 }
 
 export async function fetchPosts() {
   const response = await client.get(ENDPOINTS.POSTS.LIST);
   const posts = Array.isArray(response.data) ? response.data : [];
-  return posts.filter((post) => !post.hidden && !isExternalPost(post));
+  return posts
+    .filter((post) => !post.hidden && !isExternalPost(post))
+    .map(decodePostToc);
 }
 
 function notFound(postId) {
@@ -46,7 +49,7 @@ export async function fetchEditablePost(postId) {
   const post = response.data;
   if (!post || typeof post !== 'object' || post.id == null)
     throw notFound(postId);
-  return post;
+  return decodePostToc(post);
 }
 
 async function registerThumbnail(values, initialThumbnailUrl) {
@@ -93,7 +96,7 @@ export async function savePost({
   const body = {
     title: values.title,
     subtitle: values.subtitle,
-    content: values.content,
+    content: encodePostToc(values.content, values.tocMaxLevel),
     ...(values.tags != null && { tags: parseTags(values.tags) }),
     ...(thumbnailId != null && { thumbnailId }),
     hidden,
@@ -103,7 +106,7 @@ export async function savePost({
     postId != null
       ? await client.patch(ENDPOINTS.POSTS.BY_ID(postId), body)
       : await client.post(ENDPOINTS.POSTS.LIST, body);
-  return response.data;
+  return decodePostToc(response.data);
 }
 
 const KIND_BY_STATUS = {
