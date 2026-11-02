@@ -57,6 +57,32 @@ describe('MermaidBlock', () => {
     }
   });
 
+  it('draws the quoted text on the fence as a caption under the diagram', async () => {
+    const { container } = renderArticle(
+      '```mermaid border "로그인 흐름"\nflowchart LR\n  A --> B\n```'
+    );
+
+    const caption = await waitFor(() => {
+      const found = container.querySelector('[data-diagram-caption]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    expect(caption).toHaveTextContent('로그인 흐름');
+    expect(caption).toHaveStyle({ textAlign: 'center' });
+    expect(container.querySelector('[data-diagram]')).toHaveAttribute(
+      'data-border'
+    );
+  });
+
+  it('draws no caption when the fence has no quoted text', async () => {
+    const { container } = renderArticle(fence('flowchart LR\n  A --> B'));
+
+    await waitFor(() =>
+      expect(container.querySelector('[data-diagram]')).not.toBeNull()
+    );
+    expect(container.querySelector('[data-diagram-caption]')).toBeNull();
+  });
+
   it('draws sequence diagrams too', async () => {
     const { container } = renderArticle(
       fence('sequenceDiagram\n  브라우저->>API: POST /posts')

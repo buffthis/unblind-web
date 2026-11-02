@@ -28,6 +28,15 @@ const Figure = styled.div`
   }
 `;
 
+// Same look as an image caption, centered under the diagram.
+const Caption = styled.div`
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.inkSub};
+`;
+
 function draw(render, source, theme) {
   try {
     const svg = render(source, {
@@ -46,7 +55,12 @@ function draw(render, source, theme) {
 
 // The renderer escapes every label and attribute it writes, so the SVG it returns
 // holds no markup from the post and is safe to insert as HTML.
-export default function MermaidBlock({ source, bordered = false, children }) {
+export default function MermaidBlock({
+  source,
+  bordered = false,
+  caption = '',
+  children,
+}) {
   const theme = useTheme();
   const [render, setRender] = useState(() => loadedPlugin('mermaid'));
 
@@ -80,10 +94,13 @@ export default function MermaidBlock({ source, bordered = false, children }) {
     );
   }
   return (
-    <Figure
-      data-diagram=""
-      data-border={bordered ? '' : undefined}
-      dangerouslySetInnerHTML={{ __html: result.svg }}
-    />
+    <>
+      <Figure
+        data-diagram=""
+        data-border={bordered ? '' : undefined}
+        dangerouslySetInnerHTML={{ __html: result.svg }}
+      />
+      {caption && <Caption data-diagram-caption="">{caption}</Caption>}
+    </>
   );
 }

@@ -558,13 +558,18 @@ function LazyImage({ node: _node, alt, title, ...rest }) {
   );
 }
 
-// The words after the language on the opening fence, so "```mermaid border" gives
-// the set {"border"}. They are flags in the same spirit as an image alt's |border.
-function fenceFlags(node) {
+// The opening fence's meta, so "```mermaid border "Login flow"" gives the flag set
+// {"border"} and the caption "Login flow". The caption is the first double-quoted text.
+// The other words are flags in the same spirit as an image alt's |border.
+function fenceMeta(node) {
   const meta = node?.children?.[0]?.data?.meta;
-  return new Set(
-    typeof meta === 'string' ? meta.split(/\s+/).filter(Boolean) : []
-  );
+  if (typeof meta !== 'string') return { flags: new Set(), caption: '' };
+  const quoted = meta.match(/"([^"]*)"/);
+  const words = quoted ? meta.replace(quoted[0], ' ') : meta;
+  return {
+    flags: new Set(words.split(/\s+/).filter(Boolean)),
+    caption: quoted ? quoted[1].trim() : '',
+  };
 }
 
 // A block that draws its own border or background carries the extra blank-line gap on a
@@ -602,10 +607,12 @@ function PreContent({ node, children }) {
     );
   }
   if (language === 'mermaid') {
+    const { flags, caption } = fenceMeta(node);
     return (
       <MermaidBlock
         source={codeText(children)}
-        bordered={fenceFlags(node).has('border')}
+        bordered={flags.has('border')}
+        caption={caption}
       >
         {children}
       </MermaidBlock>
