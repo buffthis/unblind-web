@@ -9,8 +9,10 @@ const Chip = styled.span`
   align-items: center;
   gap: 5px;
   padding: 0 7px;
+  /* Dashed, so "unfinished" reads even without the label. */
   border: 1px dashed ${({ theme }) => theme.colors.inkMuted};
   border-radius: 5px;
+  background: #e5e8eb;
   font-size: 11px;
   font-weight: 560;
   line-height: 17px;

@@ -256,7 +256,8 @@ const Body = styled.div`
     box-sizing: border-box;
     margin: 0 0.15em;
     padding: 0 0.5em;
-    border: 1px solid transparent;
+    /* A thin border one step darker than the fill, as on the Washington Post badges. */
+    border: 1px solid #e5e8eb;
     border-radius: 0.35em;
     background: ${({ theme }) => theme.colors.inkSurface};
     color: ${({ theme }) => theme.colors.inkSub};
@@ -270,24 +271,29 @@ const Body = styled.div`
   .badge[data-tone='wip'] {
     border-style: dashed;
     border-color: ${({ theme }) => theme.colors.inkMuted};
+    background: #e5e8eb;
   }
 
   .badge[data-tone='blue'] {
+    border-color: #0969da55;
     background: #0969da1a;
     color: #0969da;
   }
 
   .badge[data-tone='green'] {
+    border-color: #1a7f3755;
     background: #1a7f371a;
     color: #1a7f37;
   }
 
   .badge[data-tone='amber'] {
+    border-color: #9a670055;
     background: #9a67001a;
     color: #9a6700;
   }
 
   .badge[data-tone='red'] {
+    border-color: #d1242f55;
     background: #d1242f1a;
     color: #d1242f;
   }
