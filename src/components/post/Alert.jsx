@@ -10,9 +10,11 @@ const ALERT_TYPES = {
   IMPORTANT: { title: '중요', color: '#8250df' },
   WARNING: { title: '경고', color: '#9a6700' },
   CAUTION: { title: '주의', color: '#d1242f' },
+  // Section level status: this part of a published post is not written yet.
+  WIP: { title: '작성 중', color: '#6B7684' },
 };
 
-const MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n?/i;
+const MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|WIP)\][ \t]*\n?/i;
 
 // Returns { type, children } with the marker removed, or null for an ordinary quote.
 export function parseAlert(children) {
@@ -46,7 +48,8 @@ export function parseAlert(children) {
 const Box = styled.div`
   margin: ${BOX_MARGIN};
   padding: 4px 0 4px 20px;
-  border-left: 4px solid ${({ $color }) => $color};
+  border-left: 4px ${({ $dashed }) => ($dashed ? 'dashed' : 'solid')}
+    ${({ $color }) => $color};
 
   /* The article's own p margin outranks the Title class, so reset it here. */
   > :first-child {
@@ -104,12 +107,18 @@ const ICONS = {
       <path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" />
     </>
   ),
+  WIP: (
+    <>
+      <circle cx="8" cy="8" r="6.5" strokeDasharray="2.2 2.2" />
+      <path d="M5.2 8h5.6" />
+    </>
+  ),
 };
 
 export default function Alert({ type, children }) {
   const { title, color } = ALERT_TYPES[type];
   return (
-    <Box role="note" aria-label={title} $color={color}>
+    <Box role="note" aria-label={title} $color={color} $dashed={type === 'WIP'}>
       <Title $color={color}>
         <svg
           viewBox="0 0 16 16"

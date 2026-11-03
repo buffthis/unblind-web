@@ -17,6 +17,7 @@ import styled from 'styled-components';
 
 import { ENTRANCE_DURATION } from './entrance';
 import { useRehypePlugins } from './markdownPlugins';
+import remarkBadge from './remarkBadge';
 import remarkBlankLines, { MAX_EXTRA } from './remarkBlankLines';
 import remarkBreaks from './remarkBreaks';
 import remarkHighlight from './remarkHighlight';
@@ -246,6 +247,49 @@ const Body = styled.div`
     font-weight: 700;
     line-height: 1;
     vertical-align: 0.05em;
+  }
+
+  /* An inline [[badge]]. Sized in em so it follows the text around it, and its line height
+     stays under the line box so it never grows a line. */
+  .badge {
+    display: inline-block;
+    box-sizing: border-box;
+    margin: 0 0.15em;
+    padding: 0 0.5em;
+    border: 1px solid transparent;
+    border-radius: 0.35em;
+    background: ${({ theme }) => theme.colors.inkSurface};
+    color: ${({ theme }) => theme.colors.inkSub};
+    font-size: 0.8em;
+    font-weight: 560;
+    line-height: 1.55;
+    vertical-align: 0.1em;
+    white-space: nowrap;
+  }
+
+  .badge[data-tone='wip'] {
+    border-style: dashed;
+    border-color: ${({ theme }) => theme.colors.inkMuted};
+  }
+
+  .badge[data-tone='blue'] {
+    background: #0969da1a;
+    color: #0969da;
+  }
+
+  .badge[data-tone='green'] {
+    background: #1a7f371a;
+    color: #1a7f37;
+  }
+
+  .badge[data-tone='amber'] {
+    background: #9a67001a;
+    color: #9a6700;
+  }
+
+  .badge[data-tone='red'] {
+    background: #d1242f1a;
+    color: #d1242f;
   }
 
   code {
@@ -629,12 +673,15 @@ const REMARK_PLUGINS = [
   // First, while every block still carries the line numbers the parser gave it.
   remarkBlankLines,
   remarkParagraphKinds,
-  remarkGfm,
+  // A single ~ stays text, so a range like "10~12" is not read as strikethrough.
+  // Only ~~double~~ strikes through.
+  [remarkGfm, { singleTilde: false }],
   [remarkMath, { singleDollarTextMath: false }],
   remarkHighlight,
   // Before remarkBreaks, so a multi-line HTML block keeps its line breaks.
   remarkHtmlAsText,
   remarkKeycap,
+  remarkBadge,
   remarkBreaks,
 ];
 // Math and code highlighting are added by useRehypePlugins once a post needs them.

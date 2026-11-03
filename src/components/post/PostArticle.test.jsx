@@ -703,6 +703,38 @@ describe('PostArticle', () => {
     expect(container).toHaveTextContent('숫자 3 과 12');
   });
 
+  it('keeps a single tilde as text and strikes through only ~~double~~', () => {
+    const { container } = renderArticle(
+      'a~b {긴 내용} 10~12 와 ~~취소선~~ 그리고 1~2, 3~4'
+    );
+
+    const struck = Array.from(container.querySelectorAll('del'));
+    expect(struck.map((node) => node.textContent)).toEqual(['취소선']);
+    expect(container).toHaveTextContent('a~b {긴 내용} 10~12');
+    expect(container).toHaveTextContent('1~2, 3~4');
+  });
+
+  it('draws [[text]] as an inline badge with an optional tone and leaves code alone', () => {
+    const { container } = renderArticle(
+      '설계 [[🚧 작성 중|wip]] 와 [[v2|green]], [[a|b]], `[[코드]]`, [[ ]], 배열 a[0]'
+    );
+
+    const badges = Array.from(container.querySelectorAll('.badge'));
+    expect(badges.map((badge) => badge.textContent)).toEqual([
+      '🚧 작성 중',
+      'v2',
+      'a|b',
+    ]);
+    expect(badges.map((badge) => badge.getAttribute('data-tone'))).toEqual([
+      'wip',
+      'green',
+      null,
+    ]);
+    expect(container.querySelector('code')).toHaveTextContent('[[코드]]');
+    expect(container.querySelector('code .badge')).toBeNull();
+    expect(container).toHaveTextContent('[[ ]], 배열 a[0]');
+  });
+
   it('highlights across bold and other inline marks in either nesting', () => {
     const { container } = renderArticle(
       '==**굵게** 칠한 문장==, **==굵은 형광펜==**, ==`code` 앞==, ==**전부 굵게**=='

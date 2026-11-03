@@ -1,4 +1,5 @@
 import HoverImage from '@components/common/HoverImage';
+import { WipBadge } from '@components/post/WipBanner';
 import useHoverPrefetch, { usePrefetchPost } from '@hooks/usePrefetch';
 import {
   ProjectCard,
@@ -22,6 +23,11 @@ const cardLinkStyle = css`
 
 const CardLink = styled(Link)`
   ${cardLinkStyle}
+`;
+
+const CardWip = styled(WipBadge)`
+  margin-left: 6px;
+  vertical-align: 2.5px;
 `;
 
 const TAG_GAP = 5;
@@ -66,6 +72,7 @@ export default function PostCard({ post }) {
       <ProjectContent $inset={radius}>
         <ProjectTitle $fontSize="0.9rem" $marginTop="8.5px">
           {post.title}
+          {post.wip && <CardWip />}
         </ProjectTitle>
         <ProjectDescription $fontSize="0.8rem" $marginTop="0.75px">
           {post.subtitle}

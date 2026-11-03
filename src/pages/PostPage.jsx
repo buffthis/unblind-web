@@ -6,6 +6,7 @@ import BasicHeader from '@components/header/BasicHeader';
 import { BODY_ENTRANCE, riseIn } from '@components/post/entrance';
 import PostArticle from '@components/post/PostArticle';
 import PostToc from '@components/post/PostToc';
+import WipBanner from '@components/post/WipBanner';
 import { useAuth } from '@contexts/AuthContext';
 import useArticleHeadings, {
   useActiveHeading,
@@ -374,6 +375,8 @@ export default function PostPage() {
               data-border={thumbnail.border ? '' : undefined}
             />
           )}
+
+          {post.wip && <WipBanner missing={post.wipMissing} />}
 
           {content && (
             <ArticleArea>

@@ -24,6 +24,7 @@ const UserListPage = lazy(() => import('@pages/UserListPage'));
 const UserPage = lazy(() => import('@pages/UserPage'));
 const PostPage = lazy(() => import('@pages/PostPage'));
 const PostEditorPage = lazy(() => import('@pages/PostEditorPage'));
+const WipDemoPage = lazy(() => import('@pages/WipDemoPage'));
 
 function App() {
   return (
@@ -53,6 +54,9 @@ function App() {
                           path="/posts/:postId/edit"
                           element={<PostEditorPage />}
                         />
+                      )}
+                      {import.meta.env.DEV && (
+                        <Route path="/wip-demo" element={<WipDemoPage />} />
                       )}
                       <Route path="/posts/:postId" element={<PostPage />} />
                       <Route path="/:username" element={<UserPage />} />
