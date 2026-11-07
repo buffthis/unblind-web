@@ -466,14 +466,52 @@ describe('PostArticle', () => {
       ).toBe('0px');
     });
 
-    it('leaves a paragraph that mixes text and an image, or holds several images, as it was', () => {
+    it('leaves a paragraph that mixes text and an image, or holds three images, as it was', () => {
       const { container } = renderArticle(
-        '앞 글 ![작은](https://a/b.png) 뒤 글\n\n![하나](https://a/c.png)\n![둘](https://a/d.png)'
+        '앞 글 ![작은](https://a/b.png) 뒤 글\n\n![하나](https://a/c.png) ![둘](https://a/d.png) ![셋](https://a/e.png)'
       );
 
       for (const block of container.querySelectorAll('p')) {
         expect(block).not.toHaveAttribute('data-image');
+        expect(block).not.toHaveAttribute('data-images');
       }
+    });
+
+    it.each([
+      ['on one line', '![전](https://a/b.png) ![후](https://a/c.png)'],
+      ['on two lines', '![전](https://a/b.png)\n![후](https://a/c.png)'],
+    ])(
+      'lays out a paragraph that holds exactly two images %s side by side',
+      (_label, source) => {
+        const { container } = renderArticle(`텍스트\n\n${source}`);
+        const row = container.querySelectorAll('p')[1];
+
+        expect(row).toHaveAttribute('data-images');
+        expect(row).not.toHaveAttribute('data-image');
+        expect(declaredValue(row, 'display')).toBe('flex');
+        expect(declaredValue(row, 'padding-top')).toBe(
+          'calc(var(--gap-extra, 0px) + 4.5px)'
+        );
+        expect(declaredValue(row, 'padding-bottom')).toBe('4.5px');
+        expect(row.querySelectorAll('img')).toHaveLength(2);
+        for (const image of row.querySelectorAll('img')) {
+          expect(declaredValue(image, 'flex-grow')).toBe('1');
+        }
+      }
+    );
+
+    it('keeps a caption under each image of a side by side pair', () => {
+      const { container } = renderArticle(
+        '![전](https://a/b.png "수정 전") ![후](https://a/c.png "수정 후")'
+      );
+      const figures = container.querySelectorAll(
+        'p[data-images] > [data-figure]'
+      );
+
+      expect(figures).toHaveLength(2);
+      expect(figures[0]).toHaveTextContent('수정 전');
+      expect(figures[1]).toHaveTextContent('수정 후');
+      expect(declaredValue(figures[0], 'flex-grow')).toBe('1');
     });
   });
 

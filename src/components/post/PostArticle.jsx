@@ -147,6 +147,36 @@ const Body = styled.div`
     display: block;
   }
 
+  /* A paragraph with exactly two images lays them out side by side in equal columns.
+     flex-basis 0 outranks any width the images carry, so a "| 50%" flag has no effect
+     here. Each image keeps its own ratio and the pair is top-aligned. The line break
+     that a single Enter between the two images becomes is not drawn. */
+  & > p[data-images] {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding-top: calc(var(--gap-extra, 0px) + ${TEXT_SPACE}px);
+    padding-bottom: ${TEXT_SPACE}px;
+  }
+
+  & > p[data-images] > br {
+    display: none;
+  }
+
+  & > p[data-images] > img,
+  & > p[data-images] > span[data-figure] {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0px;
+    min-width: 0;
+    margin: 0;
+  }
+
+  & > p[data-images] > img {
+    display: block;
+    height: auto;
+  }
+
   /* A line of text opens with BLOCK_GAP and closes with 0. */
   p {
     margin: ${BLOCK_MARGIN};
