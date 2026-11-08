@@ -16,6 +16,11 @@
 - axios (세션 쿠키 인증), react-helmet-async (SEO), react-markdown
 - Vitest + Testing Library
 
+## Writing Guide
+
+- [글 작성 가이드 (최신판)](writing-guide-latest.md) — 마크다운 문법과 글 카드 등 본문 기능의 사용법
+- [글 작성 가이드 (이전판)](writing-guide.md)
+
 ## Project Structure
 
 ```plaintext
