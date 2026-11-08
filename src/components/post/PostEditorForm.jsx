@@ -5,6 +5,7 @@ import {
   uploadImage,
 } from '@apis/postApi';
 import PostArticle from '@components/post/PostArticle';
+import PostLinkDialog from '@components/post/PostLinkDialog';
 import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { LAYOUT } from '@styles/constants';
@@ -12,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { dataFileBlock, dataFileMarker, isDataFile } from '@utils/dataFiles';
 import { imageMarkdown, pickImageFiles, uploadMarker } from '@utils/imageFiles';
 import { applyFormat } from '@utils/markdownFormat';
+import { insertPostLink } from '@utils/postLink';
 import { DEFAULT_TOC_MAX_LEVEL } from '@utils/postToc';
 import { tagLimitError } from '@utils/tags';
 import { joinThumbnail, splitThumbnail } from '@utils/thumbnail';
@@ -320,6 +322,8 @@ export default function PostEditorForm({
   // Uploads still running; saving then would store their placeholder markers.
   const [uploading, setUploading] = useState(0);
   const pendingSelection = useRef(null);
+  const cardSelection = useRef(null);
+  const [cardDialogOpen, setCardDialogOpen] = useState(false);
 
   // After a create succeeds, later saves must PATCH this id instead of creating again.
   const [postId, setPostId] = useState(initialPostId);
@@ -374,6 +378,24 @@ export default function PostEditorForm({
     };
     setValues((prev) => ({ ...prev, content: result.text }));
     setDirty(true);
+  };
+
+  const openPostCard = () => {
+    const textarea = textareaRef.current;
+    cardSelection.current = {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+    };
+    setCardDialogOpen(true);
+  };
+
+  const insertPostCard = (href) => {
+    const { start, end } = cardSelection.current;
+    const result = insertPostLink(values.content, start, end, href);
+    pendingSelection.current = { start: result.cursor, end: result.cursor };
+    setValues((prev) => ({ ...prev, content: result.text }));
+    setDirty(true);
+    setCardDialogOpen(false);
   };
 
   // Each image gets a marker at the caret right away; the marker is swapped for the final
@@ -682,6 +704,9 @@ export default function PostEditorForm({
       <Panes>
         <EditorPane $active={tab === 'write'}>
           <Toolbar>
+            <ToolButton type="button" onClick={openPostCard}>
+              글 카드
+            </ToolButton>
             {TOOLBAR.map((tool) => (
               <ToolButton
                 key={tool.kind}
@@ -747,6 +772,14 @@ export default function PostEditorForm({
           <PostArticle content={previewContent} />
         </PreviewPane>
       </Panes>
+
+      {cardDialogOpen && (
+        <PostLinkDialog
+          currentPostId={postId}
+          onClose={() => setCardDialogOpen(false)}
+          onInsert={insertPostCard}
+        />
+      )}
 
       <Footer>
         <span role="status">

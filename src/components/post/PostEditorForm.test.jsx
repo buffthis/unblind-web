@@ -1,4 +1,10 @@
-import { savePost, uploadDataFile, uploadImage } from '@apis/postApi';
+import {
+  fetchPostById,
+  fetchPosts,
+  savePost,
+  uploadDataFile,
+  uploadImage,
+} from '@apis/postApi';
 import theme from '@styles/theme/theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -18,6 +24,8 @@ import PostEditorForm from './PostEditorForm';
 vi.mock('@apis/postApi', async (importOriginal) => ({
   ...(await importOriginal()),
   savePost: vi.fn(),
+  fetchPosts: vi.fn(),
+  fetchPostById: vi.fn(),
   uploadImage: vi.fn(),
   uploadDataFile: vi.fn(),
 }));
@@ -71,6 +79,8 @@ function type(label, value) {
 
 beforeEach(() => {
   savePost.mockReset();
+  fetchPosts.mockReset().mockResolvedValue([]);
+  fetchPostById.mockReset();
   uploadImage.mockReset();
   uploadDataFile.mockReset();
   localStorage.clear();
@@ -90,6 +100,65 @@ function declaredValue(element, property) {
 }
 
 describe('PostEditorForm', () => {
+  it('searches for a post, previews it, and inserts a card at the saved selection', async () => {
+    HTMLDialogElement.prototype.showModal = function () {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close = function () {
+      this.removeAttribute('open');
+    };
+    const post = { id: 12, title: '캐시 이해하기', author: { name: '홍길동' } };
+    fetchPosts.mockResolvedValue([post]);
+    fetchPostById.mockResolvedValue(post);
+    renderForm();
+    type('본문', '앞문장\n\n뒷문장');
+    const body = screen.getByLabelText('본문');
+    body.setSelectionRange(5, 5);
+    fireEvent.click(screen.getByRole('button', { name: '글 카드' }));
+    const dialog = screen.getByRole('dialog', { name: '글 카드 삽입' });
+    expect(within(dialog).getByRole('button', { name: '삽입' })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText('글 URL 또는 검색어'), {
+      target: { value: '캐시' },
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('button', { name: /캐시 이해하기/ })
+    );
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: '삽입' })).toBeEnabled()
+    );
+    expect(within(dialog).getByText('캐시 이해하기')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: '삽입' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(body.value).toContain('```post\n/posts/12\n```');
+    expect(body.value).toMatch(/^앞문장[\s\S]*뒷문장$/);
+    expect(document.activeElement).toBe(body);
+    expect(
+      await screen.findByRole('link', { name: /캐시 이해하기/ })
+    ).toHaveAttribute('href', '/posts/12');
+  });
+
+  it('blocks external URLs and self references without requesting their details', () => {
+    HTMLDialogElement.prototype.showModal = function () {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close = function () {
+      this.removeAttribute('open');
+    };
+    renderForm({ postId: 12 });
+    fireEvent.click(screen.getByRole('button', { name: '글 카드' }));
+    type('글 URL 또는 검색어', 'https://evil.test/posts/12');
+    expect(screen.getByRole('alert')).toHaveTextContent('Unblind 글의 URL');
+    expect(screen.getByRole('button', { name: '삽입' })).toBeDisabled();
+    type('글 URL 또는 검색어', '/posts/12');
+    expect(
+      screen.getByText('현재 작성 중인 글은 연결할 수 없습니다.')
+    ).toBeInTheDocument();
+    expect(fetchPostById).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '취소' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('saves the selected toc level and includes it in the recovery draft', async () => {
     savePost.mockRejectedValue(httpError(500));
     renderForm();

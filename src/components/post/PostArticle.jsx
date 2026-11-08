@@ -4,6 +4,7 @@ import { ChartReplayContext } from '@components/post/chart/replay';
 import CodeBlock, { getLanguage } from '@components/post/CodeBlock';
 import GitHubLink from '@components/post/GitHubLink';
 import MermaidBlock from '@components/post/mermaid/MermaidBlock';
+import PostLinkBlock from '@components/post/PostLinkCard';
 import TimelineBlock from '@components/post/timeline/TimelineBlock';
 import TreeBlock from '@components/post/tree/TreeBlock';
 import { LAYOUT } from '@styles/constants';
@@ -675,6 +676,9 @@ function PreBlock({ node, children }) {
 
 function PreContent({ node, children }) {
   const language = getLanguage(children);
+  if (language === 'post') {
+    return <PostLinkBlock source={codeText(children)} />;
+  }
   if (language === 'chart') {
     return <ChartBlock source={codeText(children)}>{children}</ChartBlock>;
   }
