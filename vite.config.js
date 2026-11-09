@@ -39,5 +39,12 @@ export default defineConfig(({ mode }) => ({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     globals: true,
+    // Node 25+는 --localstorage-file 없이 localStorage를 undefined로 전역에
+    // 노출해 jsdom의 localStorage를 가린다. 네이티브 webstorage를 꺼서 막는다.
+    execArgv: process.allowedNodeEnvironmentFlags.has(
+      '--no-experimental-webstorage'
+    )
+      ? ['--no-experimental-webstorage']
+      : [],
   },
 }));
