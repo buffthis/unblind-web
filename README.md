@@ -65,6 +65,35 @@ npm run dev
 - `npm run lint` / `npm run lint:fix` — ESLint
 - `npm run format` — Prettier
 
+## Posting series
+
+시리즈는 글 상단의 전체 회차 목록, 하단의 이전·다음 글, 시리즈 소개 페이지,
+프로필의 `전체 글 / 시리즈` 전환으로 연결됩니다. 작성자는 글 편집기에서 시리즈를
+만들거나 선택하고, 시리즈 관리에서 기존 글을 추가·제외하거나 읽는 순서를 바꿀 수 있습니다.
+
+백엔드의 시리즈 API와 V6 마이그레이션을 먼저 배포한 뒤 `VITE_SERIES_ENABLED=true`로
+빌드합니다. 작성·관리 화면에는 기존 `VITE_POST_EDITOR_ENABLED=true`도 필요합니다.
+두 값은 빌드 시 적용되며 기본값은 꺼짐입니다.
+
+```bash
+VITE_SERIES_ENABLED=true VITE_POST_EDITOR_ENABLED=true npm run dev
+```
+
+서버와 로그인 없이 UI만 살펴보려면 개발 서버의 `/__preview/series`를 엽니다.
+실제 독자용 컴포넌트를 사용하며, 예시 글의 링크로 회차 이동도 확인할 수 있습니다.
+이 페이지와 예시 데이터는 프로덕션 빌드에 포함되지 않습니다.
+
+- `/series/:seriesId`: 공개된 회차와 시리즈 소개
+- `/series/new`: 시리즈 만들기 (로그인 필요)
+- `/series/:seriesId/edit`: 시리즈 관리 (소유자 전용)
+
+시리즈에서 글을 제외하거나 시리즈를 삭제해도 글은 유지됩니다. 숨긴 글은 관리 화면에만
+표시되며 공개 목록·회차 번호·이전/다음 탐색에서 제외됩니다. API가 실패하면 오류와
+재시도를 표시하고, 입력한 내용이나 기존 시리즈 선택을 유지합니다.
+
+Node 26의 실험적 전역 Web Storage가 jsdom의 localStorage와 충돌하는 환경에서는
+`NODE_OPTIONS=--no-experimental-webstorage npm test`로 테스트합니다.
+
 ## Deployment
 
 `main` 브랜치 push 시 GitHub Actions가 빌드 후 인스턴스에 배포합니다

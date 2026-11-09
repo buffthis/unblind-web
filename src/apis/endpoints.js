@@ -14,4 +14,11 @@ export const ENDPOINTS = {
     LIST: '/posts',
     BY_ID: (postId) => `/posts/${encodeURIComponent(postId)}`,
   },
+  SERIES: {
+    LIST: '/series',
+    MINE: '/me/series',
+    BY_ID: (id) => `/series/${encodeURIComponent(id)}`,
+    EDIT: (id) => `/series/${encodeURIComponent(id)}/edit`,
+    BY_AUTHOR: (id) => `/users/${encodeURIComponent(id)}/series`,
+  },
 };

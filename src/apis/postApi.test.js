@@ -36,6 +36,33 @@ beforeEach(() => {
 });
 
 // Posts that only pointed to an outside blog are no longer shown anywhere.
+describe('series membership in post saves', () => {
+  it.each([
+    [7, 7],
+    ['8', 8],
+    [null, null],
+  ])(
+    'sends membership %s in the same post request',
+    async (seriesId, expected) => {
+      client.patch.mockResolvedValue({ data: { id: 3 } });
+      await savePost({
+        postId: 3,
+        values: { ...values, seriesId },
+        hidden: false,
+      });
+      expect(client.patch.mock.calls[0][1]).toHaveProperty(
+        'seriesId',
+        expected
+      );
+    }
+  );
+  it('omits membership for older editor drafts so it cannot accidentally clear a series', async () => {
+    client.patch.mockResolvedValue({ data: { id: 3 } });
+    await savePost({ postId: 3, values, hidden: false });
+    expect(client.patch.mock.calls[0][1]).not.toHaveProperty('seriesId');
+  });
+});
+
 describe('external posts', () => {
   it('drops them from the post list along with hidden posts', async () => {
     client.get.mockResolvedValue({

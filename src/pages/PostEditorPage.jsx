@@ -13,6 +13,8 @@ import { Helmet } from 'react-helmet-async';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 
+import { SERIES_ENABLED } from '@/config';
+
 const EMPTY_VALUES = {
   title: '',
   subtitle: '',
@@ -21,6 +23,7 @@ const EMPTY_VALUES = {
   thumbnailBorder: false,
   content: '',
   tocMaxLevel: DEFAULT_TOC_MAX_LEVEL,
+  ...(SERIES_ENABLED && { seriesId: null }),
 };
 
 const Message = styled.div`
@@ -53,6 +56,7 @@ function toFormValues(post) {
     thumbnailBorder: thumbnail.border,
     content: post.content || '',
     tocMaxLevel: normalizeTocMaxLevel(post.tocMaxLevel),
+    ...(SERIES_ENABLED && { seriesId: post.series?.id ?? null }),
   };
 }
 
@@ -110,6 +114,7 @@ export default function PostEditorPage() {
         postId={post.id}
         initialValues={toFormValues(post)}
         initialThumbnailUrl={post.thumbnail?.url}
+        initialSeries={post.series}
         draftStorageKey={draftKey(post.id)}
       />
     );

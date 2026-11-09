@@ -100,6 +100,9 @@ export async function savePost({
     ...(values.tags != null && { tags: parseTags(values.tags) }),
     ...(thumbnailId != null && { thumbnailId }),
     hidden,
+    ...(values.seriesId !== undefined && {
+      seriesId: values.seriesId == null ? null : Number(values.seriesId),
+    }),
   };
 
   const response =

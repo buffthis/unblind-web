@@ -19,6 +19,9 @@ export const colors = {
   inkSoft: '#6B7684',
   inkMuted: '#8B95A1',
   inkSurface: '#F2F4F6',
+  seriesSlate: '#E8ECF1',
+  seriesSage: '#E5EBE5',
+  seriesSand: '#F1EBE0',
 
   border: '#e0e0e0',
   cardBackground: '#FFFFFF',

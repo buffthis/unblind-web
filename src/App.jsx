@@ -11,7 +11,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 
-import { POST_EDITOR_ENABLED } from '@/config';
+import { POST_EDITOR_ENABLED, SERIES_ENABLED } from '@/config';
 import { queryClient } from '@/queryClient';
 
 // Every page is its own chunk, so the entry holds only the app shell and a first visit
@@ -25,6 +25,11 @@ const UserPage = lazy(() => import('@pages/UserPage'));
 const PostPage = lazy(() => import('@pages/PostPage'));
 const PostEditorPage = lazy(() => import('@pages/PostEditorPage'));
 const WipDemoPage = lazy(() => import('@pages/WipDemoPage'));
+const SeriesPage = lazy(() => import('@pages/SeriesPage'));
+const SeriesEditorPage = lazy(() => import('@pages/SeriesEditorPage'));
+const SeriesPreviewPage = import.meta.env.DEV
+  ? lazy(() => import('@pages/SeriesPreviewPage'))
+  : null;
 
 function App() {
   return (
@@ -46,6 +51,30 @@ function App() {
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/users" element={<UserListPage />} />
                       <Route path="/posts" element={<PostListPage />} />
+                      {SERIES_ENABLED && (
+                        <Route
+                          path="/series/:seriesId"
+                          element={<SeriesPage />}
+                        />
+                      )}
+                      {SERIES_ENABLED && POST_EDITOR_ENABLED && (
+                        <Route
+                          path="/series/new"
+                          element={<SeriesEditorPage />}
+                        />
+                      )}
+                      {SERIES_ENABLED && POST_EDITOR_ENABLED && (
+                        <Route
+                          path="/series/:seriesId/edit"
+                          element={<SeriesEditorPage />}
+                        />
+                      )}
+                      {SeriesPreviewPage && (
+                        <Route
+                          path="/__preview/series"
+                          element={<SeriesPreviewPage />}
+                        />
+                      )}
                       {POST_EDITOR_ENABLED && (
                         <Route path="/posts/new" element={<PostEditorPage />} />
                       )}

@@ -6,6 +6,7 @@ import {
 } from '@apis/postApi';
 import PostArticle from '@components/post/PostArticle';
 import PostLinkDialog from '@components/post/PostLinkDialog';
+import SeriesPicker from '@components/series/SeriesPicker';
 import usePostDraft, { readDraft } from '@hooks/usePostDraft';
 import useUnsavedChangesWarning from '@hooks/useUnsavedChangesWarning';
 import { LAYOUT } from '@styles/constants';
@@ -25,6 +26,8 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+
+import { SERIES_ENABLED } from '@/config';
 
 const TOOLBAR = [
   { kind: 'bold', label: '굵게', text: 'B' },
@@ -311,6 +314,7 @@ export default function PostEditorForm({
   postId: initialPostId,
   initialValues,
   initialThumbnailUrl,
+  initialSeries,
   draftStorageKey,
 }) {
   const navigate = useNavigate();
@@ -588,9 +592,16 @@ export default function PostEditorForm({
         saved.thumbnail?.url ?? (storedThumbnail || undefined)
       );
       await Promise.all(
-        [['post'], ['posts'], ['user'], ['post-edit']].map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey })
-        )
+        [
+          ['post'],
+          ['posts'],
+          ['user'],
+          ['post-edit'],
+          ['series'],
+          ['series-list'],
+          ['series-edit'],
+          ['series-candidates'],
+        ].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
       );
       if (hidden) {
         navigate(`/posts/${saved.id}/edit`, {
@@ -679,6 +690,18 @@ export default function PostEditorForm({
           <option value="3">h3까지</option>
         </select>
       </Field>
+
+      {SERIES_ENABLED && (
+        <SeriesPicker
+          value={values.seriesId}
+          currentSeries={initialSeries}
+          onChange={(id) => {
+            setValues((prev) => ({ ...prev, seriesId: id }));
+            setDirty(true);
+          }}
+          disabled={saving || pendingDraft != null}
+        />
+      )}
 
       <Tabs role="tablist">
         <ActionButton

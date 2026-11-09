@@ -7,6 +7,7 @@ import { BODY_ENTRANCE, riseIn } from '@components/post/entrance';
 import PostArticle from '@components/post/PostArticle';
 import PostToc from '@components/post/PostToc';
 import WipBanner from '@components/post/WipBanner';
+import SeriesNavigation from '@components/series/SeriesNavigation';
 import { useAuth } from '@contexts/AuthContext';
 import useArticleHeadings, {
   useActiveHeading,
@@ -27,7 +28,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 
-import { POST_EDITOR_ENABLED } from '@/config';
+import { POST_EDITOR_ENABLED, SERIES_ENABLED } from '@/config';
 
 const ARTICLE_WIDTH = 550;
 const TOC_MIN_WIDTH = 220;
@@ -368,6 +369,14 @@ export default function PostPage() {
             </Meta>
           </header>
 
+          {SERIES_ENABLED && post.series?.id != null && (
+            <SeriesNavigation
+              seriesId={post.series.id}
+              postId={post.id}
+              placement="top"
+            />
+          )}
+
           {thumbnail.src && (
             <Thumbnail
               src={thumbnail.src}
@@ -388,6 +397,14 @@ export default function PostPage() {
                 entrance={entrance ? BODY_ENTRANCE : undefined}
               />
             </ArticleArea>
+          )}
+
+          {SERIES_ENABLED && post.series?.id != null && (
+            <SeriesNavigation
+              seriesId={post.series.id}
+              postId={post.id}
+              placement="bottom"
+            />
           )}
 
           {author && (

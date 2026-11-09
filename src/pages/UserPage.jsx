@@ -5,6 +5,7 @@ import Divider from '@components/common/Divider';
 import Footer from '@components/common/Footer';
 import HeaderNotice from '@components/common/HeaderNotice';
 import HoverImage from '@components/common/HoverImage';
+import ProfileSeries from '@components/series/ProfileSeries';
 import Loading from '@components/common/Loading';
 import { useLoadingHold } from '@components/common/loadingRun';
 import { Section, SectionTitle } from '@components/common/Section';
@@ -33,7 +34,12 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 
-import { POST_EDITOR_ENABLED, SITE_NAME, SITE_URL } from '@/config';
+import {
+  POST_EDITOR_ENABLED,
+  SERIES_ENABLED,
+  SITE_NAME,
+  SITE_URL,
+} from '@/config';
 
 export default function UserPage() {
   const { username } = useParams();
@@ -63,6 +69,7 @@ export default function UserPage() {
     sectionVisibility[section.id] =
       section.always || !isEmpty(user[section.key]);
   });
+  if (SERIES_ENABLED && isMe) sectionVisibility.posts = true;
 
   const profileJsonLd = serializeJsonLd({
     '@context': 'https://schema.org',
@@ -217,15 +224,29 @@ export default function UserPage() {
         </SectionTitle>
         {isMe && <Link to="/posts/new">글쓰기</Link>}
 
-        <ProjectList>
-          {user.posts
-            .filter((post) => !isExternalPost(post))
-            .map((post, index) => (
-              <ScrollAnimation key={post.id ?? index} delay={0.3}>
-                <PostCard post={post} />
-              </ScrollAnimation>
-            ))}
-        </ProjectList>
+        {SERIES_ENABLED ? (
+          <ProfileSeries userId={user.id} isMe={isMe}>
+            <ProjectList>
+              {user.posts
+                .filter((post) => !isExternalPost(post))
+                .map((post, index) => (
+                  <ScrollAnimation key={post.id ?? index} delay={0.3}>
+                    <PostCard post={post} />
+                  </ScrollAnimation>
+                ))}
+            </ProjectList>
+          </ProfileSeries>
+        ) : (
+          <ProjectList>
+            {user.posts
+              .filter((post) => !isExternalPost(post))
+              .map((post, index) => (
+                <ScrollAnimation key={post.id ?? index} delay={0.3}>
+                  <PostCard post={post} />
+                </ScrollAnimation>
+              ))}
+          </ProjectList>
+        )}
       </Section>
 
       <Footer />
