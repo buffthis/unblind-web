@@ -1,15 +1,18 @@
 import { fetchSeries, publicSeriesPosts } from '@apis/seriesApi';
 import { useQuery } from '@tanstack/react-query';
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { toDirectImageUrl } from '@utils/imageUrl';
+import { splitThumbnail } from '@utils/thumbnail';
 
 import SeriesContents from './SeriesContents';
 
 const Block = styled.nav`
   margin-top: 32px;
-  padding: 20px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
   color: ${({ theme }) => theme.colors.ink};
   a:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.accent};
@@ -17,9 +20,6 @@ const Block = styled.nav`
   }
 `;
 const Heading = styled.div`
-  display: grid;
-  justify-items: start;
-  gap: 8px;
   font-size: 15px;
   a {
     font-weight: 500;
@@ -29,68 +29,86 @@ const Heading = styled.div`
     text-decoration: underline;
     text-underline-offset: 4px;
   }
-  span {
-    color: ${({ theme }) => theme.colors.inkSoft};
-    font-size: 12px;
-  }
 `;
 const Contents = styled.div`
-  margin-top: 16px;
+  margin-top: 12px;
 `;
 const Continuation = styled.nav`
-  margin-top: 56px;
-  padding-top: 24px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  margin-top: 40px;
   a:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.accent};
     outline-offset: 4px;
   }
 `;
 const Next = styled(Link)`
-  display: block;
-  padding: 20px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr)
+    ${({ $hasThumbnail, $hasSubtitle }) =>
+      !$hasThumbnail
+        ? '0'
+        : $hasSubtitle
+          ? 'clamp(128px, 36%, 216px)'
+          : 'clamp(128px, 30%, 178px)'};
+  align-items: stretch;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  overflow: hidden;
   color: ${({ theme }) => theme.colors.inkStrong};
+  text-decoration: none;
+  &:hover {
+    text-decoration: none;
+  }
+`;
+const NextCopy = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.lg};
   span {
     display: block;
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1.5;
     color: ${({ theme }) => theme.colors.inkSoft};
   }
   strong {
     display: block;
-    margin-top: 8px;
-    font-size: 21px;
+    min-width: 0;
+    font-size: 18px;
     font-weight: 500;
     line-height: 1.5;
-    overflow-wrap: anywhere;
-  }
-  strong span {
-    display: inline;
-    font-size: inherit;
-    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   p {
-    font-size: 13px;
-    margin-top: 8px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
     color: ${({ theme }) => theme.colors.inkSoft};
   }
-  &:hover strong {
-    text-decoration: underline;
-    text-underline-offset: 5px;
-  }
 `;
-const Previous = styled(Link)`
-  display: inline-block;
-  margin-top: 16px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.inkSoft};
-  &:hover {
-    color: ${({ theme }) => theme.colors.ink};
-  }
+const NextThumbnail = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  align-self: stretch;
+  object-fit: cover;
 `;
 const End = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.inkSoft};
-  padding: 20px 0 4px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
 `;
 const Status = styled.p`
   font-size: 12px;
@@ -107,31 +125,48 @@ const Status = styled.p`
   }
 `;
 
+function NextChapterCard({ post }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const thumbnail = splitThumbnail(post.thumbnail?.url);
+  const thumbnailSrc = toDirectImageUrl(thumbnail.src);
+  const hasThumbnail = Boolean(thumbnailSrc && !imageFailed);
+  const hasSubtitle = Boolean(post.subtitle);
+
+  return (
+    <Next
+      to={`/posts/${post.id}`}
+      $hasThumbnail={hasThumbnail}
+      $hasSubtitle={hasSubtitle}
+    >
+      <NextCopy>
+        <span>다음 글</span>
+        <strong>{post.title}</strong>
+        {post.subtitle && <p>{post.subtitle}</p>}
+      </NextCopy>
+      {hasThumbnail && (
+        <NextThumbnail
+          src={thumbnailSrc}
+          alt=""
+          onError={() => setImageFailed(true)}
+        />
+      )}
+    </Next>
+  );
+}
+
 export function SeriesNavigationView({ series, postId, placement = 'top' }) {
   const posts = publicSeriesPosts(series.posts);
   const index = posts.findIndex((post) => String(post.id) === String(postId));
   if (index < 0) return null;
-  const previous = posts[index - 1];
   const next = posts[index + 1];
   const href = `/series/${series.id}`;
   if (placement === 'bottom') {
     return (
       <Continuation aria-label="시리즈 이어 읽기">
         {next ? (
-          <Next to={`/posts/${next.id}`}>
-            <span>다음 글</span>
-            <strong>
-              {next.title} <span aria-hidden="true">→</span>
-            </strong>
-            {next.subtitle && <p>{next.subtitle}</p>}
-          </Next>
+          <NextChapterCard post={next} />
         ) : (
           <End>마지막으로 공개된 글입니다.</End>
-        )}
-        {previous && (
-          <Previous to={`/posts/${previous.id}`}>
-            ← 이전 글 · {previous.title}
-          </Previous>
         )}
       </Continuation>
     );
@@ -140,9 +175,6 @@ export function SeriesNavigationView({ series, postId, placement = 'top' }) {
     <Block aria-label="이 글의 시리즈">
       <Heading>
         <Link to={href}>{series.title}</Link>
-        <span>
-          {index + 1} / {posts.length}편
-        </span>
       </Heading>
       <Contents>
         <SeriesContents posts={posts} currentPostId={postId} compact />

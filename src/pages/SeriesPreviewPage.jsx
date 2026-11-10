@@ -45,6 +45,9 @@ const series = {
       id: 'preview-3',
       title: '캐시는 언제 비워야 할까',
       subtitle: '빠른 응답과 정확한 데이터 사이의 균형',
+      thumbnail: {
+        url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80',
+      },
     },
     {
       id: 'preview-4',
