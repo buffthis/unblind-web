@@ -328,6 +328,14 @@ export default function PostPage() {
       <BasicHeader />
       <Layout key={postId} data-entrance={entrance ? '' : undefined}>
         <Main>
+          {SERIES_ENABLED && post.series?.id != null && (
+            <SeriesNavigation
+              seriesId={post.series.id}
+              postId={post.id}
+              placement="top"
+            />
+          )}
+
           <header>
             <Title>{post.title}</Title>
             {post.subtitle && <Subtitle>{post.subtitle}</Subtitle>}
@@ -368,14 +376,6 @@ export default function PostPage() {
               </MetaAside>
             </Meta>
           </header>
-
-          {SERIES_ENABLED && post.series?.id != null && (
-            <SeriesNavigation
-              seriesId={post.series.id}
-              postId={post.id}
-              placement="top"
-            />
-          )}
 
           {thumbnail.src && (
             <Thumbnail

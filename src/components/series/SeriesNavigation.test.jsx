@@ -1,9 +1,9 @@
 import theme from '@styles/theme/theme';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SeriesNavigationView } from './SeriesNavigation';
 
@@ -35,28 +35,99 @@ function renderNav(postId, placement = 'top', data = series) {
     </ThemeProvider>
   );
 }
+function stubHover(canHover) {
+  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query === '(hover: hover)' ? canHover : false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+}
+
 describe('series reading navigation', () => {
+  beforeEach(() => stubHover(true));
+  afterEach(() => vi.restoreAllMocks());
+  it('toggles the list with a tap on screens without hover', () => {
+    stubHover(false);
+    renderNav(3);
+    const banner = screen.getByRole('navigation', { name: '이 글의 시리즈' });
+    fireEvent.mouseEnter(banner);
+    expect(
+      screen.queryByRole('list', { name: '시리즈 회차' })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('3편 중 2번째'));
+    expect(
+      screen.getByRole('list', { name: '시리즈 회차' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('3편 중 2번째'));
+    expect(
+      screen.queryByRole('list', { name: '시리즈 회차' })
+    ).not.toBeInTheDocument();
+  });
   it('numbers only public chapters and marks the current chapter', () => {
     renderNav(3);
     expect(screen.getByText('서비스 만들기')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s*\/\s*\d+편/)).not.toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: '이 글의 시리즈' })).toBeInTheDocument();
+    expect(screen.getByText('3편 중 2번째')).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: '이 글의 시리즈' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('list', { name: '시리즈 회차' })
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', { name: /전체 회차/ })
+    ).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(
+      screen.getByRole('navigation', { name: '이 글의 시리즈' })
+    );
     const list = screen.getByRole('list', { name: '시리즈 회차' });
-    expect(within(list).getByText('운영').closest('a')).toHaveAttribute(
-      'aria-current',
-      'page'
+    const current = within(list).getByText('운영').closest('[aria-current]');
+    expect(current).toHaveAttribute('aria-current', 'page');
+    expect(current.tagName).not.toBe('A');
+    expect(within(list).getByText('시작').closest('a')).toHaveAttribute(
+      'href',
+      '/posts/1'
     );
     expect(screen.queryByText('숨긴 글')).not.toBeInTheDocument();
-    expect(screen.queryByText('전체 회차 보기')).not.toBeInTheDocument();
+  });
+  it('steps to the neighbouring public chapters and closes the list on leave or Escape', () => {
+    renderNav(3);
+    expect(screen.getByRole('link', { name: '이전 글: 시작' })).toHaveAttribute(
+      'href',
+      '/posts/1'
+    );
+    expect(screen.getByRole('link', { name: '다음 글: 회고' })).toHaveAttribute(
+      'href',
+      '/posts/4'
+    );
+    const banner = screen.getByRole('navigation', { name: '이 글의 시리즈' });
+    const listShown = () => screen.queryByRole('list', { name: '시리즈 회차' });
+
+    fireEvent.mouseEnter(banner);
+    expect(listShown()).toBeInTheDocument();
+    fireEvent.mouseLeave(banner);
+    expect(listShown()).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(banner);
+    fireEvent.keyDown(banner, { key: 'Escape' });
+    expect(listShown()).not.toBeInTheDocument();
+  });
+  it('disables the step that has no chapter', () => {
+    renderNav(1);
+    expect(screen.getByRole('button', { name: '이전 글 없음' })).toBeDisabled();
+    expect(
+      screen.getByRole('link', { name: '다음 글: 운영' })
+    ).toBeInTheDocument();
   });
   it('continues to the next public chapter across a hidden entry', () => {
     renderNav(1, 'bottom');
-    expect(screen.getByRole('navigation', { name: '시리즈 이어 읽기' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: '시리즈 이어 읽기' })
+    ).toBeInTheDocument();
     const nextCard = screen.getByRole('link', { name: /다음 글 운영/ });
-    expect(nextCard).toHaveAttribute(
-      'href',
-      '/posts/3'
-    );
+    expect(nextCard).toHaveAttribute('href', '/posts/3');
     expect(nextCard.querySelector('img')).toHaveAttribute(
       'src',
       'https://example.com/operating.jpg'
@@ -94,7 +165,7 @@ describe('series reading navigation', () => {
   });
   it('shows the series from its first published chapter', () => {
     renderNav(1, 'top', { ...series, posts: [series.posts[0]] });
-    expect(screen.queryByText(/\d+\s*\/\s*\d+편/)).not.toBeInTheDocument();
+    expect(screen.getByText('1편 중 1번째')).toBeInTheDocument();
   });
   it('does not navigate using a post that is no longer in the series', () => {
     const { container } = renderNav(99);
