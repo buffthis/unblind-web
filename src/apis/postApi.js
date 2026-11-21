@@ -33,7 +33,7 @@ export async function fetchPosts() {
   const response = await client.get(ENDPOINTS.POSTS.LIST);
   const posts = Array.isArray(response.data) ? response.data : [];
   return posts
-    .filter((post) => !post.hidden && !isExternalPost(post))
+    .filter((post) => !post.hidden && !post.wip && !isExternalPost(post))
     .map(decodePostToc);
 }
 
@@ -100,6 +100,8 @@ export async function savePost({
     ...(values.tags != null && { tags: parseTags(values.tags) }),
     ...(thumbnailId != null && { thumbnailId }),
     hidden,
+    // A draft saved before the field existed has no wip, and must not clear the stored mark.
+    ...(values.wip !== undefined && { wip: Boolean(values.wip) }),
     ...(values.seriesId !== undefined && {
       seriesId: values.seriesId == null ? null : Number(values.seriesId),
     }),

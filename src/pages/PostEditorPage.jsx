@@ -23,6 +23,7 @@ const EMPTY_VALUES = {
   thumbnailBorder: false,
   content: '',
   tocMaxLevel: DEFAULT_TOC_MAX_LEVEL,
+  wip: false,
   ...(SERIES_ENABLED && { seriesId: null }),
 };
 
@@ -56,6 +57,7 @@ function toFormValues(post) {
     thumbnailBorder: thumbnail.border,
     content: post.content || '',
     tocMaxLevel: normalizeTocMaxLevel(post.tocMaxLevel),
+    wip: Boolean(post.wip),
     ...(SERIES_ENABLED && { seriesId: post.series?.id ?? null }),
   };
 }

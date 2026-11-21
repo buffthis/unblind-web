@@ -372,6 +372,39 @@ describe('PostPage', () => {
     });
   });
 
+  describe('work in progress', () => {
+    it('shows the notice instead of the body when the API withholds it', () => {
+      usePost.mockReturnValue({
+        post: { ...basePost, wip: true, content: null },
+        loading: false,
+        error: false,
+      });
+      const { container } = renderPage();
+
+      expect(screen.getByText(/^작성 중인 글입니다/)).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: '글 제목' })
+      ).toBeInTheDocument();
+      expect(container.querySelector('article')).toBeNull();
+    });
+
+    it('shows the author the body under a banner', () => {
+      useAuth.mockReturnValue({ user: { id: 7 }, loading: false });
+      usePost.mockReturnValue({
+        post: { ...basePost, wip: true },
+        loading: false,
+        error: false,
+      });
+      renderPage();
+
+      expect(screen.queryByText(/^작성 중인 글입니다/)).toBeNull();
+      expect(
+        screen.getByText(/이 글은 아직 작성 중입니다/)
+      ).toBeInTheDocument();
+      expect(screen.getByText('본문입니다.')).toBeInTheDocument();
+    });
+  });
+
   it('hides the edit link from anonymous visitors', () => {
     usePost.mockReturnValue({ post: basePost, loading: false, error: false });
     renderPage();

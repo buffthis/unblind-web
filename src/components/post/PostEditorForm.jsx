@@ -234,6 +234,16 @@ const Footer = styled.div`
   }
 `;
 
+const WipField = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.secondary};
+  cursor: pointer;
+`;
+
 const ActionButton = styled.button`
   padding: 8px 20px;
   border-radius: ${({ theme }) => theme.radius.md};
@@ -808,6 +818,16 @@ export default function PostEditorForm({
         <span role="status">
           {formError || (savedAt ? `임시 저장됨 ${formatTime(savedAt)}` : '')}
         </span>
+        <WipField title="목록에는 보이지만 본문은 나에게만 보입니다">
+          <input
+            type="checkbox"
+            checked={Boolean(values.wip)}
+            onChange={(event) =>
+              setValues((prev) => ({ ...prev, wip: event.target.checked }))
+            }
+          />
+          작성 중
+        </WipField>
         <ActionButton
           type="button"
           disabled={saving || pendingDraft != null}

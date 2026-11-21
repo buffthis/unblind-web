@@ -6,7 +6,7 @@ import BasicHeader from '@components/header/BasicHeader';
 import { BODY_ENTRANCE, riseIn } from '@components/post/entrance';
 import PostArticle from '@components/post/PostArticle';
 import PostToc from '@components/post/PostToc';
-import WipBanner from '@components/post/WipBanner';
+import WipBanner, { WipNotice } from '@components/post/WipBanner';
 import SeriesNavigation from '@components/series/SeriesNavigation';
 import { useAuth } from '@contexts/AuthContext';
 import useArticleHeadings, {
@@ -272,6 +272,8 @@ export default function PostPage() {
   const { user: authorProfile } = useUser(authorUsername);
   const articleRef = useRef(null);
   const content = post?.content || '';
+  // The API sends a work-in-progress body only to its author; everyone else gets null.
+  const withheld = Boolean(post?.wip) && post?.content == null;
   const headings = useArticleHeadings(articleRef, content);
   const tocHeadings = headings.filter(
     (heading) => heading.level <= normalizeTocMaxLevel(post?.tocMaxLevel)
@@ -385,7 +387,8 @@ export default function PostPage() {
             />
           )}
 
-          {post.wip && <WipBanner missing={post.wipMissing} />}
+          {withheld && <WipNotice />}
+          {post.wip && !withheld && <WipBanner missing={post.wipMissing} />}
 
           {content && (
             <ArticleArea>

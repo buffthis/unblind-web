@@ -56,6 +56,19 @@ describe('series membership in post saves', () => {
       );
     }
   );
+  it.each([true, false])(
+    'sends wip %s in the same post request',
+    async (wip) => {
+      client.patch.mockResolvedValue({ data: { id: 3 } });
+      await savePost({ postId: 3, values: { ...values, wip }, hidden: false });
+      expect(client.patch.mock.calls[0][1]).toHaveProperty('wip', wip);
+    }
+  );
+  it('omits wip for older editor drafts so it cannot clear the mark', async () => {
+    client.patch.mockResolvedValue({ data: { id: 3 } });
+    await savePost({ postId: 3, values, hidden: false });
+    expect(client.patch.mock.calls[0][1]).not.toHaveProperty('wip');
+  });
   it('omits membership for older editor drafts so it cannot accidentally clear a series', async () => {
     client.patch.mockResolvedValue({ data: { id: 3 } });
     await savePost({ postId: 3, values, hidden: false });
@@ -64,13 +77,14 @@ describe('series membership in post saves', () => {
 });
 
 describe('external posts', () => {
-  it('drops them from the post list along with hidden posts', async () => {
+  it('drops them from the post list along with hidden and wip posts', async () => {
     client.get.mockResolvedValue({
       data: [
         { id: 1, externalUrl: 'https://velog.io/@a/1' },
         { id: 2, externalUrl: null },
         { id: 3, externalUrl: '' },
         { id: 4, hidden: true },
+        { id: 5, wip: true },
       ],
     });
     expect((await fetchPosts()).map((post) => post.id)).toEqual([2, 3]);

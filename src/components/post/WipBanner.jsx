@@ -64,6 +64,31 @@ const Missing = styled.ul`
   color: ${({ theme }) => theme.colors.inkSoft};
 `;
 
+const Notice = styled.div`
+  margin: 64px 0 0;
+  padding: 56px 24px;
+  border: 1px dashed ${({ theme }) => theme.colors.inkMuted};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.inkSurface};
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: ${({ theme }) => theme.colors.inkSub};
+  }
+`;
+
+// Stands in for the body when the API withholds it from anyone but the author.
+export function WipNotice() {
+  return (
+    <Notice role="note" aria-label={WIP_LABEL}>
+      <p>작성 중인 글입니다.</p>
+    </Notice>
+  );
+}
+
 // Page level status for a published post that is not finished. `missing` names the parts
 // that are still empty, so a reader can tell which sections to trust and which to skip.
 export default function WipBanner({ updatedAt, missing = [] }) {
