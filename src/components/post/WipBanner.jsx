@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiEyeOff } from 'react-icons/fi';
 import styled from 'styled-components';
 
 export const WIP_LABEL = '작성 중';
@@ -65,12 +66,17 @@ const Missing = styled.ul`
 `;
 
 const Notice = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   margin: 64px 0 0;
   padding: 56px 24px;
   border: 1px dashed ${({ theme }) => theme.colors.inkMuted};
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.colors.inkSurface};
   text-align: center;
+  color: ${({ theme }) => theme.colors.inkMuted};
 
   p {
     margin: 0;
@@ -84,7 +90,8 @@ const Notice = styled.div`
 export function WipNotice() {
   return (
     <Notice role="note" aria-label={WIP_LABEL}>
-      <p>작성 중인 글입니다.</p>
+      <FiEyeOff aria-hidden="true" size={22} />
+      <p>숨김 처리된 글입니다</p>
     </Notice>
   );
 }

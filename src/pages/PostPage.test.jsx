@@ -381,7 +381,7 @@ describe('PostPage', () => {
       });
       const { container } = renderPage();
 
-      expect(screen.getByText(/^작성 중인 글입니다/)).toBeInTheDocument();
+      expect(screen.getByText(/^숨김 처리된 글입니다/)).toBeInTheDocument();
       expect(
         screen.getByRole('heading', { name: '글 제목' })
       ).toBeInTheDocument();
@@ -397,7 +397,7 @@ describe('PostPage', () => {
       });
       renderPage();
 
-      expect(screen.queryByText(/^작성 중인 글입니다/)).toBeNull();
+      expect(screen.queryByText(/^숨김 처리된 글입니다/)).toBeNull();
       expect(
         screen.getByText(/이 글은 아직 작성 중입니다/)
       ).toBeInTheDocument();
