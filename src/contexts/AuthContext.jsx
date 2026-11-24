@@ -1,5 +1,6 @@
 import { fetchMe, login, logout } from '@apis/authApi';
 import { fetchUserById } from '@apis/userApi';
+import { takePendingReturnTo } from '@utils/returnTo';
 import React, {
   createContext,
   useCallback,
@@ -8,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
@@ -17,6 +19,12 @@ export function AuthProvider({ children }) {
   // 초기 세션 복원과 로그인/로그아웃이 겹칠 수 있으므로, 시퀀스 토큰으로
   // 항상 마지막 요청의 결과만 상태에 반영한다.
   const loadSeqRef = useRef(0);
+  // useNavigate changes identity on every location change in a BrowserRouter, so it
+  // is kept in a ref; listing it as an effect dependency would reload the user on
+  // every navigation.
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   const loadCurrentUser = useCallback(async () => {
     const seq = ++loadSeqRef.current;
@@ -30,17 +38,25 @@ export function AuthProvider({ children }) {
       if (seq === loadSeqRef.current) {
         console.error('사용자 정보 로드 실패:', error);
       }
-      return;
+      return null;
     }
     if (seq === loadSeqRef.current) {
       setUser(nextUser);
     }
+    return nextUser;
   }, []);
 
   useEffect(() => {
+    // Google login ends in a full page load on a fixed URL, so this initial load is
+    // where the page the user was headed to gets restored. The stash is taken on
+    // every load so a stale one never outlives the visit it was made for.
+    const pendingReturnTo = takePendingReturnTo();
     (async () => {
       try {
-        await loadCurrentUser();
+        const restoredUser = await loadCurrentUser();
+        if (restoredUser && pendingReturnTo) {
+          navigateRef.current(pendingReturnTo, { replace: true });
+        }
       } finally {
         setLoading(false);
       }

@@ -1,5 +1,10 @@
 import Logo from '@components/common/Logo';
 import { useAuth } from '@contexts/AuthContext';
+import {
+  clearPendingReturnTo,
+  sanitizeReturnTo,
+  stashPendingReturnTo,
+} from '@utils/returnTo';
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
@@ -215,20 +220,6 @@ function GoogleIcon() {
   );
 }
 
-// returnTo는 내부 경로만 허용한다. 외부 URL을 허용하면 오픈 리다이렉트가 된다.
-// '//'나 '/\' 같은 protocol-relative 우회를 막기 위해 문자열 검사 대신
-// 실제로 해석된 URL의 origin으로 판정한다.
-function sanitizeReturnTo(value) {
-  if (typeof value !== 'string' || !value.startsWith('/')) return null;
-  try {
-    const url = new URL(value, window.location.origin);
-    if (url.origin !== window.location.origin) return null;
-    return url.pathname + url.search + url.hash;
-  } catch {
-    return null;
-  }
-}
-
 function LoginPage() {
   const { user, loading, login } = useAuth();
   const [username, setUsername] = useState('');
@@ -249,6 +240,8 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     setSubmitting(true);
+    // A stash left by an abandoned Google login must not override this returnTo.
+    clearPendingReturnTo();
     try {
       await login(username, password);
       navigate(returnTo, { replace: true });
@@ -260,6 +253,7 @@ function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    stashPendingReturnTo(returnTo);
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     window.location.href = `${apiBaseUrl}/oauth2/authorization/google`;
   };
