@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiLogIn } from 'react-icons/fi';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 const LoginLink = styled(RouterLink)`
@@ -21,9 +21,19 @@ const LoginLink = styled(RouterLink)`
   }
 `;
 
+// Carries the current page as returnTo so login lands back where the user started.
+function loginPathFrom(location) {
+  const current = location.pathname + location.search + location.hash;
+  if (location.pathname === '/' || location.pathname === '/login') {
+    return '/login';
+  }
+  return `/login?returnTo=${encodeURIComponent(current)}`;
+}
+
 export default function LoginButton() {
+  const location = useLocation();
   return (
-    <LoginLink to="/login" aria-label="로그인">
+    <LoginLink to={loginPathFrom(location)} aria-label="로그인">
       <FiLogIn size={18} color="#333333" strokeWidth={2} />
     </LoginLink>
   );
