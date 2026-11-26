@@ -1,6 +1,6 @@
 import { fetchMe, login, logout } from '@apis/authApi';
 import { fetchUserById } from '@apis/userApi';
-import { takePendingReturnTo } from '@utils/returnTo';
+import { peekPendingReturnTo, takePendingReturnTo } from '@utils/returnTo';
 import React, {
   createContext,
   useCallback,
@@ -9,13 +9,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // True from the first render until the initial load decides whether to restore a
+  // stashed page. The root route reads it so it does not flash /users first.
+  const [restoringReturnTo, setRestoringReturnTo] = useState(
+    () => peekPendingReturnTo() !== null
+  );
   // 초기 세션 복원과 로그인/로그아웃이 겹칠 수 있으므로, 시퀀스 토큰으로
   // 항상 마지막 요청의 결과만 상태에 반영한다.
   const loadSeqRef = useRef(0);
@@ -52,16 +57,28 @@ export function AuthProvider({ children }) {
     // every load so a stale one never outlives the visit it was made for.
     const pendingReturnTo = takePendingReturnTo();
     (async () => {
+      let navigated = false;
       try {
         const restoredUser = await loadCurrentUser();
         if (restoredUser && pendingReturnTo) {
           navigateRef.current(pendingReturnTo, { replace: true });
+          navigated = true;
         }
       } finally {
         setLoading(false);
+        // After a navigate the flag is cleared by the location effect below instead.
+        // The router applies location changes in a transition, so clearing it here
+        // would render '/' with the flag off and redirect to /users after the restore.
+        if (!navigated) setRestoringReturnTo(false);
       }
     })();
   }, [loadCurrentUser]);
+
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // The stash never holds '/', so leaving it means the restore has landed.
+    if (restoringReturnTo && pathname !== '/') setRestoringReturnTo(false);
+  }, [restoringReturnTo, pathname]);
 
   const handleLogin = async (username, password) => {
     await login(username, password);
@@ -83,7 +100,13 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login: handleLogin, logout: handleLogout }}
+      value={{
+        user,
+        loading,
+        restoringReturnTo,
+        login: handleLogin,
+        logout: handleLogout,
+      }}
     >
       {children}
     </AuthContext.Provider>

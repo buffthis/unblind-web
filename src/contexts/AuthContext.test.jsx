@@ -4,7 +4,7 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, useAuth } from './AuthContext';
 
 vi.mock('@apis/authApi', () => ({
   fetchMe: vi.fn(),
@@ -59,5 +59,47 @@ describe('AuthProvider의 로그인 후 복귀', () => {
     await waitFor(() => expect(fetchMe).toHaveBeenCalled());
     expect(screen.getByText('목록')).toBeInTheDocument();
     expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('복원 여부가 정해질 때까지 restoringReturnTo가 true다', async () => {
+    vi.mocked(fetchMe).mockResolvedValue({ id: 1 });
+    vi.mocked(fetchUserById).mockResolvedValue({ id: 1 });
+    stashPendingReturnTo('/posts/1/edit');
+    const seen = [];
+    function Probe() {
+      seen.push(useAuth().restoringReturnTo);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(seen.at(-1)).toBe(false));
+    expect(seen[0]).toBe(true);
+  });
+
+  it('저장된 경로가 없으면 처음부터 restoringReturnTo가 false다', async () => {
+    vi.mocked(fetchMe).mockResolvedValue(null);
+    const seen = [];
+    function Probe() {
+      seen.push(useAuth().restoringReturnTo);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(fetchMe).toHaveBeenCalled());
+    expect(seen.every((v) => v === false)).toBe(true);
   });
 });

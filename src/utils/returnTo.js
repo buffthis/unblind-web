@@ -34,15 +34,7 @@ export function stashPendingReturnTo(path, now = Date.now()) {
   }
 }
 
-// Reads and always removes the stash, so a value is used at most once.
-export function takePendingReturnTo(now = Date.now()) {
-  let raw;
-  try {
-    raw = window.sessionStorage.getItem(STORAGE_KEY);
-    window.sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
+function parsePendingReturnTo(raw, now) {
   if (!raw) return null;
   try {
     const { path, savedAt } = JSON.parse(raw);
@@ -52,6 +44,30 @@ export function takePendingReturnTo(now = Date.now()) {
   } catch {
     return null;
   }
+}
+
+// Reads without removing, so it is safe to call during render.
+export function peekPendingReturnTo(now = Date.now()) {
+  try {
+    return parsePendingReturnTo(
+      window.sessionStorage.getItem(STORAGE_KEY),
+      now
+    );
+  } catch {
+    return null;
+  }
+}
+
+// Reads and always removes the stash, so a value is used at most once.
+export function takePendingReturnTo(now = Date.now()) {
+  let raw;
+  try {
+    raw = window.sessionStorage.getItem(STORAGE_KEY);
+    window.sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+  return parsePendingReturnTo(raw, now);
 }
 
 export function clearPendingReturnTo() {

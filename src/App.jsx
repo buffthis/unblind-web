@@ -2,7 +2,7 @@ import ErrorBoundary from '@components/common/ErrorBoundary';
 import Loading from '@components/common/Loading';
 import ScrollToTop from '@components/common/ScrollToTop';
 import SearchProvider from '@components/search/SearchProvider';
-import { AuthProvider } from '@contexts/AuthContext';
+import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import GlobalStyle from '@styles/GlobalStyle';
 import theme from '@styles/theme/theme';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -31,6 +31,14 @@ const SeriesPreviewPage = import.meta.env.DEV
   ? lazy(() => import('@pages/SeriesPreviewPage'))
   : null;
 
+// Google login always lands on '/'. While a stashed page is being restored, hold
+// here instead of redirecting, or /users would flash before the restore.
+function RootRedirect() {
+  const { restoringReturnTo } = useAuth();
+  if (restoringReturnTo) return <Loading />;
+  return <Navigate to="/users" replace />;
+}
+
 function App() {
   return (
     <HelmetProvider>
@@ -44,10 +52,7 @@ function App() {
                   <ScrollToTop />
                   <Suspense fallback={<Loading />}>
                     <Routes>
-                      <Route
-                        path="/"
-                        element={<Navigate to="/users" replace />}
-                      />
+                      <Route path="/" element={<RootRedirect />} />
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/users" element={<UserListPage />} />
                       <Route path="/posts" element={<PostListPage />} />
